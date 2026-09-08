@@ -15,7 +15,7 @@ function Word({ children, highlight }) {
       <span
         className={[
           'editorial-word inline-block',
-          highlight ? 'font-serif italic font-semibold text-tomate not-italic' : '',
+          highlight ? 'font-serif italic font-semibold text-tomate ' : '',
         ].join(' ')}
       >
         {children}
@@ -57,7 +57,9 @@ export default function Editorial() {
           className="h-full w-full object-cover"
         />
       </div>
-      <div className="absolute inset-0 bg-forno/78" />
+      {/* El rojo tomate del titular necesita un fondo realmente oscuro:
+          sobre las zonas claras del horno se perdía la palabra clave. */}
+      <div className="absolute inset-0 bg-forno/[0.88]" />
 
       <div className="shell relative text-center">
         <h2 className="font-sans font-extrabold uppercase text-display-md leading-[0.9]">

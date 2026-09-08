@@ -31,7 +31,7 @@ export default function Process() {
           <p className="mono text-tomate mb-4">CÓMO FUNCIONA</p>
           <h2 className="font-sans font-extrabold uppercase text-display-sm text-carbon leading-[0.95]">
             DEL HORNO<br />
-            <em className="font-serif italic font-semibold text-tomate not-italic">A TU MESA.</em>
+            <em className="font-serif italic font-semibold text-tomate ">A TU MESA.</em>
           </h2>
         </div>
 
@@ -48,7 +48,7 @@ export default function Process() {
           <div className="relative grid grid-cols-3 gap-8">
             {PROCESS.map((step) => (
               <div key={step.id}>
-                <span className="process-node relative z-10 flex items-center justify-center w-12 h-12 rounded-full bg-tomate text-crema font-serif italic font-semibold text-lg">
+                <span className="process-node relative z-10 flex items-center justify-center w-12 h-12 rounded-full bg-tomate text-crema font-mono font-semibold text-base tracking-tight">
                   {step.id}
                 </span>
                 <p className="process-text mt-6 font-sans font-extrabold uppercase text-lg text-carbon">{step.title}</p>
@@ -71,7 +71,7 @@ export default function Process() {
           <div className="flex flex-col gap-10">
             {PROCESS.map((step) => (
               <div key={step.id} className="relative">
-                <span className="process-node absolute -left-8 top-0 -translate-x-1/2 flex items-center justify-center w-9 h-9 rounded-full bg-tomate text-crema font-serif italic font-semibold text-sm">
+                <span className="process-node absolute -left-8 top-0 -translate-x-1/2 flex items-center justify-center w-9 h-9 rounded-full bg-tomate text-crema font-mono font-semibold text-xs tracking-tight">
                   {step.id}
                 </span>
                 <p className="process-text font-sans font-extrabold uppercase text-lg text-carbon">{step.title}</p>

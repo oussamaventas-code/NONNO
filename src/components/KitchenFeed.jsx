@@ -34,7 +34,7 @@ export default function KitchenFeed() {
         <div>
           <p className="mono text-horno mb-4">VISUAL EXPERIENCE</p>
           <h2 className="font-sans font-extrabold uppercase text-display-sm leading-[0.95]">
-            EL HORNO<br /><em className="font-serif italic font-semibold not-italic text-horno">NO PARA.</em>
+            EL HORNO<br /><em className="font-serif italic font-semibold  text-horno">NO PARA.</em>
           </h2>
           <p className="mt-5 max-w-sm text-crema/55">
             Una simulación visual de lo que pasa en cocina. No son pedidos en tiempo real.

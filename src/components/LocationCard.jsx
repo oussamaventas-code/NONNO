@@ -35,7 +35,7 @@ export default function LocationCard({ location, selected, onSelect, onOrder, on
 
       <div className="p-6 sm:p-8 flex flex-col flex-1">
         <h3 className="font-sans font-extrabold uppercase text-xl sm:text-2xl leading-tight">
-          LA PIZZA DE <em className="font-serif italic font-semibold not-italic">NONNO</em>
+          LA PIZZA DE <em className="font-serif italic font-semibold ">NONNO</em>
           <span className="block mt-0.5 text-crema/60 text-base sm:text-lg font-bold">{location.name}</span>
         </h3>
 

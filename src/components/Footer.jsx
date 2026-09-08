@@ -24,7 +24,7 @@ export default function Footer() {
           <div>
             <p className="font-sans font-extrabold uppercase text-sm tracking-tight">
               {SITE.brand.line1}<br />
-              <em className="font-serif italic font-semibold text-xl not-italic">{SITE.brand.line2}</em>
+              <em className="font-serif italic font-semibold text-xl ">{SITE.brand.line2}</em>
             </p>
             <p className="mt-4 text-crema/50 max-w-[16rem]">{SITE.brand.claim}</p>
           </div>

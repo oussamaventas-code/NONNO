@@ -39,7 +39,7 @@ export default function LocationSelector() {
           <p className="mono text-tomate mb-4">NUESTRAS SEDES</p>
           <h2 className="font-sans font-extrabold uppercase text-display-sm text-carbon leading-[0.95]">
             DOS SEDES.<br />
-            UN MISMO <em className="font-serif italic font-semibold text-tomate not-italic">NONNO</em>.
+            UN MISMO <em className="font-serif italic font-semibold text-tomate ">NONNO</em>.
           </h2>
           <p className="mt-5 text-carbon/60 text-base sm:text-lg">
             Elige desde dónde quieres disfrutar tu pizza.

@@ -35,7 +35,7 @@ export default function Experience() {
           <p className="mono text-tomate mb-4">LA EXPERIENCIA</p>
           <h2 className="font-sans font-extrabold uppercase text-display-sm text-carbon leading-[0.95]">
             {EXPERIENCE.title[0]}<br />
-            <em className="font-serif italic font-semibold text-tomate not-italic">{EXPERIENCE.title[1]}</em>
+            <em className="font-serif italic font-semibold text-tomate ">{EXPERIENCE.title[1]}</em>
           </h2>
           <p className="mt-5 text-carbon/60 text-base sm:text-lg">{EXPERIENCE.text}</p>
         </div>

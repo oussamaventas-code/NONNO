@@ -67,7 +67,10 @@ export default function Hero() {
               ))}
             </div>
 
-            <h1 className="font-sans font-extrabold uppercase leading-[0.9] tracking-tight text-[clamp(2.25rem,min(9vw,11dvh),6.5rem)] text-crema">
+            {/* Sin unidades dvh en el tamaño: en móvil la barra del
+                navegador aparece y desaparece al hacer scroll, y el
+                titular cambiaría de tamaño a mitad de gesto. */}
+            <h1 className="font-sans font-extrabold uppercase leading-[0.9] tracking-tight text-[clamp(2.5rem,8.5vw,6.5rem)] text-crema">
               <span className="block overflow-hidden"><span className="hero-line block">{HERO.line1}</span></span>
               <span className="block overflow-hidden"><span className="hero-line block">{HERO.line2}</span></span>
               <span className="block overflow-hidden">

@@ -53,7 +53,7 @@ export default function MobileNav() {
     >
       <div className="shell flex items-center justify-between pt-6 pb-4">
         <span className="font-sans font-extrabold uppercase text-xs tracking-tight">
-          {SITE.brand.line1} <em className="font-serif italic font-semibold not-italic">{SITE.brand.line2}</em>
+          {SITE.brand.line1} <em className="font-serif italic font-semibold">{SITE.brand.line2}</em>
         </span>
         <button
           onClick={() => toggleMobileNav(false)}

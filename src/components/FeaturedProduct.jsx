@@ -45,7 +45,7 @@ export default function FeaturedProduct() {
           <p className="mono text-horno mb-4">★ {product.badge || 'FAVORITA'}</p>
           <h2 className="font-sans font-extrabold uppercase text-display-sm leading-[0.95]">
             LA FAVORITA<br />
-            <em className="font-serif italic font-semibold text-horno not-italic">DEL NONNO.</em>
+            <em className="font-serif italic font-semibold text-horno ">DEL NONNO.</em>
           </h2>
           <p className="mt-6 max-w-md text-crema/65 text-base sm:text-lg">{product.description}</p>
 
@@ -57,11 +57,14 @@ export default function FeaturedProduct() {
             ))}
           </div>
 
-          <div className="mt-8 flex items-center gap-6">
+          <div className="mt-8 flex flex-wrap items-center gap-4 sm:gap-6">
             <p className="font-serif italic font-semibold text-3xl text-crema">
               DESDE {price(priceFrom(product))}
             </p>
-            <button onClick={() => openProduct(product.id)} className="btn bg-tomate text-crema px-6">
+            <button
+              onClick={() => openProduct(product.id)}
+              className="btn bg-tomate text-crema px-6 w-full sm:w-auto"
+            >
               <span className="btn-layer bg-horno" />
               <span className="btn-label"><Plus className="w-4 h-4" strokeWidth={2.5} /> AÑADIR AL PEDIDO</span>
             </button>

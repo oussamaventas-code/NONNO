@@ -36,13 +36,17 @@ export default function FinalCta() {
           {FINAL_CTA.serif}
         </p>
 
-        <button
-          onClick={scrollToMenu}
-          className="cta-in btn mt-10 bg-forno text-crema px-10 sm:px-14 py-4 sm:py-5 text-base sm:text-lg min-h-[56px]"
-        >
-          <span className="btn-layer bg-carbon" />
-          <span className="btn-label">🍕 {FINAL_CTA.cta}</span>
-        </button>
+        {/* El botón es inline-flex y más alto que su caja de línea:
+            sin este contenedor de bloque, el texto siguiente se le monta encima. */}
+        <div className="cta-in mt-10 flex justify-center">
+          <button
+            onClick={scrollToMenu}
+            className="btn bg-forno text-crema px-10 sm:px-14 py-4 sm:py-5 text-base sm:text-lg min-h-[56px]"
+          >
+            <span className="btn-layer bg-carbon" />
+            <span className="btn-label">🍕 {FINAL_CTA.cta}</span>
+          </button>
+        </div>
 
         <p className="cta-in mono normal-case mt-6 text-crema/70">{FINAL_CTA.foot}</p>
       </div>

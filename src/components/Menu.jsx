@@ -45,7 +45,7 @@ export default function Menu() {
           <h2 className="font-sans font-extrabold uppercase text-display-sm text-carbon leading-[0.95]">
             <span className="menu-heading-line block">EL MENÚ</span>
             <span className="menu-heading-line block">
-              QUE NO <em className="font-serif italic font-semibold text-tomate not-italic">NECESITA</em>
+              QUE NO <em className="font-serif italic font-semibold text-tomate ">NECESITA</em>
             </span>
             <span className="menu-heading-line block">PRESENTACIÓN.</span>
           </h2>
@@ -76,10 +76,12 @@ export default function Menu() {
         <div
           ref={gridRef}
           key={active}
-          className="mt-10 grid grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-10 sm:gap-x-8 sm:gap-y-14"
+          className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-10 sm:gap-x-8 sm:gap-y-14"
         >
           {products.map((p) => {
-            const span = p.layout === 'wide' ? 'col-span-2' : 'col-span-1'
+            /* En móvil todo va a una columna: las cards respiran y
+               el pulgar no tiene que apuntar a objetivos de 158px. */
+            const span = p.layout === 'wide' ? 'sm:col-span-2' : ''
             return (
               <div key={p.id} className={span}>
                 <ProductCard product={p} onOpen={openProduct} />

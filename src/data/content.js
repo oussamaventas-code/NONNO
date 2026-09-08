@@ -57,7 +57,7 @@ export const EXPERIENCE = {
   title: ['MASA LENTA.', 'HORNO RÁPIDO.'],
   text: 'Fermentación sin prisa, horno a temperatura de verdad y una lista de ingredientes que cabe en una mano. No hay más truco.',
   pillars: [
-    { id: 'masa', label: 'LA MASA', text: 'Fermentación lenta. Ligera por dentro, crujiente donde toca.', image: PHOTO.doughStack, alt: 'Masas de pizza estiradas y apiladas' },
+    { id: 'masa', label: 'LA MASA', text: 'Fermentación lenta. Ligera por dentro, crujiente donde toca.', image: PHOTO.doughBread, alt: 'Masa de fermentación lenta y trigo' },
     { id: 'horno', label: 'EL HORNO', text: 'Calor alto y contacto directo. La pizza se hace en minutos.', image: PHOTO.ovenFire, alt: 'Horno de leña encendido con una pizza dentro' },
     { id: 'ingredientes', label: 'LOS INGREDIENTES', text: 'Pocos, buenos y reconocibles. Se nota en el primer bocado.', image: PHOTO.basil, alt: 'Albahaca fresca' },
   ],

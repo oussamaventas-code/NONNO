@@ -28,7 +28,6 @@ export const PHOTO = {
   heroPizza: '1513104890138-7c749659a591', // porciones sobre madera oscura
   ovenFire: '1579751626657-72bc17010498', // pizza dentro del horno de leña
   doughBread: '1509440159596-0249088772ff', // panes rústicos + trigo
-  doughStack: '1590137876181-2a5a7e340308', // masas apiladas
   flour: '1627485937980-221c88ac04f9', // harina y espigas
   basil: '1618375569909-3c8616cf7733', // albahaca fresca
   tomato: '1592924357228-91a4daadcfea', // tomates en rama

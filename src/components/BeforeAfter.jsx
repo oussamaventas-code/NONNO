@@ -56,7 +56,7 @@ export default function BeforeAfter() {
           <p className="mono text-tomate mb-4">EL ANTES Y EL DESPUÉS</p>
           <h2 className="font-sans font-extrabold uppercase text-display-sm text-carbon leading-[0.95]">
             {BEFORE_AFTER.before.title.replace('.', '')} <span className="text-carbon/25">/</span>{' '}
-            <em className="font-serif italic font-semibold text-tomate not-italic">{BEFORE_AFTER.after.title}</em>
+            <em className="font-serif italic font-semibold text-tomate ">{BEFORE_AFTER.after.title}</em>
           </h2>
         </div>
 

@@ -53,7 +53,7 @@ export default function KitchenDashboard() {
           <p className="mono text-tomate mb-4">VISUAL EXPERIENCE</p>
           <h2 className="font-sans font-extrabold uppercase text-display-sm text-carbon leading-[0.95]">
             HECHA CON RITMO.<br />
-            <em className="font-serif italic font-semibold text-tomate not-italic">SERVIDA CON FUEGO.</em>
+            <em className="font-serif italic font-semibold text-tomate ">SERVIDA CON FUEGO.</em>
           </h2>
         </div>
 
