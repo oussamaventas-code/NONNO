@@ -1,0 +1,144 @@
+import { SITE } from '../data/site'
+import { getLocation } from '../data/locations'
+import { cartSubtotal, cartCount } from './pricing'
+import { price, orderRef } from './format'
+
+/* ═══════════════════════════════════════════════════════════════
+   CAPA DE INTEGRACIÓN DE PEDIDOS
+
+   ⚠️ AQUÍ SE CONECTA EL BACKEND. Ni un componente sabe cómo se
+   envía un pedido: solo llaman a submitOrder().
+
+   Hoy el adaptador activo es 'none' (SITE.ordering.adapter):
+   el pedido se normaliza, se valida y se devuelve como
+   "listo para enviar". No se simula ninguna conexión inexistente.
+
+   PARA INTEGRAR:
+   1. WhatsApp        -> adapter 'whatsapp' + teléfono en locations.js
+   2. API propia      -> adapter 'api' + SITE.ordering.apiEndpoint
+   3. Plataforma ext. -> adapter 'external' + orderUrl de la sede
+   ═══════════════════════════════════════════════════════════════ */
+
+/** Payload normalizado. Este es el contrato con cualquier backend. */
+export function buildOrderPayload({ lines, locationId, mode, customer }) {
+  const location = getLocation(locationId)
+  return {
+    ref: orderRef(),
+    createdAt: new Date().toISOString(),
+    channel: 'web',
+    version: SITE.brand.version,
+    location: location
+      ? { id: location.id, name: location.name, fullName: location.fullName }
+      : null,
+    mode, // 'pickup' | 'delivery'
+    customer: {
+      name: customer?.name?.trim() || '',
+      phone: customer?.phone?.trim() || '',
+      address: mode === 'delivery' ? customer?.address?.trim() || '' : null,
+      notes: customer?.notes?.trim() || '',
+    },
+    items: lines.map((l) => ({
+      id: l.productId,
+      name: l.name,
+      size: l.sizeLabel,
+      extras: l.extraLabels,
+      note: l.note,
+      qty: l.qty,
+      unitPrice: l.unitPrice,
+      total: Number((l.unitPrice * l.qty).toFixed(2)),
+    })),
+    count: cartCount(lines),
+    subtotal: cartSubtotal(lines),
+    /* Sin política oficial de entrega no se inventan importes */
+    deliveryFee: SITE.ordering.deliveryFee,
+    total: cartSubtotal(lines),
+  }
+}
+
+/** Validación previa: devuelve la lista de errores por campo */
+export function validateOrder({ lines, locationId, mode, customer }) {
+  const errors = {}
+  if (!lines?.length) errors.cart = 'Tu pedido está vacío.'
+  if (!locationId) errors.location = 'Elige una sede.'
+  if (!mode) errors.mode = 'Elige recogida o entrega.'
+  if (!customer?.name?.trim()) errors.name = 'Necesitamos un nombre.'
+  if (!customer?.phone?.trim()) errors.phone = 'Necesitamos un teléfono de contacto.'
+  else if (!/^[+\d][\d\s.-]{6,}$/.test(customer.phone.trim())) errors.phone = 'Revisa el teléfono.'
+  if (mode === 'delivery' && !customer?.address?.trim())
+    errors.address = 'Necesitamos la dirección de entrega.'
+  return errors
+}
+
+/** Texto plano del pedido: WhatsApp, impresión en cocina o email */
+export function orderToText(payload) {
+  const lines = payload.items.map((i) => {
+    const bits = [`${i.qty}x ${i.name}`]
+    if (i.size) bits.push(`(${i.size})`)
+    if (i.extras?.length) bits.push(`+ ${i.extras.join(', ')}`)
+    if (i.note) bits.push(`— "${i.note}"`)
+    return `• ${bits.join(' ')} · ${price(i.total)}`
+  })
+  return [
+    `PEDIDO ${payload.ref} — LA PIZZA DE NONNO`,
+    payload.location ? `Sede: ${payload.location.name}` : '',
+    `Modo: ${payload.mode === 'delivery' ? 'Entrega' : 'Recogida'}`,
+    '',
+    ...lines,
+    '',
+    `TOTAL: ${price(payload.total)}`,
+    '',
+    `Nombre: ${payload.customer.name}`,
+    `Teléfono: ${payload.customer.phone}`,
+    payload.customer.address ? `Dirección: ${payload.customer.address}` : '',
+    payload.customer.notes ? `Notas: ${payload.customer.notes}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n')
+}
+
+/**
+ * Envía el pedido por el canal configurado.
+ * @returns {Promise<{status:'ready'|'sent'|'error', payload, text, url?, message?}>}
+ */
+export async function submitOrder(input) {
+  const errors = validateOrder(input)
+  if (Object.keys(errors).length) {
+    return { status: 'error', errors, message: SITE.messages.error }
+  }
+
+  const payload = buildOrderPayload(input)
+  const text = orderToText(payload)
+  const { adapter, apiEndpoint, externalUrl } = SITE.ordering
+
+  try {
+    if (adapter === 'whatsapp') {
+      const phone = getLocation(input.locationId)?.whatsapp
+      if (!phone) throw new Error('Sede sin WhatsApp configurado')
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+      return { status: 'sent', payload, text, url }
+    }
+
+    if (adapter === 'api') {
+      if (!apiEndpoint) throw new Error('Endpoint no configurado')
+      const res = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return { status: 'sent', payload, text }
+    }
+
+    if (adapter === 'external') {
+      const url = getLocation(input.locationId)?.orderUrl || externalUrl
+      if (!url) throw new Error('Plataforma externa no configurada')
+      return { status: 'sent', payload, text, url }
+    }
+
+    /* adapter 'none' — sin backend todavía.
+       El pedido queda compuesto, validado y listo para enviarse. */
+    return { status: 'ready', payload, text, message: SITE.messages.orderReady }
+  } catch (error) {
+    return { status: 'error', payload, text, message: SITE.messages.error, detail: String(error) }
+  }
+}

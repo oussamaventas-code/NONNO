@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════
+   NONNO — ARTISAN FIRE / capa base del sistema visual
+   Tokens duplicados como CSS vars para SVG, canvas y estilos inline.
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    --forno: #171512;
+    --carbon: #24211e;
+    --masa: #f2ebdd;
+    --crema: #faf8f2;
+    --tomate: #c8422f;
+    --horno: #e76f32;
+    --albahaca: #465c3a;
+
+    /* Ritmo de movimiento compartido con GSAP (src/lib/motion.js) */
+    --ease-magnetic: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --ease-curtain: cubic-bezier(0.76, 0, 0.24, 1);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-masa font-sans text-carbon antialiased;
+    overflow-x: hidden;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--tomate);
+    color: var(--masa);
+  }
+
+  /* Foco visible real: nunca eliminar el outline sin sustituto */
+  :focus-visible {
+    outline: 2px solid var(--horno);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-sans font-extrabold;
+    text-wrap: balance;
+  }
+
+  /* La serif italiana siempre respira distinto a la sans */
+  .serif {
+    @apply font-serif italic font-semibold;
+    letter-spacing: -0.01em;
+  }
+
+  /* Etiquetas monoespaciadas: microdatos, precios, estados */
+  .mono {
+    @apply font-mono uppercase;
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+  }
+}
+
+@layer components {
+  /* Contenedor editorial: ancho controlado, nunca full-bleed de texto */
+  .shell {
+    @apply mx-auto w-full max-w-[88rem] px-5 sm:px-8 lg:px-12;
+  }
+
+  .section {
+    @apply py-section;
+  }
+
+  /* Botón magnético: capa interna que se desliza en hover */
+  .btn {
+    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden
+           rounded-full font-sans font-bold uppercase tracking-[0.08em]
+           min-h-[48px] px-7 text-[0.8125rem] leading-none
+           transition-transform duration-500 ease-magnetic will-change-transform;
+  }
+  .btn:hover {
+    transform: scale(1.03) translateY(-1px);
+  }
+  .btn:active {
+    transform: scale(0.99);
+  }
+  .btn > .btn-layer {
+    @apply absolute inset-0 translate-y-full transition-transform duration-500 ease-magnetic;
+  }
+  .btn:hover > .btn-layer {
+    transform: translateY(0);
+  }
+  .btn > .btn-label {
+    @apply relative z-10 flex items-center gap-2;
+  }
+
+  /* Tickets de cocina: esquinas rectas, dentado inferior */
+  .ticket {
+    @apply relative bg-crema font-mono text-carbon;
+    clip-path: polygon(
+      0 0, 100% 0, 100% calc(100% - 6px),
+      92% 100%, 84% calc(100% - 6px), 76% 100%, 68% calc(100% - 6px),
+      60% 100%, 52% calc(100% - 6px), 44% 100%, 36% calc(100% - 6px),
+      28% 100%, 20% calc(100% - 6px), 12% 100%, 4% calc(100% - 6px), 0 100%
+    );
+  }
+
+  /* Scroll horizontal de categorías sin barra visible */
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer utilities {
+  /* Estado inicial de los reveals de imagen (GSAP anima hacia inset(0)) */
+  .clip-hidden {
+    clip-path: inset(100% 0 0 0);
+  }
+
+  .fade-edges-x {
+    mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+  }
+
+  .grain-overlay {
+    @apply pointer-events-none fixed inset-0 z-[120] opacity-[0.05];
+    mix-blend-mode: overlay;
+  }
+
+  /* Safe area para la sticky order bar en iOS */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Accesibilidad: el sistema de movimiento se apaga de verdad.
+   GSAP también lo respeta vía gsap.matchMedia (src/lib/motion.js) */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .clip-hidden {
+    clip-path: none;
+  }
+}
