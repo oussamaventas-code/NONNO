@@ -23,19 +23,20 @@ export const SITE = {
   },
 
   /* ── CAPA DE INTEGRACIÓN DE PEDIDOS ────────────────────────────
-     Sin backend contratado todavía. El adaptador se elige aquí y la
-     implementación vive en src/lib/orderGateway.js
+     El adaptador se elige aquí; la implementación vive en
+     src/lib/orderGateway.js
 
-     'none'     → el pedido se compone y queda "listo para enviar"
+     'api'      → guarda el pedido en la base de datos y avisa al
+                  panel de cocina (/admin). ES EL MODO ACTIVO.
      'whatsapp' → abre WhatsApp con el pedido formateado
-     'api'      → POST a un endpoint propio
      'external' → redirige a una plataforma externa (p. ej. pideme.net)
+     'none'     → el pedido solo se compone, no se envía a ningún sitio
 
-     TODO: DEFINIR CON EL CLIENTE EL CANAL DEFINITIVO.
+     El pago sigue siendo en persona: la web nunca cobra.
   */
   ordering: {
-    adapter: 'none',
-    apiEndpoint: null,
+    adapter: 'api',
+    apiEndpoint: '/api/orders',
     externalUrl: null,
     minOrderDelivery: null, // TODO: pedido mínimo de entrega si existe
     deliveryFee: null, // TODO: coste de entrega si existe

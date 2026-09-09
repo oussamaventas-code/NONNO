@@ -119,14 +119,29 @@ export async function submitOrder(input) {
     }
 
     if (adapter === 'api') {
-      if (!apiEndpoint) throw new Error('Endpoint no configurado')
-      const res = await fetch(apiEndpoint, {
+      const res = await fetch(apiEndpoint || '/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return { status: 'sent', payload, text }
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        return {
+          status: 'error',
+          payload,
+          text,
+          message: data.error || SITE.messages.error,
+        }
+      }
+
+      /* La referencia buena es la que ha quedado guardada en cocina. */
+      return {
+        status: 'sent',
+        payload: { ...payload, ref: data.ref || payload.ref },
+        text,
+        message: 'Pedido recibido en cocina.',
+      }
     }
 
     if (adapter === 'external') {
