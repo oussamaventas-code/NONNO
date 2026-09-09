@@ -51,6 +51,8 @@ Después, **Deployments** → botón derecho en el último → **Redeploy**. Las
 ## 5. Comprobar que funciona
 
 1. Entra en `tu-dominio.vercel.app/admin` y accede con la contraseña de una sede.
+   Cada local tiene además su enlace propio: `/admin/sangonera` y
+   `/admin/santo-angel`, para guardarlo en favoritos sin confundirse.
 2. En otra pestaña, haz un pedido de prueba en la web.
 3. El pedido debe aparecer en el panel en menos de 10 segundos, con aviso sonoro.
 4. Pulsa **Imprimir** para ver el ticket.

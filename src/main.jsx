@@ -8,7 +8,13 @@ import './styles/index.css'
    la web pública, que es la que tiene que abrir rápido en un móvil. */
 const Admin = lazy(() => import('./admin/Admin'))
 
-const isAdmin = window.location.pathname.replace(/\/+$/, '') === '/admin'
+/* /admin        → login normal
+   /admin/sangonera, /admin/santo-angel → cada local tiene su enlace.
+   La dirección solo decide qué se ve en el login: quien manda sigue
+   siendo la contraseña. */
+const ruta = window.location.pathname.replace(/\/+$/, '')
+const isAdmin = ruta === '/admin' || ruta.startsWith('/admin/')
+const sedeEnRuta = ruta.startsWith('/admin/') ? ruta.slice('/admin/'.length) : null
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -20,7 +26,7 @@ createRoot(document.getElementById('root')).render(
           </div>
         }
       >
-        <Admin />
+        <Admin sedeEnRuta={sedeEnRuta} />
       </Suspense>
     ) : (
       <StoreProvider>
