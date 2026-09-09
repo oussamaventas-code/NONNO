@@ -1,5 +1,5 @@
 import { db, isConfigured } from './_lib/supabase.js'
-import { requireSession } from './_lib/auth.js'
+import { requireSession, SCOPE_ALL } from './_lib/auth.js'
 import { notifyNewOrder } from './_lib/push.js'
 import { sanitizeOrder, validateOrder } from './_lib/order.js'
 
@@ -39,7 +39,8 @@ export default async function handler(req, res) {
 
   /* ── Listar pedidos (solo panel) ────────────────────────────── */
   if (req.method === 'GET') {
-    if (requireSession(req, res)) return
+    const session = requireSession(req, res)
+    if (!session) return
 
     const limit = Math.min(200, Math.max(1, Number(req.query?.limit) || 60))
     const since = req.query?.since
@@ -49,6 +50,11 @@ export default async function handler(req, res) {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(limit)
+
+    /* El filtro por sede sale de la SESIÓN, nunca de lo que pida el
+       navegador: quien entra con la clave de una sede no puede ver la
+       otra ni manipulando la petición. */
+    if (session.scope !== SCOPE_ALL) query = query.eq('location_id', session.scope)
 
     if (since) query = query.gt('created_at', since)
 

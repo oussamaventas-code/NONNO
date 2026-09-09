@@ -29,14 +29,20 @@ La clave `service_role` es **secreta**. Solo va en las variables de Vercel, nunc
 
 ## 4. Configurar Vercel
 
-En tu proyecto de Vercel: **Settings** → **Environment Variables**. Añade estas cuatro:
+En tu proyecto de Vercel: **Settings** → **Environment Variables**.
 
 | Nombre | Valor |
 |---|---|
 | `SUPABASE_URL` | el Project URL del paso 3 |
 | `SUPABASE_SERVICE_ROLE_KEY` | la clave service_role del paso 3 |
-| `ADMIN_PASSWORD` | la contraseña que usará la pizzería para entrar en el panel |
-| `ADMIN_SESSION_SECRET` | cualquier texto largo y aleatorio (sirve para firmar la sesión) |
+| `ADMIN_SESSION_SECRET` | cualquier texto largo y aleatorio (firma la sesión) |
+| `ADMIN_PASSWORD_SANGONERA` | contraseña del local de Sangonera la Verde |
+| `ADMIN_PASSWORD_SANTO_ANGEL` | contraseña del local de Santo Ángel |
+| `ADMIN_PASSWORD` | contraseña de dirección: ve las dos sedes |
+
+**Cada local tiene su contraseña y solo ve sus pedidos.** Quien entra con la de Sangonera no puede ver Santo Ángel, ni cambiando la dirección del navegador: el filtro se aplica en el servidor según con qué clave se entró, no según lo que pida el navegador.
+
+Las tres contraseñas son independientes: pon solo las que necesites. Si únicamente configuras `ADMIN_PASSWORD`, esa clave verá las dos sedes.
 
 Marca las tres opciones (Production, Preview, Development) en cada una.
 
@@ -44,7 +50,7 @@ Después, **Deployments** → botón derecho en el último → **Redeploy**. Las
 
 ## 5. Comprobar que funciona
 
-1. Entra en `tu-dominio.vercel.app/admin` y accede con `ADMIN_PASSWORD`.
+1. Entra en `tu-dominio.vercel.app/admin` y accede con la contraseña de una sede.
 2. En otra pestaña, haz un pedido de prueba en la web.
 3. El pedido debe aparecer en el panel en menos de 10 segundos, con aviso sonoro.
 4. Pulsa **Imprimir** para ver el ticket.

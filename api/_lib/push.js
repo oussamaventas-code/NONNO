@@ -33,7 +33,11 @@ export const pushConfigured = () =>
 export async function notifyNewOrder(order) {
   if (!configure()) return { sent: 0, skipped: 'push no configurado' }
 
-  const { data: subs, error } = await db().from('push_subscriptions').select('*')
+  /* Solo avisa a los dispositivos de esa sede, más la dirección. */
+  const { data: subs, error } = await db()
+    .from('push_subscriptions')
+    .select('*')
+    .in('scope', [order.location_id, 'all'])
   if (error || !subs?.length) return { sent: 0 }
 
   const payload = JSON.stringify({

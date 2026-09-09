@@ -11,6 +11,7 @@ import AdminPanel from './AdminPanel'
 export default function Admin() {
   const [state, setState] = useState('comprobando') // comprobando | fuera | dentro
   const [configured, setConfigured] = useState(true)
+  const [scope, setScope] = useState(null)
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
   const [sending, setSending] = useState(false)
@@ -19,6 +20,7 @@ export default function Admin() {
     getSession()
       .then((s) => {
         setConfigured(s.configured)
+        setScope(s.scope)
         setState(s.authenticated ? 'dentro' : 'fuera')
       })
       .catch(() => setState('fuera'))
@@ -29,8 +31,9 @@ export default function Admin() {
     setSending(true)
     setError(null)
     try {
-      await login(password)
+      const s = await login(password)
       setPassword('')
+      setScope(s.scope)
       setState('dentro')
     } catch (err) {
       setError(err.message)
@@ -48,7 +51,7 @@ export default function Admin() {
   }
 
   if (state === 'dentro') {
-    return <AdminPanel onSignedOut={() => setState('fuera')} />
+    return <AdminPanel scope={scope} onSignedOut={() => { setScope(null); setState('fuera') }} />
   }
 
   return (

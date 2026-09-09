@@ -4,6 +4,7 @@ import { fetchOrders, updateOrder, logout, getPushConfig, savePushSubscription }
 import { useOrderAlert } from './useOrderAlert'
 import OrderCard from './OrderCard'
 import { price } from '../lib/format'
+import { LOCATIONS } from '../data/locations'
 
 const FILTERS = [
   { id: 'activos', label: 'ACTIVOS' },
@@ -15,6 +16,13 @@ const FILTERS = [
 
 const POLL_MS = 8000
 
+/* Cada sede tiene su color y su cinta superior: nadie debe dudar ni
+   un segundo de qué cocina está mirando. */
+const SEDES = {
+  sangonera: { nombre: 'Sangonera la Verde', banda: 'bg-tomate', texto: 'text-crema' },
+  'santo-angel': { nombre: 'Santo Ángel', banda: 'bg-albahaca', texto: 'text-crema' },
+}
+
 /** Convierte la clave VAPID a los bytes que espera el navegador. */
 function urlBase64ToUint8Array(base64) {
   const padded = (base64 + '='.repeat((4 - (base64.length % 4)) % 4))
@@ -23,9 +31,11 @@ function urlBase64ToUint8Array(base64) {
   return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)))
 }
 
-export default function AdminPanel({ onSignedOut }) {
+export default function AdminPanel({ scope, onSignedOut }) {
   const [orders, setOrders] = useState([])
   const [filter, setFilter] = useState('activos')
+  /* Solo lo usa la dirección: las sedes no eligen, ven la suya y ya. */
+  const [sedeVista, setSedeVista] = useState('todas')
   const [error, setError] = useState(null)
   const [busyId, setBusyId] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -127,29 +137,49 @@ export default function AdminPanel({ onSignedOut }) {
   }
 
   /* ── Datos derivados ─────────────────────────────────────────── */
-  const visible = orders.filter((o) => {
+  const esDireccion = scope === 'all'
+  const sede = SEDES[scope]
+
+  /* El servidor ya envía solo lo que esta sesión puede ver. La
+     dirección, que las ve todas, puede además filtrar por sede. */
+  const porSede = esDireccion && sedeVista !== 'todas'
+    ? orders.filter((o) => o.location_id === sedeVista)
+    : orders
+
+  const visible = porSede.filter((o) => {
     if (filter === 'todos') return true
     if (filter === 'activos') return !['entregado', 'cancelado'].includes(o.status)
     return o.status === filter
   })
 
-  const today = orders.filter(
+  const today = porSede.filter(
     (o) => new Date(o.created_at).toDateString() === new Date().toDateString()
       && o.status !== 'cancelado'
   )
   const facturado = today.reduce((sum, o) => sum + Number(o.total || 0), 0)
-  const pendientes = orders.filter((o) => o.status === 'nuevo').length
+  const pendientes = porSede.filter((o) => o.status === 'nuevo').length
 
   return (
     <div className="min-h-screen bg-masa">
-      <header className="sticky top-0 z-30 bg-crema/95 backdrop-blur-md border-b border-carbon/10">
+      {/* Cinta de sede: imposible confundir de cocina */}
+      {sede && (
+        <div className={`${sede.banda} ${sede.texto} py-2 text-center`}>
+          <p className="mono normal-case tracking-[0.2em] font-bold">
+            COCINA · {sede.nombre.toUpperCase()}
+          </p>
+        </div>
+      )}
+
+      <header className={`sticky top-0 z-30 bg-crema/95 backdrop-blur-md border-b border-carbon/10 ${sede ? '' : ''}`}>
         <div className="shell py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <p className="font-sans font-extrabold uppercase text-sm tracking-tight text-carbon">
                 LA PIZZA DE <em className="font-serif italic font-semibold">NONNO</em>
               </p>
-              <p className="mono text-carbon/45 mt-0.5">PANEL DE COCINA</p>
+              <p className="mono text-carbon/45 mt-0.5">
+                {sede ? sede.nombre.toUpperCase() : 'TODAS LAS SEDES'}
+              </p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -195,6 +225,28 @@ export default function AdminPanel({ onSignedOut }) {
               <strong className="text-carbon">{price(facturado)}</strong> hoy
             </span>
           </div>
+
+          {/* Cambiar de sede solo lo puede hacer la dirección */}
+          {esDireccion && (
+            <div className="mt-4 hide-scrollbar flex gap-2 overflow-x-auto border-b border-carbon/10 pb-3">
+              {[{ id: 'todas', label: 'TODAS LAS SEDES' },
+                ...LOCATIONS.map((l) => ({ id: l.id, label: l.name.toUpperCase() }))
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setSedeVista(s.id)}
+                  className={[
+                    'flex-shrink-0 rounded-full px-4 py-2 min-h-[40px] font-sans font-bold uppercase text-[0.7rem] tracking-wide border transition-colors',
+                    sedeVista === s.id
+                      ? 'bg-tomate text-crema border-tomate'
+                      : 'bg-transparent text-carbon/60 border-carbon/15 hover:border-carbon/40',
+                  ].join(' ')}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="mt-4 hide-scrollbar flex gap-2 overflow-x-auto">
             {FILTERS.map((f) => (

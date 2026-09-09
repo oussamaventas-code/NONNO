@@ -1,29 +1,36 @@
-import { checkPassword, createSessionCookie, clearSessionCookie, hasSession } from './_lib/auth.js'
+import {
+  scopeForPassword, createSessionCookie, clearSessionCookie,
+  readSession, isConfigured, SCOPE_ALL,
+} from './_lib/auth.js'
 
 /**
  * Sesión del panel.
- *   GET    → ¿estoy dentro?
+ *   GET    → ¿estoy dentro y qué sede puedo ver?
  *   POST   → entrar con contraseña
  *   DELETE → salir
  */
 export default function handler(req, res) {
   if (req.method === 'GET') {
+    const session = readSession(req)
     return res.status(200).json({
-      authenticated: hasSession(req),
-      configured: Boolean(process.env.ADMIN_PASSWORD),
+      authenticated: Boolean(session),
+      scope: session?.scope || null,
+      configured: isConfigured(),
     })
   }
 
   if (req.method === 'POST') {
-    if (!process.env.ADMIN_PASSWORD) {
+    if (!isConfigured()) {
       return res.status(503).json({ error: 'El panel aún no tiene contraseña configurada.' })
     }
-    const { password } = req.body || {}
-    if (!checkPassword(password)) {
+
+    const scope = scopeForPassword(req.body?.password)
+    if (!scope) {
       return res.status(401).json({ error: 'Contraseña incorrecta.' })
     }
-    res.setHeader('Set-Cookie', createSessionCookie())
-    return res.status(200).json({ authenticated: true })
+
+    res.setHeader('Set-Cookie', createSessionCookie(scope))
+    return res.status(200).json({ authenticated: true, scope })
   }
 
   if (req.method === 'DELETE') {
@@ -34,3 +41,5 @@ export default function handler(req, res) {
   res.setHeader('Allow', 'GET, POST, DELETE')
   return res.status(405).json({ error: 'Método no permitido' })
 }
+
+export { SCOPE_ALL }

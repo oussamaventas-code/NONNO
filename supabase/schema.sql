@@ -62,7 +62,14 @@ create table if not exists public.push_subscriptions (
   endpoint   text not null unique,
   keys       jsonb not null,
   label      text,                                 -- "Ordenador del local"
+  -- Qué sede avisa este dispositivo: 'sangonera', 'santo-angel' o
+  -- 'all' para la dirección. Un local no recibe avisos del otro.
+  scope      text not null default 'all',
   created_at timestamptz not null default now()
 );
+
+-- Para instalaciones anteriores a la separación por sede:
+alter table public.push_subscriptions
+  add column if not exists scope text not null default 'all';
 
 alter table public.push_subscriptions enable row level security;

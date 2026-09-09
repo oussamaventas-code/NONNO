@@ -19,7 +19,8 @@ export default async function handler(req, res) {
   if (!isConfigured()) {
     return res.status(503).json({ error: 'Base de datos no configurada.' })
   }
-  if (requireSession(req, res)) return
+  const session = requireSession(req, res)
+  if (!session) return
 
   if (req.method === 'POST') {
     const { subscription, label } = req.body || {}
@@ -34,6 +35,7 @@ export default async function handler(req, res) {
           endpoint: subscription.endpoint,
           keys: subscription.keys,
           label: String(label || 'Panel de cocina').slice(0, 80),
+          scope: session.scope,
         },
         { onConflict: 'endpoint' }
       )
