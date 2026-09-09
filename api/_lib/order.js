@@ -20,6 +20,8 @@ export function sanitizeOrder(body) {
       name: trim(i?.name, 80),
       size: trim(i?.size, 60) || null,
       extras: Array.isArray(i?.extras) ? i.extras.slice(0, 20).map((e) => trim(e, 60)) : [],
+      /* Ingredientes que el cliente ha quitado. Van a cocina. */
+      removed: Array.isArray(i?.removed) ? i.removed.slice(0, 20).map((e) => trim(e, 60)) : [],
       note: trim(i?.note, 140) || null,
       qty,
       unitPrice,

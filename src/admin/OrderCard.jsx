@@ -65,6 +65,11 @@ export default function OrderCard({ order, onStatus, busy }) {
             <span className="flex-1">
               <span className="font-semibold text-carbon">{item.name}</span>
               {item.size && <span className="block mono normal-case text-carbon/50">{item.size}</span>}
+              {item.removed?.length > 0 && (
+                <span className="mt-1 inline-block rounded-lg border-2 border-tomate px-2 py-0.5 text-xs font-extrabold uppercase text-tomate">
+                  Sin {item.removed.join(' · sin ')}
+                </span>
+              )}
               {item.extras?.length > 0 && (
                 <span className="block mono normal-case text-albahaca">+ {item.extras.join(', ')}</span>
               )}

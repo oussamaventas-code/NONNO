@@ -1,7 +1,7 @@
 import { Plus, Leaf, Flame as FlameIcon } from 'lucide-react'
 import { img, srcSet } from '../data/images'
 import { price } from '../lib/format'
-import { priceFrom } from '../data/menu'
+import { priceOf } from '../data/menu'
 
 /**
  * Card editorial de producto. Tres variantes de layout (tall / circle /
@@ -10,8 +10,7 @@ import { priceFrom } from '../data/menu'
  */
 export default function ProductCard({ product, onOpen }) {
   const layout = product.layout || 'tall'
-  const from = priceFrom(product)
-  const hasSizes = Boolean(product.sizes)
+  const precio = priceOf(product)
 
   if (layout === 'circle') {
     return (
@@ -50,7 +49,7 @@ export default function ProductCard({ product, onOpen }) {
             <span className="btn-layer bg-tomate" />
             <span className="btn-label"><Plus className="w-4 h-4" strokeWidth={2.5} /></span>
           </button>
-          <p className="mono mt-2 text-carbon/60">{hasSizes && 'DESDE '}{price(from)}</p>
+          <p className="mono mt-2 text-carbon/60">{price(precio)}</p>
         </div>
       </article>
     )
@@ -84,7 +83,7 @@ export default function ProductCard({ product, onOpen }) {
           </h3>
           <p className="mt-1 text-sm text-carbon/50 line-clamp-2">{product.description}</p>
           <div className="mt-3 flex items-center justify-between">
-            <p className="mono text-carbon/70">{hasSizes && 'DESDE '}{price(from)}</p>
+            <p className="mono text-carbon/70">{price(precio)}</p>
             <button
               onClick={() => onOpen(product.id)}
               className="btn bg-tomate text-crema w-10 h-10 !min-h-0 !px-0 rounded-full"
@@ -133,7 +132,7 @@ export default function ProductCard({ product, onOpen }) {
         </h3>
         <p className="mt-1 text-sm text-carbon/50 line-clamp-2">{product.description}</p>
       </div>
-      <p className="mono mt-2 text-carbon/60">{hasSizes && 'DESDE '}{price(from)}</p>
+      <p className="mono mt-2 text-carbon/60">{price(precio)}</p>
     </article>
   )
 }

@@ -9,14 +9,13 @@ import { price, orderRef } from './format'
    ⚠️ AQUÍ SE CONECTA EL BACKEND. Ni un componente sabe cómo se
    envía un pedido: solo llaman a submitOrder().
 
-   Hoy el adaptador activo es 'none' (SITE.ordering.adapter):
-   el pedido se normaliza, se valida y se devuelve como
-   "listo para enviar". No se simula ninguna conexión inexistente.
+   Hoy el adaptador activo es 'api' (SITE.ordering.adapter): el pedido
+   se guarda en la base de datos y aparece en el panel de cocina.
 
-   PARA INTEGRAR:
-   1. WhatsApp        -> adapter 'whatsapp' + teléfono en locations.js
-   2. API propia      -> adapter 'api' + SITE.ordering.apiEndpoint
-   3. Plataforma ext. -> adapter 'external' + orderUrl de la sede
+   OTROS CANALES:
+   - WhatsApp        -> adapter 'whatsapp' + teléfono en locations.js
+   - Plataforma ext. -> adapter 'external' + orderUrl de la sede
+   - Sin enviar      -> adapter 'none'
    ═══════════════════════════════════════════════════════════════ */
 
 /** Payload normalizado. Este es el contrato con cualquier backend. */
@@ -42,6 +41,7 @@ export function buildOrderPayload({ lines, locationId, mode, customer }) {
       name: l.name,
       size: l.sizeLabel,
       extras: l.extraLabels,
+      removed: l.removed || [],
       note: l.note,
       qty: l.qty,
       unitPrice: l.unitPrice,
@@ -74,6 +74,9 @@ export function orderToText(payload) {
   const lines = payload.items.map((i) => {
     const bits = [`${i.qty}x ${i.name}`]
     if (i.size) bits.push(`(${i.size})`)
+    /* Lo que se quita va en mayúsculas y por delante de los extras:
+       es el dato que más se pasa por alto en cocina. */
+    if (i.removed?.length) bits.push(`>> SIN ${i.removed.join(', SIN ').toUpperCase()}`)
     if (i.extras?.length) bits.push(`+ ${i.extras.join(', ')}`)
     if (i.note) bits.push(`— "${i.note}"`)
     return `• ${bits.join(' ')} · ${price(i.total)}`

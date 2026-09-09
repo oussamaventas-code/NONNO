@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Minus, Plus, Leaf, Flame as FlameIcon } from 'lucide-react'
-import { getProduct, getExtra, defaultSize } from '../data/menu'
+import { X, Minus, Plus, Leaf, Flame as FlameIcon, Check } from 'lucide-react'
+import { getProduct, getExtra, isPizza, PIZZA_SIZE } from '../data/menu'
 import { img, srcSet } from '../data/images'
 import { unitPrice } from '../lib/pricing'
 import { price } from '../lib/format'
@@ -11,9 +11,12 @@ import { useIsDesktop } from '../hooks/useMediaQuery'
 import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 
 /**
- * Modal de producto: nunca navega a otra página. Tamaño, extras,
- * cantidad y nota, con el precio recalculándose en cada cambio.
- * Desktop: panel centrado. Móvil: bottom sheet.
+ * Modal de producto: nunca navega a otra página.
+ *
+ * Los ingredientes se pueden quitar uno a uno tocándolos. La pizza
+ * mantiene su nombre y su precio: es la misma pizza, hecha a la
+ * manera del cliente. Se manda a cocina como "SIN cebolla", que es
+ * mucho más difícil de pasar por alto que una nota escrita a mano.
  */
 export default function ProductModal() {
   const { ui, locationId } = useStore()
@@ -25,16 +28,16 @@ export default function ProductModal() {
   const panelRef = useRef(null)
   const dialogRef = useRef(null)
 
-  const [sizeId, setSizeId] = useState(null)
   const [extraIds, setExtraIds] = useState([])
+  const [removed, setRemoved] = useState([])
   const [qty, setQty] = useState(1)
   const [note, setNote] = useState('')
   const pendingAdd = useRef(false)
 
   useEffect(() => {
     if (!product) return
-    setSizeId(product.sizes ? defaultSize(product).id : null)
     setExtraIds([])
+    setRemoved([])
     setQty(1)
     setNote('')
     pendingAdd.current = false
@@ -46,7 +49,7 @@ export default function ProductModal() {
   useEffect(() => {
     if (locationId && pendingAdd.current && product) {
       pendingAdd.current = false
-      const ok = addToCart({ productId, sizeId, extraIds, qty, note })
+      const ok = addToCart({ productId, extraIds, removed, qty, note })
       if (ok) closeProduct()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,7 +73,10 @@ export default function ProductModal() {
   const toggleExtra = (id) =>
     setExtraIds((prev) => (prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]))
 
-  const total = unitPrice(product, { sizeId, extraIds }) * qty
+  const toggleIngredient = (ing) =>
+    setRemoved((prev) => (prev.includes(ing) ? prev.filter((i) => i !== ing) : [...prev, ing]))
+
+  const total = unitPrice(product, { extraIds }) * qty
 
   const extrasByGroup = (product.extras || []).reduce((acc, id) => {
     const extra = getExtra(id)
@@ -86,11 +92,11 @@ export default function ProductModal() {
       openLocationPrompt()
       return
     }
-    const ok = addToCart({ productId, sizeId, extraIds, qty, note })
+    const ok = addToCart({ productId, extraIds, removed, qty, note })
     if (ok) closeProduct()
   }
 
-  const notePlaceholder = 'Ej. "Sin cebolla", "el timbre no funciona"'
+  const notePlaceholder = 'Ej. "poco hecha", "el timbre no funciona"'
 
   return (
     <div ref={panelRef} className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
@@ -134,41 +140,65 @@ export default function ProductModal() {
           </h2>
           <p className="mt-2 text-carbon/60">{product.description}</p>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {product.ingredients.map((ing) => (
-              <span key={ing} className="mono normal-case rounded-full border border-carbon/12 px-3 py-1 text-carbon/60">
-                {ing}
-              </span>
-            ))}
-          </div>
+          {isPizza(product) && (
+            <p className="mono text-carbon/40 mt-3">TAMAÑO ÚNICO · {PIZZA_SIZE.diameter}</p>
+          )}
 
-          {product.sizes && (
+          {/* Ingredientes: se quitan tocándolos */}
+          {product.ingredients?.length > 0 && (
             <div className="mt-8">
-              <p className="mono text-carbon/50 mb-3">TAMAÑO</p>
-              <div className="grid grid-cols-3 gap-2">
-                {product.sizes.map((s) => (
+              <div className="flex items-baseline justify-between gap-3 mb-1">
+                <p className="mono text-carbon/50">INGREDIENTES</p>
+                {removed.length > 0 && (
                   <button
-                    key={s.id}
-                    onClick={() => setSizeId(s.id)}
-                    className={[
-                      'rounded-2xl border px-3 py-3 text-center transition-all duration-300 ease-magnetic',
-                      sizeId === s.id
-                        ? 'border-tomate bg-tomate/5 text-carbon'
-                        : 'border-carbon/12 text-carbon/60 hover:border-carbon/30',
-                    ].join(' ')}
+                    onClick={() => setRemoved([])}
+                    className="mono normal-case text-tomate hover:text-horno transition-colors"
                   >
-                    <span className="block font-sans font-bold text-sm uppercase">{s.label}</span>
-                    <span className="block mono text-carbon/40 mt-0.5">{s.diameter}</span>
-                    <span className="block mono text-carbon/70 mt-1">{price(s.price)}</span>
+                    Restaurar todos
                   </button>
-                ))}
+                )}
               </div>
+              <p className="text-xs text-carbon/45 mb-3">
+                Toca un ingrediente para quitarlo. El precio no cambia.
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {product.ingredients.map((ing) => {
+                  const off = removed.includes(ing)
+                  return (
+                    <button
+                      key={ing}
+                      onClick={() => toggleIngredient(ing)}
+                      aria-pressed={!off}
+                      aria-label={off ? `Añadir ${ing}` : `Quitar ${ing}`}
+                      className={[
+                        'group flex items-center gap-1.5 rounded-full border px-3.5 py-2 min-h-[40px] text-sm transition-all duration-300 ease-magnetic',
+                        off
+                          ? 'border-carbon/12 text-carbon/35 line-through bg-transparent'
+                          : 'border-albahaca/35 bg-albahaca/8 text-carbon',
+                      ].join(' ')}
+                    >
+                      {off
+                        ? <Plus className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
+                        : <Check className="w-3.5 h-3.5 flex-shrink-0 text-albahaca" strokeWidth={2.5} />}
+                      {ing}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {removed.length > 0 && (
+                <p className="mt-3 rounded-2xl bg-tomate/8 px-4 py-2.5 text-sm font-semibold text-tomate">
+                  Sin {removed.join(', sin ')}
+                </p>
+              )}
             </div>
           )}
 
+          {/* Extras */}
           {Object.keys(extrasByGroup).length > 0 && (
             <div className="mt-8">
-              <p className="mono text-carbon/50 mb-3">EXTRAS</p>
+              <p className="mono text-carbon/50 mb-3">AÑADIR EXTRAS</p>
               <div className="space-y-5">
                 {Object.entries(extrasByGroup).map(([group, extras]) => (
                   <div key={group}>
@@ -184,7 +214,7 @@ export default function ProductModal() {
                             className={[
                               'rounded-full border px-4 py-2 min-h-[40px] text-sm transition-all duration-300 ease-magnetic',
                               checked
-                                ? 'border-albahaca bg-albahaca/10 text-albahaca font-semibold'
+                                ? 'border-tomate bg-tomate/10 text-tomate font-semibold'
                                 : 'border-carbon/12 text-carbon/60 hover:border-carbon/30',
                             ].join(' ')}
                           >

@@ -319,9 +319,19 @@ function StepSummary({ lines, subtotal, location, mode, customer }) {
 
       <div className="mt-5 flex flex-col gap-3">
         {lines.map((l) => (
-          <div key={l.id} className="flex items-center justify-between text-sm">
-            <span className="text-carbon/70">{l.qty}× {l.name}{l.sizeLabel ? ` (${l.sizeLabel})` : ''}</span>
-            <span className="mono text-carbon/60">{price(lineTotal(l))}</span>
+          <div key={l.id} className="flex items-start justify-between gap-3 text-sm">
+            <span className="text-carbon/70">
+              {l.qty}× {l.name}
+              {l.removed?.length > 0 && (
+                <span className="block text-tomate font-semibold">
+                  Sin {l.removed.join(', sin ')}
+                </span>
+              )}
+              {l.extraLabels?.length > 0 && (
+                <span className="block text-albahaca">+ {l.extraLabels.join(', ')}</span>
+              )}
+            </span>
+            <span className="mono text-carbon/60 whitespace-nowrap">{price(lineTotal(l))}</span>
           </div>
         ))}
       </div>

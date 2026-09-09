@@ -15,10 +15,11 @@ import { PHOTO } from './images'
    category     string    id de CATEGORIES
    name         string
    description  string    una línea, tono de marca
-   ingredients  string[]  se muestran como chips en el modal
+   ingredients  string[]  el cliente puede QUITAR cualquiera de ellos
+                          desde el modal, sin cambiar el precio ni el
+                          nombre del producto
    image        string    id de PHOTO (src/data/images.js)
-   price        number    solo si NO tiene tamaños
-   sizes        array     [{ id, label, diameter, price }] precio ABSOLUTO
+   price        number    precio único (un solo tamaño de pizza)
    extras       string[]  ids de EXTRAS permitidos en este producto
    badge        string    etiqueta editorial opcional
    popular      bool
@@ -35,24 +36,9 @@ export const CATEGORIES = [
   { id: 'extras', label: 'EXTRAS', note: 'Sube el nivel' },
 ]
 
-/* ── TAMAÑOS ────────────────────────────────────────────────────
-   Diámetros y precios DEMO. TODO: AJUSTAR A LA CARTA REAL. */
-export const SIZE_PRESETS = {
-  pizza: [
-    { id: 'p', label: 'Pequeña', diameter: '26 cm', delta: -2 },
-    { id: 'm', label: 'Mediana', diameter: '32 cm', delta: 0 },
-    { id: 'g', label: 'Grande', diameter: '40 cm', delta: 3.5 },
-  ],
-}
-
-/** Genera los tamaños de una pizza a partir de su precio mediano */
-const pizzaSizes = (base) =>
-  SIZE_PRESETS.pizza.map((s) => ({
-    id: s.id,
-    label: s.label,
-    diameter: s.diameter,
-    price: Number((base + s.delta).toFixed(2)),
-  }))
+/* ── TAMAÑO ─────────────────────────────────────────────────────
+   Un único tamaño de pizza. Se muestra como dato, no como elección. */
+export const PIZZA_SIZE = { diameter: '33 cm' }
 
 /* ── EXTRAS (personalización) ───────────────────────────────────
    TODO: CONFIRMAR EXTRAS Y PRECIOS OFICIALES. */
@@ -88,7 +74,7 @@ export const PRODUCTS = [
     description: 'La prueba de fuego. Si esta está bien, todo lo demás también.',
     ingredients: ['Tomate San Marzano', 'Mozzarella fior di latte', 'Albahaca', 'Aceite de oliva'],
     image: PHOTO.margherita,
-    sizes: pizzaSizes(9.5),
+    price: 9.5,
     extras: PIZZA_EXTRAS,
     popular: true,
     vegetarian: true,
@@ -102,7 +88,7 @@ export const PRODUCTS = [
     description: 'Pica lo justo para que te acuerdes de ella mañana.',
     ingredients: ['Tomate', 'Mozzarella', 'Pepperoni picante', 'Aceite de guindilla'],
     image: PHOTO.diavola,
-    sizes: pizzaSizes(11.5),
+    price: 11.5,
     extras: PIZZA_EXTRAS,
     popular: true,
     vegetarian: false,
@@ -116,7 +102,7 @@ export const PRODUCTS = [
     description: 'Jamón, rúcula y cero necesidad de explicarse.',
     ingredients: ['Tomate', 'Mozzarella', 'Jamón curado', 'Rúcula', 'Parmesano'],
     image: PHOTO.prosciutto,
-    sizes: pizzaSizes(12.5),
+    price: 12.5,
     extras: PIZZA_EXTRAS,
     popular: false,
     vegetarian: false,
@@ -130,7 +116,7 @@ export const PRODUCTS = [
     description: 'Cuatro quesos discutiendo. Gana tu paladar.',
     ingredients: ['Mozzarella', 'Gorgonzola', 'Parmesano', 'Provolone'],
     image: PHOTO.formaggi,
-    sizes: pizzaSizes(12.9),
+    price: 12.9,
     extras: PIZZA_EXTRAS,
     popular: true,
     vegetarian: true,
@@ -144,7 +130,7 @@ export const PRODUCTS = [
     description: 'Verdura de verdad, no de compromiso.',
     ingredients: ['Tomate', 'Mozzarella', 'Calabacín', 'Pimiento asado', 'Rúcula', 'Ricotta'],
     image: PHOTO.vegetale,
-    sizes: pizzaSizes(11.9),
+    price: 11.9,
     extras: PIZZA_EXTRAS,
     popular: false,
     vegetarian: true,
@@ -158,7 +144,7 @@ export const PRODUCTS = [
     description: 'Champiñón, ajo y esa cosa que hace el horno con las setas.',
     ingredients: ['Mozzarella', 'Champiñón', 'Ajo confitado', 'Tomillo'],
     image: PHOTO.funghi,
-    sizes: pizzaSizes(11.9),
+    price: 11.9,
     extras: PIZZA_EXTRAS,
     popular: false,
     vegetarian: true,
@@ -172,7 +158,7 @@ export const PRODUCTS = [
     description: 'Mozzarella de búfala. Se nota desde el primer bocado.',
     ingredients: ['Tomate', 'Mozzarella de búfala', 'Albahaca', 'Aceite de oliva virgen extra'],
     image: PHOTO.bufala,
-    sizes: pizzaSizes(13.5),
+    price: 13.5,
     extras: PIZZA_EXTRAS,
     popular: false,
     vegetarian: true,
@@ -186,7 +172,7 @@ export const PRODUCTS = [
     description: 'Sin tomate. Sin miedo.',
     ingredients: ['Crema de ricotta', 'Mozzarella', 'Ajo', 'Albahaca', 'Pimienta negra'],
     image: PHOTO.bianca,
-    sizes: pizzaSizes(12.5),
+    price: 12.5,
     extras: PIZZA_EXTRAS,
     popular: false,
     vegetarian: true,
@@ -204,7 +190,7 @@ export const PRODUCTS = [
       'Burrata', 'Albahaca fresca', 'Aceite de oliva virgen extra',
     ],
     image: PHOTO.speciale,
-    sizes: pizzaSizes(14.9),
+    price: 14.9,
     extras: PIZZA_EXTRAS,
     badge: 'FAVORITA',
     featured: true,
@@ -399,10 +385,8 @@ export const featuredProduct = () => PRODUCTS.find((p) => p.featured) || PRODUCT
 
 export const popularProducts = () => PRODUCTS.filter((p) => p.popular)
 
-/** Precio "desde": el menor de sus tamaños o su precio único */
-export const priceFrom = (product) =>
-  product.sizes ? Math.min(...product.sizes.map((s) => s.price)) : product.price
+/** Precio del producto. Quitar ingredientes no lo modifica. */
+export const priceOf = (product) => product?.price ?? 0
 
-/** Tamaño por defecto: el mediano si existe, si no el primero */
-export const defaultSize = (product) =>
-  product.sizes ? product.sizes.find((s) => s.id === 'm') || product.sizes[0] : null
+/** ¿Es una pizza? Solo las pizzas muestran el diámetro. */
+export const isPizza = (product) => product?.category === 'pizzas'

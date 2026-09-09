@@ -26,6 +26,7 @@ export function buildTicketHtml(order) {
       <td>
         <strong>${esc(i.name)}</strong>
         ${i.size ? `<div class="sub">${esc(i.size)}</div>` : ''}
+        ${i.removed?.length ? `<div class="remove">SIN ${esc(i.removed.join(' · SIN ').toUpperCase())}</div>` : ''}
         ${i.extras?.length ? `<div class="sub">+ ${esc(i.extras.join(', '))}</div>` : ''}
         ${i.note ? `<div class="note">“${esc(i.note)}”</div>` : ''}
       </td>
@@ -57,6 +58,13 @@ export function buildTicketHtml(order) {
   .amount { text-align: right; white-space: nowrap; padding-left: 4px; }
   .sub { font-size: 11px; }
   .note { font-size: 11px; font-weight: bold; }
+  /* Lo que hay que QUITAR se lee de un vistazo: es el error más caro
+     en cocina. Recuadrado y en negrita, no una línea más. */
+  .remove {
+    font-size: 12px; font-weight: bold;
+    border: 1.5px solid #000; padding: 1px 4px; margin: 2px 0;
+    display: inline-block;
+  }
   .total { display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; }
   .field { margin: 2px 0; }
   .foot { font-size: 11px; text-align: center; margin-top: 8px; }

@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { Star, Plus } from 'lucide-react'
-import { featuredProduct, priceFrom } from '../data/menu'
+import { featuredProduct, priceOf } from '../data/menu'
 import { img, srcSet } from '../data/images'
 import { price } from '../lib/format'
 import { useActions } from '../store/StoreContext'
@@ -59,7 +59,7 @@ export default function FeaturedProduct() {
 
           <div className="mt-8 flex flex-wrap items-center gap-4 sm:gap-6">
             <p className="font-serif italic font-semibold text-3xl text-crema">
-              DESDE {price(priceFrom(product))}
+              {price(priceOf(product))}
             </p>
             <button
               onClick={() => openProduct(product.id)}
