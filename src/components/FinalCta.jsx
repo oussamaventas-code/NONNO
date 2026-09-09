@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { FINAL_CTA } from '../data/content'
 import { useActions } from '../store/StoreContext'
 import { gsap, useGSAP, onEnter , revealFrom } from '../lib/motion'
+import { scrollToSection } from '../lib/scroll'
 
 /**
  * CTA final a toda pantalla. Fondo rojo tomate, titular enorme,
@@ -23,7 +24,7 @@ export default function FinalCta() {
   }, { scope: rootRef })
 
   const scrollToMenu = () => {
-    document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    scrollToSection('menu')
   }
 
   return (

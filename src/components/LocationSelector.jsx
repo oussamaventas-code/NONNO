@@ -3,6 +3,7 @@ import { LOCATIONS } from '../data/locations'
 import { useSelectedLocation, useActions } from '../store/StoreContext'
 import LocationCard from './LocationCard'
 import { gsap, useGSAP, EASE, STAGGER, onEnter , revealFrom } from '../lib/motion'
+import { scrollToSection } from '../lib/scroll'
 
 /**
  * Selector de sedes. Fija selectedLocation en el store y persiste.
@@ -25,7 +26,7 @@ export default function LocationSelector() {
   }, { scope: rootRef })
 
   const scrollToMenu = () =>
-    document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    scrollToSection('menu')
 
   const handleOrder = (id) => {
     setLocation(id)

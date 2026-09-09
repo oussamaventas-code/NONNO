@@ -9,6 +9,7 @@ import { price } from '../lib/format'
 import { lineTotal } from '../lib/pricing'
 import { SITE } from '../data/site'
 import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
+import { scrollToSection } from '../lib/scroll'
 
 /**
  * Carrito global. Desktop: drawer lateral derecho. Móvil: bottom sheet.
@@ -42,7 +43,7 @@ export default function CartDrawer() {
 
   const scrollToMenu = () => {
     closeCart()
-    setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200)
+    setTimeout(() => scrollToSection('menu'), 200)
   }
 
   return (

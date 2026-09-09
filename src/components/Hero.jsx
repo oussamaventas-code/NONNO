@@ -3,6 +3,7 @@ import { Flame, ChevronDown } from 'lucide-react'
 import { HERO } from '../data/content'
 import { img, srcSet } from '../data/images'
 import { useGSAP, EASE, DUR, STAGGER, revealTimeline } from '../lib/motion'
+import { scrollToSection } from '../lib/scroll'
 
 /**
  * Hero 100dvh. Imagen full-screen + statement editorial en el tercio
@@ -28,7 +29,7 @@ export default function Hero() {
   }, { scope: rootRef })
 
   const scrollToMenu = () =>
-    document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    scrollToSection('menu')
 
   return (
     <section

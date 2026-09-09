@@ -1,6 +1,7 @@
 import { SITE, NAV_LINKS } from '../data/site'
 import { LOCATIONS } from '../data/locations'
 import { useActions } from '../store/StoreContext'
+import { scrollToSection } from '../lib/scroll'
 
 /**
  * Footer de marca. Cuatro columnas, esquinas redondeadas arriba,
@@ -10,7 +11,7 @@ export default function Footer() {
   const { setLocation, openCart } = useActions()
   const year = new Date().getFullYear()
 
-  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const scrollTo = (id) => scrollToSection(id)
 
   const orderAt = (id) => {
     setLocation(id)

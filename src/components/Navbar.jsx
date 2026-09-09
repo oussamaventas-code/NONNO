@@ -4,6 +4,7 @@ import { NAV_LINKS, SITE } from '../data/site'
 import { useActions, useCart } from '../store/StoreContext'
 import { useScrolled } from '../hooks/useScrolled'
 import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
+import { scrollToSection } from '../lib/scroll'
 
 /**
  * Navbar "isla flotante": nunca ocupa todo el ancho, fixed y centrada.
@@ -20,7 +21,7 @@ export default function Navbar() {
   }, { scope: rootRef })
 
   const scrollTo = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    scrollToSection(id)
   }
 
   return (

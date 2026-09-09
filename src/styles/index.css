@@ -24,7 +24,10 @@
 
   html {
     -webkit-text-size-adjust: 100%;
-    scroll-behavior: smooth;
+    /* El scroll suave depende del reloj de animación del navegador:
+       si se pausa (pestaña en segundo plano, ahorro de energía en iOS)
+       los enlaces del menú dejan de llevar a ninguna parte. Cada salto
+       decide su propio comportamiento desde JS. */
   }
 
   body {

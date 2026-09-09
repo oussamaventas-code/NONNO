@@ -5,6 +5,7 @@ import { useStore, useActions } from '../store/StoreContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { gsap, useGSAP, EASE, DUR, revealFrom, guard } from '../lib/motion'
+import { scrollToSection } from '../lib/scroll'
 
 /**
  * Panel de navegación móvil a pantalla completa.
@@ -40,7 +41,7 @@ export default function MobileNav() {
 
   const scrollTo = (id) => {
     toggleMobileNav(false)
-    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 260)
+    setTimeout(() => scrollToSection(id), 260)
   }
 
   return (
