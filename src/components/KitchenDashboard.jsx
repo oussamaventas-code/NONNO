@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { KITCHEN_KPIS, KITCHEN_RHYTHM } from '../data/content'
-import { gsap, useGSAP, onEnter } from '../lib/motion'
+import { gsap, useGSAP, onEnter, revealFrom, guard } from '../lib/motion'
 
 const R = 42
 const CIRC = 2 * Math.PI * R
@@ -13,7 +13,7 @@ export default function KitchenDashboard() {
   const rootRef = useRef(null)
 
   useGSAP(() => {
-    gsap.from('.kpi-card', {
+    revealFrom('.kpi-card', {
       y: 30,
       opacity: 0,
       stagger: 0.12,
@@ -24,7 +24,7 @@ export default function KitchenDashboard() {
 
     gsap.utils.toArray('.kpi-ring').forEach((ring) => {
       const arc = Number(ring.dataset.arc) / 100
-      gsap.fromTo(
+      guard(gsap.fromTo(
         ring,
         { strokeDashoffset: CIRC },
         {
@@ -33,10 +33,10 @@ export default function KitchenDashboard() {
           ease: 'power2.out',
           scrollTrigger: onEnter(ring, 'top 85%'),
         }
-      )
+      ), true)
     })
 
-    gsap.from('.rhythm-bar', {
+    revealFrom('.rhythm-bar', {
       scaleX: 0,
       transformOrigin: 'left center',
       stagger: 0.12,

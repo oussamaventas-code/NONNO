@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { PROCESS } from '../data/content'
-import { gsap, useGSAP, onEnter } from '../lib/motion'
+import { gsap, useGSAP, onEnter, revealFrom, revealTimeline } from '../lib/motion'
 
 /**
  * "DEL HORNO A TU MESA." Timeline horizontal en desktop, vertical en
@@ -10,7 +10,7 @@ export default function Process() {
   const rootRef = useRef(null)
 
   useGSAP(() => {
-    gsap.from('.process-heading', {
+    revealFrom('.process-heading', {
       y: 40,
       opacity: 0,
       duration: 0.9,
@@ -18,10 +18,16 @@ export default function Process() {
       scrollTrigger: onEnter(rootRef.current, 'top 78%'),
     })
 
-    const tl = gsap.timeline({ scrollTrigger: onEnter(rootRef.current, 'top 65%') })
-    tl.fromTo('.process-line', { strokeDashoffset: 1000 }, { strokeDashoffset: 0, duration: 1.4, ease: 'power2.inOut' })
-      .from('.process-node', { scale: 0, stagger: 0.25, duration: 0.5, ease: 'back.out(2)' }, '-=1.1')
-      .from('.process-text', { y: 20, opacity: 0, stagger: 0.25, duration: 0.5 }, '-=1.1')
+    const tl = revealTimeline({ scrollTrigger: onEnter(rootRef.current, 'top 65%') })
+    if (tl) {
+      tl.fromTo('.process-line', { strokeDashoffset: 1000 }, { strokeDashoffset: 0, duration: 1.4, ease: 'power2.inOut' })
+        .from('.process-node', { scale: 0, stagger: 0.25, duration: 0.5, ease: 'back.out(2)' }, '-=1.1')
+        .from('.process-text', { y: 20, opacity: 0, stagger: 0.25, duration: 0.5 }, '-=1.1')
+    } else {
+      /* La línea vive oculta en el SVG (dashoffset): sin animación hay
+         que dibujarla igualmente. */
+      gsap.set('.process-line', { strokeDashoffset: 0 })
+    }
   }, { scope: rootRef })
 
   return (

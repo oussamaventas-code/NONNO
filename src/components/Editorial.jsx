@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { EDITORIAL } from '../data/content'
 import { img, srcSet } from '../data/images'
-import { gsap, useGSAP, onEnter } from '../lib/motion'
+import { gsap, useGSAP, onEnter , revealFrom } from '../lib/motion'
 
 /**
  * Sección editorial de marca. "NO HACEMOS PIZZA RÁPIDA" / "HACEMOS
@@ -28,14 +28,14 @@ export default function Editorial() {
   const rootRef = useRef(null)
 
   useGSAP(() => {
-    gsap.from('.editorial-image', {
+    revealFrom('.editorial-image', {
       scale: 1.15,
       duration: 2,
       ease: 'power1.out',
       scrollTrigger: onEnter(rootRef.current, 'top 85%'),
     })
 
-    gsap.from('.editorial-word', {
+    revealFrom('.editorial-word', {
       yPercent: 110,
       opacity: 0,
       stagger: 0.05,

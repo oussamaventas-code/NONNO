@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { CATEGORIES, productsByCategory } from '../data/menu'
 import { useActions } from '../store/StoreContext'
 import ProductCard from './ProductCard'
-import { gsap, useGSAP, STAGGER, onEnter } from '../lib/motion'
+import { gsap, useGSAP, STAGGER, onEnter , revealFrom } from '../lib/motion'
 
 /**
  * Núcleo del producto. Tabs sticky por categoría + grid editorial
@@ -17,7 +17,7 @@ export default function Menu() {
   const products = productsByCategory(active)
 
   useGSAP(() => {
-    gsap.from('.menu-heading-line', {
+    revealFrom('.menu-heading-line', {
       y: 50,
       opacity: 0,
       stagger: STAGGER.text,
@@ -28,7 +28,7 @@ export default function Menu() {
   }, { scope: rootRef })
 
   useGSAP(() => {
-    gsap.from('.product-card', {
+    revealFrom('.product-card', {
       y: 30,
       opacity: 0,
       stagger: STAGGER.cards,

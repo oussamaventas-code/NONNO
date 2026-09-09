@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { Pizza, X } from 'lucide-react'
 import { useStore, useActions } from '../store/StoreContext'
-import { gsap, useGSAP, EASE } from '../lib/motion'
+import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 import { clock } from '../lib/format'
 
 /**
@@ -18,7 +18,7 @@ export default function Toasts() {
 
   useGSAP(() => {
     if (!toasts.length) return
-    gsap.from('.nonno-toast:last-child', { y: 24, opacity: 0, duration: 0.5, ease: EASE.in })
+    revealFrom('.nonno-toast:last-child', { y: 24, opacity: 0, duration: 0.5, ease: EASE.in })
   }, { dependencies: [toasts.length], scope: listRef })
 
   return (

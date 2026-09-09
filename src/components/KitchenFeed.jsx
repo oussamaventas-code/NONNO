@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Pizza, Flame, Milk, Package } from 'lucide-react'
 import { KITCHEN_FEED } from '../data/content'
 import { clock } from '../lib/format'
-import { gsap, useGSAP } from '../lib/motion'
+import { gsap, useGSAP , revealFrom } from '../lib/motion'
 
 const ICONS = { pizza: Pizza, flame: Flame, cheese: Milk, box: Package }
 
@@ -25,7 +25,7 @@ export default function KitchenFeed() {
   }, [])
 
   useGSAP(() => {
-    gsap.from('.kitchen-ticket:last-child', { x: 24, opacity: 0, duration: 0.5, ease: 'power2.out' })
+    revealFrom('.kitchen-ticket:last-child', { x: 24, opacity: 0, duration: 0.5, ease: 'power2.out' })
   }, { dependencies: [items.length], scope: listRef })
 
   return (

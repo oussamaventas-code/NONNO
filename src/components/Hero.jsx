@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { Flame, ChevronDown } from 'lucide-react'
 import { HERO } from '../data/content'
 import { img, srcSet } from '../data/images'
-import { gsap, useGSAP, EASE, DUR, STAGGER } from '../lib/motion'
+import { useGSAP, EASE, DUR, STAGGER, revealTimeline } from '../lib/motion'
 
 /**
  * Hero 100dvh. Imagen full-screen + statement editorial en el tercio
@@ -12,7 +12,10 @@ export default function Hero() {
   const rootRef = useRef(null)
 
   useGSAP(() => {
-    const tl = gsap.timeline({ defaults: { ease: EASE.in } })
+    /* Sin timeline (reducir movimiento activo) el hero se queda tal
+       cual está en el HTML: visible. Nunca al revés. */
+    const tl = revealTimeline({ defaults: { ease: EASE.in } })
+    if (!tl) return
 
     tl.fromTo('.hero-image', { scale: 1.12 }, { scale: 1, duration: DUR.cinematic * 1.6, ease: 'power1.out' }, 0)
       .from('.hero-navmask', { opacity: 0, duration: 0.6 }, 0)

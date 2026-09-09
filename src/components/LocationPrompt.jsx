@@ -7,7 +7,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import { SITE } from '../data/site'
 import { decimal } from '../lib/format'
 import { img } from '../data/images'
-import { gsap, useGSAP, EASE } from '../lib/motion'
+import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 
 /**
  * "¿DESDE QUÉ NONNO PEDIMOS?" — se abre cuando el usuario intenta
@@ -25,8 +25,8 @@ export default function LocationPrompt({ onPicked }) {
 
   useGSAP(() => {
     if (!open) return
-    gsap.from(panelRef.current, { opacity: 0, duration: 0.3, ease: EASE.in })
-    gsap.from(dialogRef.current, { y: 30, opacity: 0, scale: 0.97, duration: 0.5, ease: EASE.in })
+    revealFrom(panelRef.current, { opacity: 0, duration: 0.3, ease: EASE.in })
+    revealFrom(dialogRef.current, { y: 30, opacity: 0, scale: 0.97, duration: 0.5, ease: EASE.in })
   }, { dependencies: [open], scope: panelRef })
 
   if (!open) return null

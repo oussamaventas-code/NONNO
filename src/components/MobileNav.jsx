@@ -4,7 +4,7 @@ import { NAV_LINKS, SITE } from '../data/site'
 import { useStore, useActions } from '../store/StoreContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
-import { gsap, useGSAP, EASE, DUR } from '../lib/motion'
+import { gsap, useGSAP, EASE, DUR, revealFrom, guard } from '../lib/motion'
 
 /**
  * Panel de navegación móvil a pantalla completa.
@@ -21,12 +21,12 @@ export default function MobileNav() {
 
   useGSAP(() => {
     if (!open) return
-    gsap.fromTo(
+    guard(gsap.fromTo(
       panelRef.current,
       { clipPath: 'inset(0 0 100% 0)' },
       { clipPath: 'inset(0 0 0% 0)', duration: DUR.slow, ease: EASE.curtain }
-    )
-    gsap.from('.mobile-nav-link', {
+    ))
+    revealFrom('.mobile-nav-link', {
       y: 30,
       opacity: 0,
       stagger: 0.07,

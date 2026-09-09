@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { EXPERIENCE } from '../data/content'
 import { img, srcSet } from '../data/images'
-import { gsap, useGSAP, revealImage, EASE, onEnter } from '../lib/motion'
+import { gsap, useGSAP, revealImage, EASE, onEnter, revealFrom, revealTimeline } from '../lib/motion'
 
 /**
  * Tres pilares de calidad (masa, horno, ingredientes). Cada imagen
@@ -11,7 +11,7 @@ export default function Experience() {
   const rootRef = useRef(null)
 
   useGSAP(() => {
-    gsap.from('.exp-heading', {
+    revealFrom('.exp-heading', {
       y: 40,
       opacity: 0,
       duration: 0.9,
@@ -22,7 +22,8 @@ export default function Experience() {
     gsap.utils.toArray('.exp-pillar').forEach((pillar, i) => {
       const wrap = pillar.querySelector('.exp-image-wrap')
       const image = pillar.querySelector('.exp-image')
-      const tl = gsap.timeline({ scrollTrigger: onEnter(pillar, 'top 82%') })
+      const tl = revealTimeline({ scrollTrigger: onEnter(pillar, 'top 82%') })
+      if (!tl) return
       tl.add(revealImage(wrap, image))
       tl.from(pillar.querySelectorAll('.exp-text'), { y: 20, opacity: 0, stagger: 0.08, duration: 0.6 }, '-=0.5')
     })
@@ -43,7 +44,7 @@ export default function Experience() {
         <div className="mt-14 grid md:grid-cols-3 gap-8 lg:gap-10">
           {EXPERIENCE.pillars.map((p) => (
             <div key={p.id} className="exp-pillar">
-              <div className="exp-image-wrap relative aspect-[4/5] rounded-card overflow-hidden clip-hidden shadow-island">
+              <div className="exp-image-wrap relative aspect-[4/5] rounded-card overflow-hidden shadow-island">
                 <img
                   src={img(p.image, 700, 70)}
                   srcSet={srcSet(p.image, [400, 700, 1000])}

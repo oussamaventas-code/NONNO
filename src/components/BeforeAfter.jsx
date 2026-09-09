@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { ChevronsLeftRight } from 'lucide-react'
 import { BEFORE_AFTER } from '../data/content'
 import { img } from '../data/images'
-import { gsap, useGSAP, onEnter } from '../lib/motion'
+import { gsap, useGSAP, onEnter , revealFrom } from '../lib/motion'
 
 /**
  * "ANTES DE NONNO" vs "DESPUÉS DE NONNO" con divisor arrastrable.
@@ -15,7 +15,7 @@ export default function BeforeAfter() {
   const dragging = useRef(false)
 
   useGSAP(() => {
-    gsap.from('.ba-in', {
+    revealFrom('.ba-in', {
       y: 30,
       opacity: 0,
       stagger: 0.1,

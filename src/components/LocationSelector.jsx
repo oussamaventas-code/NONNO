@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { LOCATIONS } from '../data/locations'
 import { useSelectedLocation, useActions } from '../store/StoreContext'
 import LocationCard from './LocationCard'
-import { gsap, useGSAP, EASE, STAGGER, onEnter } from '../lib/motion'
+import { gsap, useGSAP, EASE, STAGGER, onEnter , revealFrom } from '../lib/motion'
 
 /**
  * Selector de sedes. Fija selectedLocation en el store y persiste.
@@ -14,7 +14,7 @@ export default function LocationSelector() {
   const rootRef = useRef(null)
 
   useGSAP(() => {
-    gsap.from('.location-card', {
+    revealFrom('.location-card', {
       y: 50,
       opacity: 0,
       stagger: STAGGER.cards,

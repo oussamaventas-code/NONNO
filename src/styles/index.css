@@ -119,11 +119,6 @@
 }
 
 @layer utilities {
-  /* Estado inicial de los reveals de imagen (GSAP anima hacia inset(0)) */
-  .clip-hidden {
-    clip-path: inset(100% 0 0 0);
-  }
-
   .fade-edges-x {
     mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
   }
@@ -152,8 +147,5 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
-  }
-  .clip-hidden {
-    clip-path: none;
   }
 }

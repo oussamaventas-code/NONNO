@@ -7,7 +7,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import { submitOrder } from '../lib/orderGateway'
 import { price } from '../lib/format'
 import { lineTotal } from '../lib/pricing'
-import { gsap, useGSAP, EASE } from '../lib/motion'
+import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 
 const STEPS = [
   { id: 1, label: 'SEDE' },
@@ -45,13 +45,13 @@ export default function Checkout() {
 
   useGSAP(() => {
     if (!open) return
-    gsap.from(panelRef.current, { opacity: 0, duration: 0.3, ease: EASE.in })
-    gsap.from(dialogRef.current, { y: 30, opacity: 0, duration: 0.45, ease: EASE.in })
+    revealFrom(panelRef.current, { opacity: 0, duration: 0.3, ease: EASE.in })
+    revealFrom(dialogRef.current, { y: 30, opacity: 0, duration: 0.45, ease: EASE.in })
   }, { dependencies: [open], scope: panelRef })
 
   useGSAP(() => {
     if (!open || !bodyRef.current) return
-    gsap.from(bodyRef.current, { x: 16, opacity: 0, duration: 0.4, ease: 'power2.out' })
+    revealFrom(bodyRef.current, { x: 16, opacity: 0, duration: 0.4, ease: 'power2.out' })
   }, { dependencies: [step], scope: panelRef })
 
   if (!open || isEmpty) return null

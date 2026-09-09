@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { FINAL_CTA } from '../data/content'
 import { useActions } from '../store/StoreContext'
-import { gsap, useGSAP, onEnter } from '../lib/motion'
+import { gsap, useGSAP, onEnter , revealFrom } from '../lib/motion'
 
 /**
  * CTA final a toda pantalla. Fondo rojo tomate, titular enorme,
@@ -12,7 +12,7 @@ export default function FinalCta() {
   const { openCart } = useActions()
 
   useGSAP(() => {
-    gsap.from('.cta-in', {
+    revealFrom('.cta-in', {
       y: 40,
       opacity: 0,
       stagger: 0.1,

@@ -8,7 +8,7 @@ import { img } from '../data/images'
 import { price } from '../lib/format'
 import { lineTotal } from '../lib/pricing'
 import { SITE } from '../data/site'
-import { gsap, useGSAP, EASE } from '../lib/motion'
+import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 
 /**
  * Carrito global. Desktop: drawer lateral derecho. Móvil: bottom sheet.
@@ -30,11 +30,11 @@ export default function CartDrawer() {
 
   useGSAP(() => {
     if (!open) return
-    gsap.from(panelRef.current, { opacity: 0, duration: 0.3, ease: EASE.in })
+    revealFrom(panelRef.current, { opacity: 0, duration: 0.3, ease: EASE.in })
     if (isDesktop) {
-      gsap.fromTo(dialogRef.current, { x: '100%' }, { x: '0%', duration: 0.55, ease: EASE.curtain })
+      guard(gsap.fromTo(dialogRef.current, { x: '100%' }, { x: '0%', duration: 0.55, ease: EASE.curtain }))
     } else {
-      gsap.fromTo(dialogRef.current, { y: '100%' }, { y: '0%', duration: 0.5, ease: EASE.curtain })
+      guard(gsap.fromTo(dialogRef.current, { y: '100%' }, { y: '0%', duration: 0.5, ease: EASE.curtain }))
     }
   }, { dependencies: [open], scope: panelRef })
 

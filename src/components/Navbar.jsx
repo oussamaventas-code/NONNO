@@ -3,7 +3,7 @@ import { ShoppingBag, Menu as MenuIcon } from 'lucide-react'
 import { NAV_LINKS, SITE } from '../data/site'
 import { useActions, useCart } from '../store/StoreContext'
 import { useScrolled } from '../hooks/useScrolled'
-import { gsap, useGSAP, EASE } from '../lib/motion'
+import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 
 /**
  * Navbar "isla flotante": nunca ocupa todo el ancho, fixed y centrada.
@@ -16,7 +16,7 @@ export default function Navbar() {
   const rootRef = useRef(null)
 
   useGSAP(() => {
-    gsap.from(rootRef.current, { y: -24, opacity: 0, duration: 0.9, ease: EASE.in, delay: 0.15 })
+    revealFrom(rootRef.current, { y: -24, opacity: 0, duration: 0.9, ease: EASE.in, delay: 0.15 })
   }, { scope: rootRef })
 
   const scrollTo = (id) => {

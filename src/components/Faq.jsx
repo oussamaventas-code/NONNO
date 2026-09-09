@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { FAQ } from '../data/faq'
-import { gsap, useGSAP, onEnter } from '../lib/motion'
+import { gsap, useGSAP, onEnter , revealFrom } from '../lib/motion'
 
 /**
  * Acordeón de preguntas frecuentes. Altura animada con GSAP
@@ -14,7 +14,7 @@ export default function Faq() {
   const iconRefs = useRef({})
 
   useGSAP(() => {
-    gsap.from('.faq-item', {
+    revealFrom('.faq-item', {
       y: 24,
       opacity: 0,
       stagger: 0.08,

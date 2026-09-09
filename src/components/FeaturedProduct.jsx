@@ -5,7 +5,7 @@ import { img, srcSet } from '../data/images'
 import { price } from '../lib/format'
 import { useActions } from '../store/StoreContext'
 import { useReducedMotion } from '../hooks/useReducedMotion'
-import { gsap, useGSAP, EASE, onEnter } from '../lib/motion'
+import { gsap, useGSAP, EASE, onEnter , revealFrom } from '../lib/motion'
 
 /**
  * Producto destacado a pantalla casi completa. Rotación de la imagen
@@ -18,7 +18,7 @@ export default function FeaturedProduct() {
   const reduced = useReducedMotion()
 
   useGSAP(() => {
-    gsap.from('.featured-in', {
+    revealFrom('.featured-in', {
       y: 40,
       opacity: 0,
       stagger: 0.1,

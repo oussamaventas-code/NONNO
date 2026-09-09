@@ -8,7 +8,7 @@ import { useStore, useActions } from '../store/StoreContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useIsDesktop } from '../hooks/useMediaQuery'
-import { gsap, useGSAP, EASE } from '../lib/motion'
+import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 
 /**
  * Modal de producto: nunca navega a otra página. Tamaño, extras,
@@ -57,11 +57,11 @@ export default function ProductModal() {
 
   useGSAP(() => {
     if (!product) return
-    gsap.from(panelRef.current, { opacity: 0, duration: 0.3, ease: EASE.in })
+    revealFrom(panelRef.current, { opacity: 0, duration: 0.3, ease: EASE.in })
     if (isDesktop) {
-      gsap.from(dialogRef.current, { y: 30, opacity: 0, scale: 0.97, duration: 0.45, ease: EASE.in })
+      revealFrom(dialogRef.current, { y: 30, opacity: 0, scale: 0.97, duration: 0.45, ease: EASE.in })
     } else {
-      gsap.fromTo(dialogRef.current, { y: '100%' }, { y: '0%', duration: 0.5, ease: EASE.curtain })
+      guard(gsap.fromTo(dialogRef.current, { y: '100%' }, { y: '0%', duration: 0.5, ease: EASE.curtain }))
     }
   }, { dependencies: [productId], scope: panelRef })
 
