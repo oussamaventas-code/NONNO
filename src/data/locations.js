@@ -1,4 +1,4 @@
-import { PHOTO } from './images'
+import { PHOTO } from './images.js'
 
 /* ═══════════════════════════════════════════════════════════════
    SEDES
@@ -40,9 +40,25 @@ export const LOCATIONS = [
     mapsUrl: null, // TODO
     orderUrl: null, // TODO (pideme.net u otra plataforma)
 
-    /* Aviso mostrado en checkout cuando no hay condiciones oficiales */
+    /* Zonas de reparto y su coste, tal y como vienen en la carta.
+       Fuera de estas zonas no se hace entrega. */
+    /* minutes: tiempo de reparto desde que sale del horno.
+       TODO: CONFIRMAR CON NONNO LOS MINUTOS REALES DE CADA ZONA. */
+    deliveryZones: [
+      { id: 'sangonera-la-verde', name: 'Sangonera la Verde', fee: 1.5, minutes: 10 },
+      { id: 'el-palmar', name: 'El Palmar', fee: 3, minutes: 20 },
+      { id: 'torreguil', name: 'Torreguil', fee: 3, minutes: 20 },
+      { id: 'alcantarilla', name: 'Alcantarilla', fee: 3, minutes: 20 },
+      { id: 'san-gines', name: 'San Ginés', fee: 3, minutes: 20 },
+      { id: 'la-alberca', name: 'La Alberca', fee: 3, minutes: 25 },
+    ],
+
+    /* Horno: de jueves a domingo y festivos, 19:00–23:00 (carta).
+       Qué días se abre lo decide el interruptor del panel. */
+    kitchen: { open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
+
     deliveryNote:
-      'Las condiciones de entrega se confirman con la sede al procesar el pedido.',
+      'Envío +1,50 € en Sangonera la Verde y +3 € en El Palmar, Torreguil, Alcantarilla, San Ginés y La Alberca. Las ofertas "Llévatelas por menos" son solo para recoger.',
   },
   {
     id: 'santo-angel',
@@ -62,6 +78,9 @@ export const LOCATIONS = [
        TODO: CONFIRMAR SERVICIOS REALES DE ESTA SEDE. */
     services: { pickup: true, delivery: false },
 
+    /* TODO: CONFIRMAR HORARIO Y CAPACIDAD DE ESTA SEDE (se asume la misma). */
+    kitchen: { open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
+
     address: null, // TODO
     phone: null, // TODO
     whatsapp: null, // TODO
@@ -75,6 +94,9 @@ export const LOCATIONS = [
 ]
 
 export const getLocation = (id) => LOCATIONS.find((l) => l.id === id) || null
+
+export const getDeliveryZone = (locationId, zoneId) =>
+  getLocation(locationId)?.deliveryZones?.find((z) => z.id === zoneId) || null
 
 /** Modos de pedido disponibles en una sede (nunca se asume simetría) */
 export const availableModes = (locationId) => {

@@ -24,6 +24,22 @@ export const fetchOrders = (limit = 60) => request(`/api/orders?limit=${limit}`)
 export const updateOrder = (id, patch) =>
   request(`/api/orders/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
 
+/** Pedido creado desde el mostrador o por teléfono (payload como el de la web + channel). */
+export const createOrder = (payload) =>
+  request('/api/orders', { method: 'POST', body: JSON.stringify(payload) })
+
+/** Cambia el contenido de un pedido: { items, mode, customer } */
+export const editOrder = (id, edit) =>
+  request(`/api/orders/${id}`, { method: 'PATCH', body: JSON.stringify({ edit }) })
+
+export const fetchSlots = (locationId, pizzas) =>
+  request(`/api/slots?location=${encodeURIComponent(locationId)}&pizzas=${pizzas}`)
+
+export const fetchStoreStatus = () => request('/api/store-status')
+
+export const setStoreStatus = (locationId, isOpen) =>
+  request('/api/store-status', { method: 'PATCH', body: JSON.stringify({ locationId, isOpen }) })
+
 export const getPushConfig = () => request('/api/push')
 
 export const savePushSubscription = (subscription, label) =>

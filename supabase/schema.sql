@@ -32,12 +32,74 @@ create table if not exists public.orders (
 
   -- Marcas de cocina
   printed_at    timestamptz,
-  seen_at       timestamptz
+  seen_at       timestamptz,
+
+  -- Pago: solo relevante para pedidos de recogida (el envío no está
+  -- cobrado por la web, pero en el mostrador hay que saber si ya se
+  -- ha pagado o queda pendiente al entregar).
+  payment_status text not null default 'pendiente'
+                  check (payment_status in ('pendiente', 'pagado'))
 );
+
+-- Para instalaciones anteriores a esta columna:
+alter table public.orders
+  add column if not exists payment_status text not null default 'pendiente';
+
+-- Desglose del importe: total = subtotal − descuento + envío.
+-- deals guarda qué packs "Llévatelas por menos" se aplicaron.
+alter table public.orders add column if not exists subtotal      numeric(10,2);
+alter table public.orders add column if not exists discount      numeric(10,2) not null default 0;
+alter table public.orders add column if not exists deals         jsonb not null default '[]'::jsonb;
+alter table public.orders add column if not exists delivery_fee  numeric(10,2) not null default 0;
+alter table public.orders add column if not exists delivery_zone text;
+
+-- Franjas del horno: cuántas unidades van al horno, en qué franjas
+-- (oven_slots = [{start, pizzas}]), a qué hora está listo y, si es
+-- entrega, a qué hora llega. Mientras oven_slots es null el pedido
+-- está recién entrado y el servidor le está asignando franja.
+alter table public.orders add column if not exists pizza_count integer not null default 0;
+alter table public.orders add column if not exists oven_slots  jsonb;
+alter table public.orders add column if not exists ready_at    timestamptz;
+alter table public.orders add column if not exists eta_at      timestamptz;
+create index if not exists orders_location_created_idx on public.orders (location_id, created_at desc);
+
+-- TPV del mostrador: de dónde viene el pedido (web, mostrador o
+-- teléfono), cómo y cuándo se cobró, y si se modificó después.
+alter table public.orders add column if not exists channel        text not null default 'web';
+alter table public.orders add column if not exists payment_method text;
+alter table public.orders add column if not exists paid_at        timestamptz;
+alter table public.orders add column if not exists edited_at      timestamptz;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'orders_payment_status_check'
+  ) then
+    alter table public.orders
+      add constraint orders_payment_status_check
+      check (payment_status in ('pendiente', 'pagado'));
+  end if;
+end $$;
 
 -- El panel siempre pide los más recientes primero
 create index if not exists orders_created_at_idx on public.orders (created_at desc);
 create index if not exists orders_status_idx     on public.orders (status);
+
+-- ── Apertura de la tienda ───────────────────────────────────────
+-- "La tienda se abre cuando Nonno le da al ON": cada sede tiene su
+-- propio interruptor. Mientras esté cerrada, la web no deja pedir y
+-- el servidor rechaza igualmente cualquier pedido que se cuele.
+create table if not exists public.store_status (
+  location_id text primary key,
+  is_open     boolean not null default false,
+  updated_at  timestamptz not null default now()
+);
+
+insert into public.store_status (location_id, is_open)
+values ('sangonera', false), ('santo-angel', false)
+on conflict (location_id) do nothing;
+
+alter table public.store_status enable row level security;
 
 -- ── Seguridad ──────────────────────────────────────────────────
 -- RLS activado y SIN políticas públicas: con la clave anónima no se

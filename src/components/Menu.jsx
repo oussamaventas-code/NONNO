@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { CATEGORIES, productsByCategory } from '../data/menu'
+import { CATEGORIES, PICKUP_DEALS, productsByCategory } from '../data/menu'
+import { price } from '../lib/format'
 import { useActions } from '../store/StoreContext'
 import ProductCard from './ProductCard'
 import { gsap, useGSAP, STAGGER, onEnter , revealFrom } from '../lib/motion'
@@ -15,6 +16,7 @@ export default function Menu() {
   const gridRef = useRef(null)
 
   const products = productsByCategory(active)
+  const deal = PICKUP_DEALS.find((d) => d.category === active)
 
   useGSAP(() => {
     revealFrom('.menu-heading-line', {
@@ -72,22 +74,32 @@ export default function Menu() {
           </div>
         </div>
 
+        {deal && (
+          <div className="mt-8 rounded-card bg-carbon text-crema p-5 sm:p-6">
+            <p className="font-sans font-extrabold uppercase text-lg">
+              Llévatelas por <em className="font-serif italic font-semibold text-horno">menos</em>
+            </p>
+            <p className="mono normal-case text-crema/60 mt-1">Solo para recoger en el local · se aplica sola al hacer el pedido</p>
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+              {deal.packs.map((p) => (
+                <div key={p.qty} className="rounded-2xl border border-dashed border-crema/25 px-3 py-3 text-center">
+                  <p className="font-serif italic font-semibold text-2xl sm:text-3xl text-horno">{price(p.price)}</p>
+                  <p className="mono normal-case text-crema/70 mt-1">{p.qty} {deal.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Grid editorial */}
         <div
           ref={gridRef}
           key={active}
-          className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-10 sm:gap-x-8 sm:gap-y-14"
+          className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6"
         >
-          {products.map((p) => {
-            /* En móvil todo va a una columna: las cards respiran y
-               el pulgar no tiene que apuntar a objetivos de 158px. */
-            const span = p.layout === 'wide' ? 'sm:col-span-2' : ''
-            return (
-              <div key={p.id} className={span}>
-                <ProductCard product={p} onOpen={openProduct} />
-              </div>
-            )
-          })}
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} onOpen={openProduct} />
+          ))}
         </div>
       </div>
     </section>

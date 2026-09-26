@@ -1,6 +1,7 @@
 import { SITE } from '../data/site'
-import { getLocation } from '../data/locations'
-import { cartSubtotal, cartCount } from './pricing'
+import { getLocation, getDeliveryZone } from '../data/locations'
+import { cartCount } from './pricing'
+import { orderTotals } from './orderTotals'
 import { price, orderRef } from './format'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -21,6 +22,7 @@ import { price, orderRef } from './format'
 /** Payload normalizado. Este es el contrato con cualquier backend. */
 export function buildOrderPayload({ lines, locationId, mode, customer }) {
   const location = getLocation(locationId)
+  const totals = orderTotals({ lines, mode, locationId, zoneId: customer?.zone })
   return {
     ref: orderRef(),
     createdAt: new Date().toISOString(),
@@ -34,11 +36,15 @@ export function buildOrderPayload({ lines, locationId, mode, customer }) {
       name: customer?.name?.trim() || '',
       phone: customer?.phone?.trim() || '',
       address: mode === 'delivery' ? customer?.address?.trim() || '' : null,
+      zone: mode === 'delivery' ? customer?.zone || '' : null,
       notes: customer?.notes?.trim() || '',
     },
     items: lines.map((l) => ({
       id: l.productId,
+      portionId: l.portionId,
+      extraIds: l.extraIds,
       name: l.name,
+      category: l.category,
       size: l.sizeLabel,
       extras: l.extraLabels,
       removed: l.removed || [],
@@ -48,10 +54,12 @@ export function buildOrderPayload({ lines, locationId, mode, customer }) {
       total: Number((l.unitPrice * l.qty).toFixed(2)),
     })),
     count: cartCount(lines),
-    subtotal: cartSubtotal(lines),
-    /* Sin política oficial de entrega no se inventan importes */
-    deliveryFee: SITE.ordering.deliveryFee,
-    total: cartSubtotal(lines),
+    subtotal: totals.subtotal,
+    discount: totals.discount,
+    deals: totals.deals,
+    deliveryZone: totals.zone?.name || null,
+    deliveryFee: totals.deliveryFee,
+    total: totals.total,
   }
 }
 
@@ -64,6 +72,8 @@ export function validateOrder({ lines, locationId, mode, customer }) {
   if (!customer?.name?.trim()) errors.name = 'Necesitamos un nombre.'
   if (!customer?.phone?.trim()) errors.phone = 'Necesitamos un teléfono de contacto.'
   else if (!/^[+\d][\d\s.-]{6,}$/.test(customer.phone.trim())) errors.phone = 'Revisa el teléfono.'
+  if (mode === 'delivery' && !getDeliveryZone(locationId, customer?.zone))
+    errors.zone = 'Elige tu zona de entrega.'
   if (mode === 'delivery' && !customer?.address?.trim())
     errors.address = 'Necesitamos la dirección de entrega.'
   return errors
@@ -88,6 +98,10 @@ export function orderToText(payload) {
     '',
     ...lines,
     '',
+    payload.discount || payload.deliveryFee ? `Subtotal: ${price(payload.subtotal)}` : '',
+    ...payload.deals.map((d) => `Oferta ${d.count > 1 ? `${d.count}× ` : ''}${d.label} por ${price(d.price)}`),
+    payload.discount ? `Descuento recogida: -${price(payload.discount)}` : '',
+    payload.deliveryFee ? `Envío (${payload.deliveryZone}): +${price(payload.deliveryFee)}` : '',
     `TOTAL: ${price(payload.total)}`,
     '',
     `Nombre: ${payload.customer.name}`,
@@ -141,7 +155,9 @@ export async function submitOrder(input) {
       /* La referencia buena es la que ha quedado guardada en cocina. */
       return {
         status: 'sent',
-        payload: { ...payload, ref: data.ref || payload.ref },
+        payload: { ...payload, ref: data.ref || payload.ref, total: data.total ?? payload.total },
+        /* Hora definitiva: la franja que ha asignado el servidor. */
+        arrivalAt: payload.mode === 'delivery' ? data.etaAt : data.readyAt,
         text,
         message: 'Pedido recibido en cocina.',
       }

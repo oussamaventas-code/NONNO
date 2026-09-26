@@ -4,9 +4,13 @@ import { LOCATIONS } from '../data/locations'
 import { useStore, useActions, useCart, useSelectedLocation } from '../store/StoreContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
+import { useStoreStatus } from '../hooks/useStoreStatus'
 import { submitOrder } from '../lib/orderGateway'
 import { price } from '../lib/format'
 import { lineTotal } from '../lib/pricing'
+import { orderTotals, pickupDeals } from '../lib/orderTotals'
+import { hourOf, ovenUnits } from '../lib/kitchenSlots'
+import { useKitchenEta } from '../hooks/useKitchenEta'
 import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 
 const STEPS = [
@@ -28,10 +32,15 @@ export default function Checkout() {
     closeCheckout, setCheckoutStep, setLocation, setMode,
     setCustomer, setOrderStatus, resetOrder,
   } = useActions()
-  const { lines, subtotal, isEmpty } = useCart()
+  const { lines, isEmpty } = useCart()
   const { locationId, location, modes } = useSelectedLocation()
+  const { isOpen: storeIsOpen } = useStoreStatus()
+  const locationClosed = Boolean(locationId) && !storeIsOpen(locationId)
 
   const open = ui.checkoutOpen
+  const eta = useKitchenEta(open && !isEmpty && !locationClosed ? locationId : null, ovenUnits(lines))
+  const slotFull = eta?.ok === false
+  const blocked = locationClosed || slotFull
   const step = ui.checkoutStep
   const [fieldErrors, setFieldErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -56,15 +65,22 @@ export default function Checkout() {
 
   if (!open || isEmpty) return null
 
+  const totals = orderTotals({ lines, mode: order.mode, locationId, zoneId: customer.zone })
+  const pickupSaving = pickupDeals(lines).discount
+  const zones = location?.deliveryZones || []
+  const readyAt = eta?.ok ? Date.parse(eta.readyAt) : null
+
   const goTo = (n) => setCheckoutStep(Math.min(4, Math.max(1, n)))
 
   const canNext = () => {
+    if (blocked) return false
     if (step === 1) return Boolean(locationId)
     if (step === 2) return Boolean(order.mode)
     if (step === 3) {
       const errs = {}
       if (!customer.name.trim()) errs.name = true
       if (!customer.phone.trim()) errs.phone = true
+      if (order.mode === 'delivery' && !zones.some((z) => z.id === customer.zone)) errs.zone = true
       if (order.mode === 'delivery' && !customer.address.trim()) errs.address = true
       setFieldErrors(errs)
       return Object.keys(errs).length === 0
@@ -78,6 +94,7 @@ export default function Checkout() {
   }
 
   const handleSubmit = async () => {
+    if (blocked) return
     setSubmitting(true)
     const result = await submitOrder({ lines, locationId, mode: order.mode, customer })
     setSubmitting(false)
@@ -128,6 +145,17 @@ export default function Checkout() {
         </div>
 
         <div ref={bodyRef} className="px-6 sm:px-8 py-7">
+          {order.status === 'idle' && locationClosed && (
+            <p className="mb-6 rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">
+              {location?.name} está cerrado ahora mismo. No se pueden hacer pedidos hasta que vuelva a abrir.
+            </p>
+          )}
+          {order.status === 'idle' && !locationClosed && slotFull && (
+            <p className="mb-6 rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">
+              {eta.message}
+            </p>
+          )}
+
           {order.status === 'success' && (
             <OrderSuccess result={order.result} onClose={handleClose} />
           )}
@@ -141,32 +169,33 @@ export default function Checkout() {
           )}
 
           {order.status === 'idle' && step === 2 && (
-            <StepMode modes={modes} value={order.mode} onPick={setMode} location={location} />
+            <StepMode modes={modes} value={order.mode} onPick={setMode} location={location} pickupSaving={pickupSaving} zones={zones} readyAt={readyAt} />
           )}
 
           {order.status === 'idle' && step === 3 && (
             <StepCustomer
               customer={customer}
               mode={order.mode}
+              zones={zones}
               errors={fieldErrors}
               onChange={(patch) => { setCustomer(patch); setFieldErrors({}) }}
             />
           )}
 
           {order.status === 'idle' && step === 4 && (
-            <StepSummary lines={lines} subtotal={subtotal} location={location} mode={order.mode} customer={customer} />
+            <StepSummary lines={lines} totals={totals} location={location} mode={order.mode} customer={customer} readyAt={readyAt} />
           )}
         </div>
 
         {order.status === 'idle' && (
           <div className="sticky bottom-0 bg-crema/95 backdrop-blur-md px-6 sm:px-8 py-5 border-t border-carbon/8 pb-safe">
             {step < 4 ? (
-              <button onClick={handleNext} className="btn w-full bg-tomate text-crema">
+              <button onClick={handleNext} disabled={blocked} className="btn w-full bg-tomate text-crema disabled:opacity-60">
                 <span className="btn-layer bg-horno" />
                 <span className="btn-label">CONTINUAR →</span>
               </button>
             ) : (
-              <button onClick={handleSubmit} disabled={submitting} className="btn w-full bg-tomate text-crema disabled:opacity-60">
+              <button onClick={handleSubmit} disabled={submitting || blocked} className="btn w-full bg-tomate text-crema disabled:opacity-60">
                 <span className="btn-layer bg-horno" />
                 <span className="btn-label">{submitting ? 'ENVIANDO…' : 'CONFIRMAR PEDIDO'}</span>
               </button>
@@ -213,7 +242,17 @@ function StepLocation({ locationId, onPick }) {
 }
 
 /* ── Paso 2: recoger o entrega ────────────────────────────────── */
-function StepMode({ modes, value, onPick, location }) {
+function StepMode({ modes, value, onPick, location, pickupSaving, zones, readyAt }) {
+  const minFee = zones.length ? Math.min(...zones.map((z) => z.fee)) : null
+  const minTravel = zones.length ? Math.min(...zones.map((z) => z.minutes)) : 0
+  const when = readyAt && {
+    pickup: `Lista a las ${hourOf(readyAt)}`,
+    delivery: `Llega desde las ${hourOf(readyAt + minTravel * 60000)}`,
+  }
+  const extra = {
+    pickup: pickupSaving > 0 ? `Oferta recogida: ahorras ${price(pickupSaving)}` : null,
+    delivery: minFee !== null ? `Envío desde ${price(minFee)}` : null,
+  }
   return (
     <div>
       <p className="mono text-tomate mb-2">02 / MODO</p>
@@ -234,6 +273,17 @@ function StepMode({ modes, value, onPick, location }) {
               <Icon className={['w-6 h-6', active ? 'text-tomate' : 'text-carbon/50'].join(' ')} />
               <span className="font-sans font-bold text-sm text-carbon">{m.label}</span>
               <span className="text-xs text-carbon/45">{m.hint}</span>
+              {when && (
+                <span className="mt-1 font-sans font-bold text-sm text-carbon">{when[m.id]}</span>
+              )}
+              {extra[m.id] && (
+                <span className={[
+                  'mt-1 rounded-full px-2.5 py-1 text-[0.7rem] font-semibold',
+                  m.id === 'pickup' ? 'bg-albahaca/15 text-albahaca' : 'bg-carbon/8 text-carbon/60',
+                ].join(' ')}>
+                  {extra[m.id]}
+                </span>
+              )}
             </button>
           )
         })}
@@ -246,7 +296,7 @@ function StepMode({ modes, value, onPick, location }) {
 }
 
 /* ── Paso 3: datos ────────────────────────────────────────────── */
-function StepCustomer({ customer, mode, errors, onChange }) {
+function StepCustomer({ customer, mode, zones, errors, onChange }) {
   const field = (key, label, placeholder, type = 'text') => (
     <div>
       <label htmlFor={`f-${key}`} className="mono text-carbon/50 mb-2 block">{label}</label>
@@ -272,6 +322,33 @@ function StepCustomer({ customer, mode, errors, onChange }) {
       <div className="flex flex-col gap-5">
         {field('name', 'NOMBRE', 'Tu nombre')}
         {field('phone', 'TELÉFONO', '600 000 000', 'tel')}
+        {mode === 'delivery' && (
+          <div>
+            <p className="mono text-carbon/50 mb-2">ZONA DE ENTREGA</p>
+            <div className="grid grid-cols-2 gap-2">
+              {zones.map((z) => {
+                const active = customer.zone === z.id
+                return (
+                  <button
+                    key={z.id}
+                    type="button"
+                    onClick={() => onChange({ zone: z.id })}
+                    aria-pressed={active}
+                    className={[
+                      'flex items-center justify-between gap-2 rounded-2xl border px-3.5 py-3 text-left text-sm transition-all',
+                      active ? 'border-tomate bg-tomate/5 font-semibold text-carbon' : 'border-carbon/12 text-carbon/70 hover:border-carbon/30',
+                    ].join(' ')}
+                  >
+                    <span>{z.name}</span>
+                    <span className="mono normal-case text-carbon/50 whitespace-nowrap">+{price(z.fee)}</span>
+                  </button>
+                )
+              })}
+            </div>
+            {errors.zone && <p className="mt-1 text-xs text-tomate">Elige tu zona.</p>}
+            <p className="mt-2 text-xs text-carbon/40">¿No ves tu zona? De momento no llegamos ahí: puedes pedir para recoger.</p>
+          </div>
+        )}
         {mode === 'delivery' && field('address', 'DIRECCIÓN DE ENTREGA', 'Calle, número, piso')}
         <div>
           <label htmlFor="f-notes" className="mono text-carbon/50 mb-2 block">NOTAS (OPCIONAL)</label>
@@ -290,7 +367,8 @@ function StepCustomer({ customer, mode, errors, onChange }) {
 }
 
 /* ── Paso 4: resumen ──────────────────────────────────────────── */
-function StepSummary({ lines, subtotal, location, mode, customer }) {
+function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
+  const arrival = readyAt && (mode === 'delivery' && totals.zone ? readyAt + totals.zone.minutes * 60000 : readyAt)
   return (
     <div>
       <p className="mono text-tomate mb-2">04 / RESUMEN</p>
@@ -305,14 +383,22 @@ function StepSummary({ lines, subtotal, location, mode, customer }) {
           <span className="mono text-carbon/45">MODO</span>
           <span className="text-sm font-semibold text-carbon">{mode === 'delivery' ? 'Entrega' : 'Recogida'}</span>
         </div>
+        {arrival && (
+          <div className="p-4 flex items-center justify-between">
+            <span className="mono text-carbon/45">{mode === 'delivery' ? 'LLEGA HACIA LAS' : 'LISTA A LAS'}</span>
+            <span className="font-sans font-extrabold text-lg text-tomate">{hourOf(arrival)}</span>
+          </div>
+        )}
         <div className="p-4 flex items-center justify-between">
           <span className="mono text-carbon/45">CONTACTO</span>
           <span className="text-sm font-semibold text-carbon text-right">{customer.name} · {customer.phone}</span>
         </div>
-        {customer.address && (
+          {mode === 'delivery' && customer.address && (
           <div className="p-4 flex items-center justify-between gap-4">
             <span className="mono text-carbon/45 flex-shrink-0">DIRECCIÓN</span>
-            <span className="text-sm font-semibold text-carbon text-right">{customer.address}</span>
+            <span className="text-sm font-semibold text-carbon text-right">
+              {customer.address}{totals.zone ? ` · ${totals.zone.name}` : ''}
+            </span>
           </div>
         )}
       </div>
@@ -336,9 +422,35 @@ function StepSummary({ lines, subtotal, location, mode, customer }) {
         ))}
       </div>
 
-      <div className="mt-5 pt-5 border-t border-carbon/10 flex items-center justify-between">
+      <div className="mt-5 pt-5 border-t border-carbon/10 flex flex-col gap-2 text-sm">
+        {(totals.discount > 0 || totals.deliveryFee > 0) && (
+          <div className="flex items-center justify-between text-carbon/60">
+            <span>Subtotal</span>
+            <span className="mono">{price(totals.subtotal)}</span>
+          </div>
+        )}
+        {totals.deals.map((d) => (
+          <div key={d.label} className="flex items-center justify-between text-albahaca">
+            <span>Llévatelas por menos · {d.count > 1 ? `${d.count}× ` : ''}{d.label} por {price(d.price)}</span>
+          </div>
+        ))}
+        {totals.discount > 0 && (
+          <div className="flex items-center justify-between font-semibold text-albahaca">
+            <span>Descuento por recoger</span>
+            <span className="mono">−{price(totals.discount)}</span>
+          </div>
+        )}
+        {totals.deliveryFee > 0 && (
+          <div className="flex items-center justify-between text-carbon/60">
+            <span>Envío · {totals.zone.name}</span>
+            <span className="mono">+{price(totals.deliveryFee)}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3 flex items-center justify-between">
         <span className="mono text-carbon/50">TOTAL</span>
-        <span className="font-serif italic font-semibold text-2xl text-carbon">{price(subtotal)}</span>
+        <span className="font-serif italic font-semibold text-2xl text-carbon">{price(totals.total)}</span>
       </div>
 
       <p className="mt-4 text-xs text-carbon/40 italic">
@@ -357,6 +469,12 @@ function OrderSuccess({ result, onClose }) {
       </span>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon">Perfecto. Ya está en tu pedido.</h3>
       <p className="mt-2 text-carbon/55">{result?.message}</p>
+      {result?.arrivalAt && (
+        <p className="mt-4 font-sans font-extrabold uppercase text-lg text-tomate">
+          {result.payload?.mode === 'delivery' ? 'Llega hacia las ' : 'Lista para recoger a las '}
+          {hourOf(result.arrivalAt)}
+        </p>
+      )}
       {result?.payload?.ref && (
         <p className="mono mt-4 text-carbon/40">REF. {result.payload.ref}</p>
       )}

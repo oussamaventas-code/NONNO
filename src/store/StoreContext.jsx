@@ -4,6 +4,7 @@ import {
 import { SITE } from '../data/site'
 import { buildLine, cartSubtotal, cartCount } from '../lib/pricing'
 import { getLocation, availableModes } from '../data/locations'
+import { getProduct } from '../data/menu'
 
 /* ═══════════════════════════════════════════════════════════════
    ESTADO GLOBAL
@@ -17,7 +18,7 @@ import { getLocation, availableModes } from '../data/locations'
    del cliente. La UI nunca se persiste.
    ═══════════════════════════════════════════════════════════════ */
 
-const EMPTY_CUSTOMER = { name: '', phone: '', address: '', notes: '' }
+const EMPTY_CUSTOMER = { name: '', phone: '', address: '', zone: '', notes: '' }
 
 const initialState = {
   locationId: null,
@@ -61,7 +62,8 @@ function hydrate() {
   return {
     ...initialState,
     locationId: getLocation(locationId) ? locationId : null,
-    lines: Array.isArray(lines) ? lines : [],
+    /* Un producto que ya no está en la carta no puede llegar a cocina */
+    lines: Array.isArray(lines) ? lines.filter((l) => getProduct(l.productId)) : [],
     customer: { ...EMPTY_CUSTOMER, ...customer },
   }
 }

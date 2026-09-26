@@ -1,4 +1,4 @@
-import { getExtra, getProduct, priceOf, isPizza, PIZZA_SIZE } from '../data/menu'
+import { getExtra, getProduct, getPortion, priceOf, isPizza, PIZZA_SIZE } from '../data/menu.js'
 
 /* ═══════════════════════════════════════════════════════════════
    MOTOR DE PRECIOS
@@ -14,8 +14,8 @@ export const extrasPrice = (extraIds = []) =>
   extraIds.reduce((total, id) => total + (getExtra(id)?.price || 0), 0)
 
 /** Precio de una unidad configurada */
-export const unitPrice = (product, { extraIds = [] } = {}) =>
-  round(priceOf(product) + extrasPrice(extraIds))
+export const unitPrice = (product, { extraIds = [], portionId } = {}) =>
+  round(priceOf(product, portionId) + extrasPrice(extraIds))
 
 /** Total de una línea del carrito */
 export const lineTotal = (line) => round(line.unitPrice * line.qty)
@@ -33,9 +33,10 @@ export const cartCount = (lines = []) =>
  * ingredientes quitados + misma nota => se agrupa en una sola línea.
  * Una pizza sin cebolla y otra con ella son líneas distintas.
  */
-export const lineId = ({ productId, extraIds = [], removed = [], note = '' }) =>
+export const lineId = ({ productId, portionId, extraIds = [], removed = [], note = '' }) =>
   [
     productId,
+    portionId || 'unica',
     [...extraIds].sort().join('+') || 'sin-extras',
     [...removed].sort().join('+') || 'completa',
     note.trim().toLowerCase(),
@@ -46,26 +47,30 @@ export const lineId = ({ productId, extraIds = [], removed = [], note = '' }) =>
  * Congela nombre, imagen y precio para que el carrito siga siendo
  * legible aunque el catálogo cambie después.
  */
-export const buildLine = ({ productId, extraIds = [], removed = [], qty = 1, note = '' }) => {
+export const buildLine = ({ productId, portionId, extraIds = [], removed = [], qty = 1, note = '' }) => {
   const product = getProduct(productId)
   if (!product) return null
 
-  /* Solo se pueden quitar ingredientes que el producto lleva */
+  /* Solo se pueden quitar ingredientes que el producto lleva, y solo
+     se pueden añadir los toppings que ese producto admite. */
   const quitados = (product.ingredients || []).filter((ing) => removed.includes(ing))
+  const extras = [...new Set(extraIds)].filter((id) => product.extras?.includes(id)).sort()
+  const portion = getPortion(product, portionId)
 
   return {
-    id: lineId({ productId, extraIds, removed: quitados, note }),
+    id: lineId({ productId, portionId: portion?.id, extraIds: extras, removed: quitados, note }),
     productId,
+    portionId: portion?.id || null,
     name: product.name,
     image: product.image,
     category: product.category,
-    sizeLabel: isPizza(product) ? PIZZA_SIZE.diameter : null,
-    extraIds: [...extraIds].sort(),
-    extraLabels: extraIds.map((id) => getExtra(id)?.label).filter(Boolean),
+    sizeLabel: portion ? portion.label : isPizza(product) ? PIZZA_SIZE.diameter : null,
+    extraIds: extras,
+    extraLabels: extras.map((id) => getExtra(id)?.label).filter(Boolean),
     removed: quitados,
     note: note.trim(),
     qty,
-    unitPrice: unitPrice(product, { extraIds }),
+    unitPrice: unitPrice(product, { extraIds: extras, portionId: portion?.id }),
   }
 }
 

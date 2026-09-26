@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, RefreshCw, LogOut, Pizza } from 'lucide-react'
-import { fetchOrders, updateOrder, logout, getPushConfig, savePushSubscription } from './api'
+import { Bell, BellOff, RefreshCw, LogOut, Pizza, Power, ChefHat, Store, Printer } from 'lucide-react'
+import Counter from './Counter'
+import { printTicket } from './printTicket'
+import { fetchOrders, updateOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus } from './api'
 import { useOrderAlert } from './useOrderAlert'
 import OrderCard from './OrderCard'
 import { price } from '../lib/format'
@@ -14,7 +16,27 @@ const FILTERS = [
   { id: 'todos', label: 'TODOS' },
 ]
 
-const POLL_MS = 8000
+/* 4 s: lo bastante rápido para que cocina y mostrador no se
+   desincronicen sin machacar la API. Se refuerza con una recarga
+   inmediata al volver a la pestaña (ver más abajo). */
+const POLL_MS = 4000
+
+const PREF_VIEW = 'nonno.panel.view'
+const PREF_AUTOPRINT = 'nonno.panel.autoprint'
+const readPref = (key, fallback) => {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw === null ? fallback : JSON.parse(raw)
+  } catch {
+    return fallback
+  }
+}
+const writePref = (key, value) => {
+  try { localStorage.setItem(key, JSON.stringify(value)) } catch { /* modo privado: solo dura la sesión */ }
+}
+
+/* Un pedido modificado vuelve a imprimirse: la clave cambia con la edición. */
+const printKey = (o) => `${o.id}:${o.edited_at || ''}`
 
 /* Cada sede tiene su color y su cinta superior: nadie debe dudar ni
    un segundo de qué cocina está mirando. */
@@ -40,10 +62,19 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const [busyId, setBusyId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [pushState, setPushState] = useState('desconocido')
+  const [storeStatuses, setStoreStatuses] = useState({})
+  const [togglingStore, setTogglingStore] = useState(null)
+  /* Cada equipo recuerda su papel: el ordenador de cocina y el del
+     mostrador imprimen cosas distintas en su propia impresora. */
+  const [view, setView] = useState(() => readPref(PREF_VIEW, 'cocina'))
+  const [autoPrint, setAutoPrint] = useState(() => readPref(PREF_AUTOPRINT, false))
 
   const { play } = useOrderAlert()
   const knownIds = useRef(new Set())
   const firstLoad = useRef(true)
+  const printedKeys = useRef(new Set())
+  const autoPrintOn = useRef(false)
+  autoPrintOn.current = autoPrint && view === 'cocina'
 
   /* ── Carga y sondeo ──────────────────────────────────────────── */
   const load = useCallback(async () => {
@@ -59,6 +90,20 @@ export default function AdminPanel({ scope, onSignedOut }) {
       if (!firstLoad.current && entrantes.length) {
         play()
         document.title = `(${entrantes.length}) Nuevo pedido · Nonno`
+      }
+
+      /* Comandas automáticas (solo en el equipo de cocina): cada pedido
+         activo sin imprimir sale una vez, y otra vez si se modifica.
+         Al abrir el panel no se imprime lo que ya había. */
+      const pendingPrint = list.filter((o) =>
+        !o.printed_at && !['entregado', 'cancelado'].includes(o.status)
+        && !printedKeys.current.has(printKey(o)))
+      pendingPrint.forEach((o) => printedKeys.current.add(printKey(o)))
+      if (!firstLoad.current && autoPrintOn.current) {
+        pendingPrint.forEach((o) => {
+          printTicket(o)
+          updateOrder(o.id, { printed: true }).catch(() => {})
+        })
       }
       firstLoad.current = false
 
@@ -77,12 +122,50 @@ export default function AdminPanel({ scope, onSignedOut }) {
     return () => clearInterval(timer)
   }, [load])
 
-  /* El título vuelve a la normalidad al volver a la pestaña */
+  /* El título vuelve a la normalidad al volver a la pestaña, y se
+     recarga al instante: si el panel estuvo minimizado o en segundo
+     plano, no hay que esperar al siguiente sondeo para ponerse al día. */
   useEffect(() => {
-    const onFocus = () => { document.title = 'Panel de cocina · Nonno' }
+    const onFocus = () => {
+      document.title = 'Panel de cocina · Nonno'
+      load()
+    }
+    const onVisible = () => { if (document.visibilityState === 'visible') load() }
     window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [load])
+
+  /* ── Apertura de la tienda ───────────────────────────────────── */
+  const loadStoreStatus = useCallback(async () => {
+    try {
+      const { statuses } = await fetchStoreStatus()
+      setStoreStatuses(statuses || {})
+    } catch {
+      /* No se bloquea el panel por esto: el toggle simplemente no aparece bien */
+    }
   }, [])
+
+  useEffect(() => {
+    loadStoreStatus()
+    const timer = setInterval(loadStoreStatus, 15000)
+    return () => clearInterval(timer)
+  }, [loadStoreStatus])
+
+  const toggleStore = async (locationId, next) => {
+    setTogglingStore(locationId)
+    try {
+      const { status } = await setStoreStatus(locationId, next)
+      setStoreStatuses((prev) => ({ ...prev, [locationId]: status }))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setTogglingStore(null)
+    }
+  }
 
   /* ── Avisos del navegador ────────────────────────────────────── */
   useEffect(() => {
@@ -131,6 +214,20 @@ export default function AdminPanel({ scope, onSignedOut }) {
     }
   }
 
+  /* Pedido creado o cambiado desde el mostrador: entra ya en la lista
+     sin esperar al sondeo, y sin sonar en el equipo que lo ha creado. */
+  const upsertOrder = (order) => {
+    knownIds.current.add(order.id)
+    setOrders((prev) => (prev.some((o) => o.id === order.id)
+      ? prev.map((o) => (o.id === order.id ? order : o))
+      : [order, ...prev]))
+  }
+
+  const changeView = (next) => { setView(next); writePref(PREF_VIEW, next) }
+  const toggleAutoPrint = () => {
+    setAutoPrint((on) => { writePref(PREF_AUTOPRINT, !on); return !on })
+  }
+
   const handleLogout = async () => {
     await logout().catch(() => {})
     onSignedOut()
@@ -146,11 +243,21 @@ export default function AdminPanel({ scope, onSignedOut }) {
     ? orders.filter((o) => o.location_id === sedeVista)
     : orders
 
+  /* Sedes en las que este panel puede crear pedidos */
+  const locationIds = !esDireccion ? [scope]
+    : sedeVista !== 'todas' ? [sedeVista]
+      : LOCATIONS.map((l) => l.id)
+
   const visible = porSede.filter((o) => {
     if (filter === 'todos') return true
     if (filter === 'activos') return !['entregado', 'cancelado'].includes(o.status)
     return o.status === filter
   })
+  /* Pendientes en el orden en que tienen que salir del horno. */
+  if (filter !== 'todos') {
+    const when = (o) => Date.parse(o.ready_at || o.created_at)
+    visible.sort((a, b) => when(a) - when(b))
+  }
 
   const today = porSede.filter(
     (o) => new Date(o.created_at).toDateString() === new Date().toDateString()
@@ -165,7 +272,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
       {sede && (
         <div className={`${sede.banda} ${sede.texto} py-2 text-center`}>
           <p className="mono normal-case tracking-[0.2em] font-bold">
-            COCINA · {sede.nombre.toUpperCase()}
+            {view === 'mostrador' ? 'MOSTRADOR' : 'COCINA'} · {sede.nombre.toUpperCase()}
           </p>
         </div>
       )}
@@ -182,7 +289,41 @@ export default function AdminPanel({ scope, onSignedOut }) {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex rounded-full border border-carbon/15 p-1" role="tablist" aria-label="Vista del panel">
+                {[
+                  { id: 'cocina', label: 'Cocina', Icon: ChefHat },
+                  { id: 'mostrador', label: 'Mostrador', Icon: Store },
+                ].map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    role="tab"
+                    aria-selected={view === id}
+                    onClick={() => changeView(id)}
+                    className={[
+                      'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors',
+                      view === id ? 'bg-carbon text-crema' : 'text-carbon/60',
+                    ].join(' ')}
+                  >
+                    <Icon className="w-4 h-4" /> {label}
+                  </button>
+                ))}
+              </div>
+
+              {view === 'cocina' && (
+                <button
+                  onClick={toggleAutoPrint}
+                  aria-pressed={autoPrint}
+                  title="Imprime la comanda de cada pedido nuevo o modificado en la impresora de este equipo"
+                  className={[
+                    'mono normal-case flex items-center gap-1.5 rounded-full px-3 py-2 border transition-colors',
+                    autoPrint ? 'bg-albahaca text-crema border-albahaca' : 'border-carbon/15 text-carbon/70',
+                  ].join(' ')}
+                >
+                  <Printer className="w-3.5 h-3.5" /> {autoPrint ? 'Comandas automáticas' : 'Comandas manuales'}
+                </button>
+              )}
+
               <button
                 onClick={load}
                 className="mono normal-case flex items-center gap-1.5 rounded-full border border-carbon/15 px-3 py-2 text-carbon/70 hover:border-carbon/40 transition-colors"
@@ -226,6 +367,31 @@ export default function AdminPanel({ scope, onSignedOut }) {
             </span>
           </div>
 
+          {/* Apertura de la tienda: el interruptor que de verdad abre o
+              cierra los pedidos, no solo un adorno visual. */}
+          <div className="mt-4 flex items-center gap-2 flex-wrap">
+            {(esDireccion ? LOCATIONS.map((l) => l.id) : [scope]).map((locId) => {
+              const loc = LOCATIONS.find((l) => l.id === locId)
+              const abierta = storeStatuses[locId]?.is_open === true
+              const busy = togglingStore === locId
+              return (
+                <button
+                  key={locId}
+                  onClick={() => toggleStore(locId, !abierta)}
+                  disabled={busy}
+                  className={[
+                    'mono normal-case flex items-center gap-1.5 rounded-full px-3 py-2 border transition-colors disabled:opacity-50',
+                    abierta ? 'bg-albahaca text-crema border-albahaca' : 'bg-tomate/10 text-tomate border-tomate/30',
+                  ].join(' ')}
+                >
+                  <Power className="w-3.5 h-3.5" />
+                  {esDireccion ? `${loc?.name.toUpperCase()} · ` : ''}
+                  {abierta ? 'ABIERTA — TOCA PARA CERRAR' : 'CERRADA — TOCA PARA ABRIR'}
+                </button>
+              )
+            })}
+          </div>
+
           {/* Cambiar de sede solo lo puede hacer la dirección */}
           {esDireccion && (
             <div className="mt-4 hide-scrollbar flex gap-2 overflow-x-auto border-b border-carbon/10 pb-3">
@@ -248,7 +414,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
             </div>
           )}
 
-          <div className="mt-4 hide-scrollbar flex gap-2 overflow-x-auto">
+          {view === 'cocina' && <div className="mt-4 hide-scrollbar flex gap-2 overflow-x-auto">
             {FILTERS.map((f) => (
               <button
                 key={f.id}
@@ -263,7 +429,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
                 {f.label}
               </button>
             ))}
-          </div>
+          </div>}
         </div>
       </header>
 
@@ -276,6 +442,14 @@ export default function AdminPanel({ scope, onSignedOut }) {
 
         {loading ? (
           <p className="mono text-carbon/40 py-16 text-center">CARGANDO PEDIDOS…</p>
+        ) : view === 'mostrador' ? (
+          <Counter
+            orders={porSede}
+            locationIds={locationIds}
+            defaultLocationId={locationIds[0]}
+            onSaved={upsertOrder}
+            onError={setError}
+          />
         ) : visible.length === 0 ? (
           <div className="py-20 text-center">
             <span className="inline-flex w-16 h-16 rounded-full bg-carbon/5 items-center justify-center text-carbon/25 mb-4">

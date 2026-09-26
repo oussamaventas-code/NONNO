@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { LOCATIONS } from '../data/locations'
 import { useSelectedLocation, useActions } from '../store/StoreContext'
+import { useStoreStatus } from '../hooks/useStoreStatus'
 import LocationCard from './LocationCard'
 import { gsap, useGSAP, EASE, STAGGER, onEnter , revealFrom } from '../lib/motion'
 import { scrollToSection } from '../lib/scroll'
@@ -12,6 +13,7 @@ import { scrollToSection } from '../lib/scroll'
 export default function LocationSelector() {
   const { locationId } = useSelectedLocation()
   const { setLocation, openCart } = useActions()
+  const { isOpen } = useStoreStatus()
   const rootRef = useRef(null)
 
   useGSAP(() => {
@@ -53,6 +55,7 @@ export default function LocationSelector() {
               <LocationCard
                 location={loc}
                 selected={locationId === loc.id}
+                closed={!isOpen(loc.id)}
                 onSelect={() => setLocation(loc.id)}
                 onViewMenu={scrollToMenu}
                 onOrder={() => handleOrder(loc.id)}

@@ -38,8 +38,7 @@ export const SITE = {
     adapter: 'api',
     apiEndpoint: '/api/orders',
     externalUrl: null,
-    minOrderDelivery: null, // TODO: pedido mínimo de entrega si existe
-    deliveryFee: null, // TODO: coste de entrega si existe
+    /* El coste de envío va por zonas: ver deliveryZones en locations.js */
   },
 
   /* Estados de UI centralizados: mismo idioma en toda la web */

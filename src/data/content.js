@@ -66,12 +66,12 @@ export const EXPERIENCE = {
 /* ── MICRO-UI: NOTIFICACIONES DE COCINA ────────────────────────
    Simulación visual de marca. NO son pedidos reales en tiempo real. */
 export const KITCHEN_FEED = [
-  { icon: 'pizza', text: 'Una Margherita acaba de salir del horno.' },
+  { icon: 'pizza', text: 'Una Margarita acaba de salir del horno.' },
   { icon: 'flame', text: 'Pedido preparado.' },
   { icon: 'cheese', text: 'Extra mozzarella añadido.' },
   { icon: 'box', text: 'Pedido listo para recoger.' },
   { icon: 'flame', text: 'Horno a temperatura.' },
-  { icon: 'pizza', text: 'Diavola en camino a la mesa 4.' },
+  { icon: 'pizza', text: 'Una Carnívora sale para reparto.' },
 ]
 
 /* ── MICRO-UI: MINI DASHBOARD (VISUAL EXPERIENCE) ──────────────

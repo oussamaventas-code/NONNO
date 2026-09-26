@@ -1,6 +1,7 @@
-import { Printer, Truck, Package, Phone, MapPin, Clock } from 'lucide-react'
+import { Printer, Truck, Package, Phone, MapPin, Clock, Euro, CircleDollarSign } from 'lucide-react'
 import { price } from '../lib/format'
 import { printTicket } from './printTicket'
+import { hourOf } from '../lib/kitchenSlots'
 
 const FLOW = [
   { id: 'nuevo', label: 'NUEVO', next: 'horno', action: 'AL HORNO' },
@@ -47,7 +48,36 @@ export default function OrderCard({ order, onStatus, busy }) {
                 ? <><Truck className="w-3.5 h-3.5" /> Entrega</>
                 : <><Package className="w-3.5 h-3.5" /> Recogida</>}
             </span>
+            {order.channel && order.channel !== 'web' && (
+              <span className="mono normal-case rounded-full border border-carbon/15 px-2.5 py-1 text-carbon/70">
+                {order.channel === 'telefono' ? 'Teléfono' : 'Mostrador'}
+              </span>
+            )}
+            {order.edited_at && isOpen && (
+              <span className="mono normal-case rounded-full bg-horno px-2.5 py-1 text-crema font-bold">
+                MODIFICADO {hourOf(order.edited_at)}
+              </span>
+            )}
+            {order.mode === 'pickup' && (
+              <span className={[
+                'mono normal-case flex items-center gap-1 rounded-full px-2.5 py-1',
+                order.payment_status === 'pagado' ? 'bg-albahaca/15 text-albahaca' : 'bg-tomate/15 text-tomate',
+              ].join(' ')}>
+                <Euro className="w-3.5 h-3.5" />
+                {order.payment_status === 'pagado' ? 'Pagado' : 'Falta por pagar'}
+              </span>
+            )}
           </div>
+          {order.ready_at && isOpen && (
+            <p className="mt-2 font-sans font-extrabold text-lg text-carbon">
+              HORNO PARA LAS {hourOf(order.ready_at)}
+              {order.mode === 'delivery' && order.eta_at && (
+                <span className="block mono normal-case font-normal text-sm text-carbon/60">
+                  llega al cliente hacia las {hourOf(order.eta_at)} · {order.pizza_count} al horno
+                </span>
+              )}
+            </p>
+          )}
           <p className="mono normal-case text-carbon/45 mt-2 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
             hace {waiting} min · {order.location_name}
@@ -82,6 +112,26 @@ export default function OrderCard({ order, onStatus, busy }) {
         ))}
       </ul>
 
+      {(Number(order.discount) > 0 || Number(order.delivery_fee) > 0) && (
+        <div className="mt-3 flex flex-col gap-1 text-sm">
+          {(order.deals || []).map((d) => (
+            <span key={d.label} className="mono normal-case text-albahaca">
+              Oferta: {d.count > 1 ? `${d.count}× ` : ''}{d.label} por {price(d.price)}
+            </span>
+          ))}
+          {Number(order.discount) > 0 && (
+            <span className="flex justify-between text-albahaca font-semibold">
+              <span>Descuento recogida</span><span className="mono">−{price(order.discount)}</span>
+            </span>
+          )}
+          {Number(order.delivery_fee) > 0 && (
+            <span className="flex justify-between text-carbon/70">
+              <span>Envío {order.delivery_zone}</span><span className="mono">+{price(order.delivery_fee)}</span>
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="mt-4 border-t border-carbon/10 pt-4 flex flex-col gap-1 text-sm">
         <span className="font-semibold text-carbon">{order.customer_name}</span>
         <a href={`tel:${order.customer_phone}`} className="flex items-center gap-1.5 text-carbon/70 hover:text-tomate transition-colors">
@@ -89,7 +139,8 @@ export default function OrderCard({ order, onStatus, busy }) {
         </a>
         {order.address && (
           <span className="flex items-start gap-1.5 text-carbon/70">
-            <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> {order.address}
+            <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+            {order.address}{order.delivery_zone ? ` · ${order.delivery_zone}` : ''}
           </span>
         )}
         {order.notes && (
@@ -100,6 +151,21 @@ export default function OrderCard({ order, onStatus, busy }) {
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
+        {order.mode === 'pickup' && (
+          <button
+            onClick={() => onStatus(order.id, null, { paymentStatus: order.payment_status === 'pagado' ? 'pendiente' : 'pagado' })}
+            disabled={busy}
+            className="btn border border-carbon/20 bg-transparent text-carbon px-5 disabled:opacity-50"
+            title="Cambiar estado de pago"
+          >
+            <span className="btn-layer bg-carbon/5" />
+            <span className="btn-label">
+              <CircleDollarSign className="w-4 h-4" />
+              {order.payment_status === 'pagado' ? 'MARCAR PENDIENTE' : 'MARCAR PAGADO'}
+            </span>
+          </button>
+        )}
+
         {step.next && (
           <button
             onClick={() => onStatus(order.id, step.next)}
@@ -114,12 +180,12 @@ export default function OrderCard({ order, onStatus, busy }) {
         <button
           onClick={() => { printTicket(order); onStatus(order.id, null, { printed: true }) }}
           className="btn border border-carbon/20 bg-transparent text-carbon px-5"
-          title="Imprimir ticket"
+          title="Imprimir comanda de cocina"
         >
           <span className="btn-layer bg-carbon/5" />
           <span className="btn-label">
             <Printer className="w-4 h-4" />
-            {order.printed_at ? 'REIMPRIMIR' : 'IMPRIMIR'}
+            {order.printed_at ? 'REIMPRIMIR COMANDA' : 'IMPRIMIR COMANDA'}
           </span>
         </button>
 

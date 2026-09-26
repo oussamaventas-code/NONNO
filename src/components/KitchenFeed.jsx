@@ -17,9 +17,10 @@ export default function KitchenFeed() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      const next = KITCHEN_FEED[counter.current % KITCHEN_FEED.length]
-      setItems((prev) => [...prev, { ...next, id: counter.current, at: clock() }].slice(-3))
+      const id = counter.current
       counter.current += 1
+      const next = KITCHEN_FEED[id % KITCHEN_FEED.length]
+      setItems((prev) => [...prev, { ...next, id, at: clock() }].slice(-3))
     }, 2500)
     return () => clearInterval(timer)
   }, [])

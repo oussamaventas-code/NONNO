@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Minus, Plus, Leaf, Flame as FlameIcon, Check } from 'lucide-react'
 import { getProduct, getExtra, isPizza, PIZZA_SIZE } from '../data/menu'
-import { img, srcSet } from '../data/images'
+import ProductImage from './ProductImage'
 import { unitPrice } from '../lib/pricing'
 import { price } from '../lib/format'
 import { useStore, useActions } from '../store/StoreContext'
@@ -28,6 +28,7 @@ export default function ProductModal() {
   const panelRef = useRef(null)
   const dialogRef = useRef(null)
 
+  const [portionId, setPortionId] = useState(null)
   const [extraIds, setExtraIds] = useState([])
   const [removed, setRemoved] = useState([])
   const [qty, setQty] = useState(1)
@@ -36,6 +37,7 @@ export default function ProductModal() {
 
   useEffect(() => {
     if (!product) return
+    setPortionId(product.portions?.[0]?.id || null)
     setExtraIds([])
     setRemoved([])
     setQty(1)
@@ -49,7 +51,7 @@ export default function ProductModal() {
   useEffect(() => {
     if (locationId && pendingAdd.current && product) {
       pendingAdd.current = false
-      const ok = addToCart({ productId, extraIds, removed, qty, note })
+      const ok = addToCart({ productId, portionId, extraIds, removed, qty, note })
       if (ok) closeProduct()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -76,7 +78,7 @@ export default function ProductModal() {
   const toggleIngredient = (ing) =>
     setRemoved((prev) => (prev.includes(ing) ? prev.filter((i) => i !== ing) : [...prev, ing]))
 
-  const total = unitPrice(product, { extraIds }) * qty
+  const total = unitPrice(product, { extraIds, portionId }) * qty
 
   const extrasByGroup = (product.extras || []).reduce((acc, id) => {
     const extra = getExtra(id)
@@ -92,7 +94,7 @@ export default function ProductModal() {
       openLocationPrompt()
       return
     }
-    const ok = addToCart({ productId, extraIds, removed, qty, note })
+    const ok = addToCart({ productId, portionId, extraIds, removed, qty, note })
     if (ok) closeProduct()
   }
 
@@ -120,13 +122,16 @@ export default function ProductModal() {
           <X className="w-5 h-5" />
         </button>
 
-        <div className="relative h-56 sm:h-72">
-          <img
-            src={img(product.image, 900, 72)}
-            srcSet={srcSet(product.image, [500, 900, 1300])}
-            sizes="(min-width: 640px) 42rem, 100vw"
+        <div className={product.image ? 'relative h-56 sm:h-72' : 'relative h-40'}>
+          <ProductImage
+            image={product.image}
+            category={product.category}
             alt={product.name}
-            className="h-full w-full object-cover rounded-t-block sm:rounded-t-block"
+            width={900}
+            widths={[500, 900, 1300]}
+            sizes="(min-width: 640px) 42rem, 100vw"
+            className="h-full w-full rounded-t-block"
+            iconClassName="w-12 h-12"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-crema via-transparent to-transparent" />
         </div>
@@ -142,6 +147,25 @@ export default function ProductModal() {
 
           {isPizza(product) && (
             <p className="mono text-carbon/40 mt-3">TAMAÑO ÚNICO · {PIZZA_SIZE.diameter}</p>
+          )}
+
+          {product.portions?.length > 1 && (
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              {product.portions.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setPortionId(p.id)}
+                  aria-pressed={portionId === p.id}
+                  className={[
+                    'rounded-2xl border p-4 text-left transition-all',
+                    portionId === p.id ? 'border-tomate bg-tomate/5' : 'border-carbon/12 hover:border-carbon/30',
+                  ].join(' ')}
+                >
+                  <span className="block font-sans font-bold text-sm text-carbon">{p.label}</span>
+                  <span className="block mono normal-case text-carbon/55 mt-0.5">{price(p.price)}</span>
+                </button>
+              ))}
+            </div>
           )}
 
           {/* Ingredientes: se quitan tocándolos */}

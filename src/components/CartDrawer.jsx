@@ -1,12 +1,15 @@
 import { useRef } from 'react'
-import { X, Minus, Plus, Trash2, Pizza } from 'lucide-react'
+import { X, Minus, Plus, Trash2, Pizza, Clock } from 'lucide-react'
 import { useStore, useActions, useCart, useSelectedLocation } from '../store/StoreContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useIsDesktop } from '../hooks/useMediaQuery'
-import { img } from '../data/images'
+import ProductImage from './ProductImage'
 import { price } from '../lib/format'
 import { lineTotal } from '../lib/pricing'
+import { pickupDeals } from '../lib/orderTotals'
+import { hourOf, ovenUnits } from '../lib/kitchenSlots'
+import { useKitchenEta, minutesUntil } from '../hooks/useKitchenEta'
 import { SITE } from '../data/site'
 import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 import { scrollToSection } from '../lib/scroll'
@@ -19,7 +22,9 @@ export default function CartDrawer() {
   const { ui } = useStore()
   const { closeCart, setQty, removeLine, openCheckout } = useActions()
   const { lines, subtotal, isEmpty } = useCart()
+  const pickupSaving = pickupDeals(lines).discount
   const { location } = useSelectedLocation()
+  const eta = useKitchenEta(ui.cartOpen && !isEmpty ? location?.id : null, ovenUnits(lines))
   const isDesktop = useIsDesktop()
   const open = ui.cartOpen
 
@@ -91,11 +96,13 @@ export default function CartDrawer() {
           <div className="flex-1 overflow-y-auto px-6 sm:px-7 py-5 flex flex-col gap-5">
             {lines.map((line) => (
               <div key={line.id} className="flex gap-4">
-                <img
-                  src={img(line.image, 200, 60)}
+                <ProductImage
+                  image={line.image}
+                  category={line.category}
                   alt=""
-                  loading="lazy"
-                  className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
+                  width={200}
+                  className="w-16 h-16 rounded-2xl flex-shrink-0"
+                  iconClassName="w-6 h-6"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
@@ -156,6 +163,22 @@ export default function CartDrawer() {
               <span className="mono text-carbon/50">SUBTOTAL</span>
               <span className="font-serif italic font-semibold text-2xl text-carbon">{price(subtotal)}</span>
             </div>
+            {eta && (
+              <p className={[
+                '-mt-2 mb-4 flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold',
+                eta.ok ? 'bg-carbon/5 text-carbon' : 'bg-tomate/10 text-tomate',
+              ].join(' ')}>
+                <Clock className="w-4 h-4 flex-shrink-0" />
+                {eta.ok
+                  ? `Si pides ahora, listo a las ${hourOf(eta.readyAt)} (${minutesUntil(eta.readyAt)} min)`
+                  : eta.message}
+              </p>
+            )}
+            {pickupSaving > 0 && (
+              <p className="-mt-2 mb-4 rounded-2xl bg-albahaca/10 px-4 py-2.5 text-sm font-semibold text-albahaca">
+                Si lo recoges en el local te ahorras {price(pickupSaving)} con "Llévatelas por menos".
+              </p>
+            )}
             <button onClick={openCheckout} className="btn w-full bg-tomate text-crema">
               <span className="btn-layer bg-horno" />
               <span className="btn-label">CONTINUAR CON EL PEDIDO →</span>

@@ -1,377 +1,393 @@
-import { PHOTO } from './images'
+/* Extensiones .js explícitas: este fichero también lo importan las
+   funciones del servidor (ESM nativo de Node). */
+import { PHOTO } from './images.js'
 
 /* ═══════════════════════════════════════════════════════════════
-   MENÚ
+   MENÚ — CARTA OFICIAL DE LA PIZZA DE NONNO
 
-   DATOS DEMO EDITABLES — NO SON EL MENÚ OFICIAL DE NONNO.
-   Nombres, descripciones, ingredientes, tamaños y precios son una
-   estructura de ejemplo realista para que la web funcione hoy.
-
-   TODO: REEMPLAZAR POR MENÚ REAL (carta, alérgenos y precios oficiales).
+   Nombres, ingredientes y precios transcritos de la carta impresa.
+   Las fotos siguen siendo de banco (o sin foto): sustituir por
+   fotografía propia en src/data/images.js.
 
    ESQUEMA DE PRODUCTO
    ───────────────────
    id           string    único
    category     string    id de CATEGORIES
    name         string
-   description  string    una línea, tono de marca
+   description  string    el texto de la carta
    ingredients  string[]  el cliente puede QUITAR cualquiera de ellos
-                          desde el modal, sin cambiar el precio ni el
-                          nombre del producto
-   image        string    id de PHOTO (src/data/images.js)
-   price        number    precio único (un solo tamaño de pizza)
+                          sin cambiar el precio ni el nombre
+   image        string?   id de PHOTO; null → la web pinta un hueco de marca
+   price        number    precio de la ración normal
+   portions     array?    [{ id, label, price }] cuando hay media ración
    extras       string[]  ids de EXTRAS permitidos en este producto
-   badge        string    etiqueta editorial opcional
-   popular      bool
+   badge        string    etiqueta opcional
+   featured     bool      sale en "La favorita del Nonno"
    vegetarian   bool
    spicy        bool
-   layout       string    variante editorial de card: tall | circle | wide
    ═══════════════════════════════════════════════════════════════ */
 
-export const CATEGORIES = [
-  { id: 'pizzas', label: 'PIZZAS', note: 'Masa de fermentación lenta' },
-  { id: 'entrantes', label: 'ENTRANTES', note: 'Para abrir boca' },
-  { id: 'bebidas', label: 'BEBIDAS', note: 'Frío contra el horno' },
-  { id: 'postres', label: 'POSTRES', note: 'El final feliz' },
-  { id: 'extras', label: 'EXTRAS', note: 'Sube el nivel' },
+/* Puestos de cocina: cada uno recibe su propio ticket al imprimir. */
+export const STATIONS = [
+  { id: 'entrantes', label: 'ENTRANTES' },
+  { id: 'pizzas', label: 'PIZZAS · HORNO' },
+  { id: 'bebidas', label: 'BEBIDAS' },
 ]
+
+export const CATEGORIES = [
+  { id: 'pizzas-clasicas', label: 'PIZZAS CLÁSICAS', station: 'pizzas' },
+  { id: 'pizzas-especiales', label: 'PIZZAS ESPECIALES', station: 'pizzas' },
+  { id: 'calzones', label: 'CALZONES', station: 'pizzas' },
+  { id: 'entrantes', label: 'ENTRANTES', station: 'entrantes' },
+  { id: 'calzones-dulces', label: 'CALZONES DULCES', station: 'pizzas' },
+  { id: 'bebidas', label: 'BEBIDAS', station: 'bebidas' },
+]
+
+/** Puesto de cocina de una categoría. Los pedidos antiguos guardaban
+    'pizzas' / 'entrantes' / 'bebidas', que ya son ids de puesto. */
+export const stationOf = (categoryId) =>
+  CATEGORIES.find((c) => c.id === categoryId)?.station
+  || (STATIONS.some((s) => s.id === categoryId) ? categoryId : null)
 
 /* ── TAMAÑO ─────────────────────────────────────────────────────
    Un único tamaño de pizza. Se muestra como dato, no como elección. */
 export const PIZZA_SIZE = { diameter: '33 cm' }
 
-/* ── EXTRAS (personalización) ───────────────────────────────────
-   TODO: CONFIRMAR EXTRAS Y PRECIOS OFICIALES. */
+/* ── TOPPINGS ───────────────────────────────────────────────────
+   La carta dice "TOPPING +1€": todos al mismo precio.
+   TODO: CONFIRMAR CON NONNO LA LISTA EXACTA DE TOPPINGS. */
+const TOPPING = 1
 export const EXTRAS = [
-  { id: 'mozzarella', label: 'Extra mozzarella', price: 1.5, group: 'Quesos' },
-  { id: 'burrata', label: 'Burrata fresca', price: 2.5, group: 'Quesos' },
-  { id: 'parmesano', label: 'Parmesano curado', price: 1.5, group: 'Quesos' },
-  { id: 'prosciutto', label: 'Extra jamón', price: 2.0, group: 'Carnes' },
-  { id: 'pepperoni', label: 'Extra pepperoni', price: 1.8, group: 'Carnes' },
-  { id: 'champinon', label: 'Champiñón', price: 1.2, group: 'Verduras' },
-  { id: 'rucula', label: 'Rúcula fresca', price: 1.0, group: 'Verduras' },
-  { id: 'cebolla', label: 'Cebolla caramelizada', price: 1.0, group: 'Verduras' },
-  { id: 'picante', label: 'Aceite picante', price: 0.5, group: 'Toques finales' },
-  { id: 'albahaca', label: 'Albahaca fresca', price: 0.5, group: 'Toques finales' },
-  { id: 'borde', label: 'Borde relleno de queso', price: 2.5, group: 'Masa' },
+  { id: 'mozzarella', label: 'Extra mozzarella', price: TOPPING, group: 'Quesos' },
+  { id: 'cabra', label: 'Queso de cabra', price: TOPPING, group: 'Quesos' },
+  { id: 'gorgonzola', label: 'Gorgonzola', price: TOPPING, group: 'Quesos' },
+  { id: 'parmesano', label: 'Parmesano', price: TOPPING, group: 'Quesos' },
+  { id: 'jamon-cocido', label: 'Jamón cocido', price: TOPPING, group: 'Carnes' },
+  { id: 'jamon-serrano', label: 'Jamón serrano', price: TOPPING, group: 'Carnes' },
+  { id: 'bacon', label: 'Bacon', price: TOPPING, group: 'Carnes' },
+  { id: 'pepperoni', label: 'Pepperoni', price: TOPPING, group: 'Carnes' },
+  { id: 'salami', label: 'Salami', price: TOPPING, group: 'Carnes' },
+  { id: 'pollo', label: 'Pollo', price: TOPPING, group: 'Carnes' },
+  { id: 'kebab', label: 'Carne kebab', price: TOPPING, group: 'Carnes' },
+  { id: 'ternera', label: 'Ternera picada', price: TOPPING, group: 'Carnes' },
+  { id: 'chorizo', label: 'Chorizo picante', price: TOPPING, group: 'Carnes' },
+  { id: 'atun', label: 'Atún', price: TOPPING, group: 'Del mar' },
+  { id: 'anchoas', label: 'Anchoas', price: TOPPING, group: 'Del mar' },
+  { id: 'champinon', label: 'Champiñón', price: TOPPING, group: 'Verduras' },
+  { id: 'cebolla', label: 'Cebolla', price: TOPPING, group: 'Verduras' },
+  { id: 'pimiento', label: 'Pimiento italiano', price: TOPPING, group: 'Verduras' },
+  { id: 'aceitunas', label: 'Aceitunas negras', price: TOPPING, group: 'Verduras' },
+  { id: 'alcachofa', label: 'Alcachofas', price: TOPPING, group: 'Verduras' },
+  { id: 'pina', label: 'Piña', price: TOPPING, group: 'Verduras' },
+  { id: 'jalapenos', label: 'Jalapeños', price: TOPPING, group: 'Verduras' },
+  { id: 'tomate-fresco', label: 'Tomate fresco', price: TOPPING, group: 'Verduras' },
+  { id: 'huevo', label: 'Huevo', price: TOPPING, group: 'Otros' },
 ]
 
 export const getExtra = (id) => EXTRAS.find((e) => e.id === id) || null
 
-/* Extras ofrecidos por defecto en cualquier pizza */
-const PIZZA_EXTRAS = [
-  'mozzarella', 'burrata', 'parmesano', 'prosciutto', 'pepperoni',
-  'champinon', 'rucula', 'cebolla', 'picante', 'albahaca', 'borde',
-]
+const TOPPINGS = EXTRAS.map((e) => e.id)
 
-/* ── PRODUCTOS ──────────────────────────────────────────────────
-   TODO: REEMPLAZAR POR MENÚ REAL. Precios de ejemplo en euros. */
+/* ── PRODUCTOS ──────────────────────────────────────────────── */
+const pizza = (category, id, name, ingredients, price, rest = {}) => ({
+  id,
+  category,
+  name,
+  description: `${ingredients.join(', ')}.`,
+  ingredients,
+  image: null,
+  price,
+  extras: TOPPINGS,
+  ...rest,
+})
+
+const clasica = (...args) => pizza('pizzas-clasicas', ...args)
+const especial = (...args) => pizza('pizzas-especiales', ...args)
+const calzone = (...args) => pizza('calzones', ...args)
+
 export const PRODUCTS = [
+  /* ── PIZZAS CLÁSICAS ───────────────────────────────────────── */
+  clasica('margarita', 'Margarita', ['Tomate', 'Mozzarella'], 9.5,
+    { image: PHOTO.margherita, vegetarian: true }),
+  clasica('prosciutto', 'Prosciutto', ['Tomate', 'Mozzarella', 'Jamón cocido'], 10.5,
+    { image: PHOTO.prosciutto }),
+  clasica('hawaiana', 'Hawaiana', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Piña'], 10.9),
+  clasica('salami', 'Salami', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Salami'], 10.9),
+  clasica('pepperoni', 'Pepperoni', ['Tomate', 'Mozzarella', 'Pepperoni italiano'], 10.9,
+    { image: PHOTO.diavola }),
   {
-    id: 'margherita',
-    category: 'pizzas',
-    name: 'Margherita',
-    description: 'La prueba de fuego. Si esta está bien, todo lo demás también.',
-    ingredients: ['Tomate San Marzano', 'Mozzarella fior di latte', 'Albahaca', 'Aceite de oliva'],
-    image: PHOTO.margherita,
+    id: 'a-tu-gusto',
+    category: 'pizzas-clasicas',
+    name: 'A tu gusto',
+    description: 'Tomate y mozzarella, más los toppings que elijas (+1 € cada uno).',
+    ingredients: ['Tomate', 'Mozzarella'],
+    image: PHOTO.slicePull,
     price: 9.5,
-    extras: PIZZA_EXTRAS,
-    popular: true,
+    extras: TOPPINGS,
+    badge: 'TÚ ELIGES',
     vegetarian: true,
-    spicy: false,
-    layout: 'tall',
   },
-  {
-    id: 'diavola',
-    category: 'pizzas',
-    name: 'Diavola',
-    description: 'Pica lo justo para que te acuerdes de ella mañana.',
-    ingredients: ['Tomate', 'Mozzarella', 'Pepperoni picante', 'Aceite de guindilla'],
-    image: PHOTO.diavola,
-    price: 11.5,
-    extras: PIZZA_EXTRAS,
-    popular: true,
-    vegetarian: false,
-    spicy: true,
-    layout: 'circle',
-  },
-  {
-    id: 'prosciutto',
-    category: 'pizzas',
-    name: 'Prosciutto',
-    description: 'Jamón, rúcula y cero necesidad de explicarse.',
-    ingredients: ['Tomate', 'Mozzarella', 'Jamón curado', 'Rúcula', 'Parmesano'],
-    image: PHOTO.prosciutto,
-    price: 12.5,
-    extras: PIZZA_EXTRAS,
-    popular: false,
-    vegetarian: false,
-    spicy: false,
-    layout: 'wide',
-  },
-  {
-    id: 'quattro-formaggi',
-    category: 'pizzas',
-    name: 'Quattro Formaggi',
-    description: 'Cuatro quesos discutiendo. Gana tu paladar.',
-    ingredients: ['Mozzarella', 'Gorgonzola', 'Parmesano', 'Provolone'],
-    image: PHOTO.formaggi,
-    price: 12.9,
-    extras: PIZZA_EXTRAS,
-    popular: true,
-    vegetarian: true,
-    spicy: false,
-    layout: 'tall',
-  },
-  {
-    id: 'vegetale',
-    category: 'pizzas',
-    name: 'Vegetale',
-    description: 'Verdura de verdad, no de compromiso.',
-    ingredients: ['Tomate', 'Mozzarella', 'Calabacín', 'Pimiento asado', 'Rúcula', 'Ricotta'],
-    image: PHOTO.vegetale,
-    price: 11.9,
-    extras: PIZZA_EXTRAS,
-    popular: false,
-    vegetarian: true,
-    spicy: false,
-    layout: 'circle',
-  },
-  {
-    id: 'funghi',
-    category: 'pizzas',
-    name: 'Funghi',
-    description: 'Champiñón, ajo y esa cosa que hace el horno con las setas.',
-    ingredients: ['Mozzarella', 'Champiñón', 'Ajo confitado', 'Tomillo'],
-    image: PHOTO.funghi,
-    price: 11.9,
-    extras: PIZZA_EXTRAS,
-    popular: false,
-    vegetarian: true,
-    spicy: false,
-    layout: 'wide',
-  },
-  {
-    id: 'bufala',
-    category: 'pizzas',
-    name: 'Bufala',
-    description: 'Mozzarella de búfala. Se nota desde el primer bocado.',
-    ingredients: ['Tomate', 'Mozzarella de búfala', 'Albahaca', 'Aceite de oliva virgen extra'],
-    image: PHOTO.bufala,
-    price: 13.5,
-    extras: PIZZA_EXTRAS,
-    popular: false,
-    vegetarian: true,
-    spicy: false,
-    layout: 'tall',
-  },
-  {
-    id: 'bianca',
-    category: 'pizzas',
-    name: 'Bianca',
-    description: 'Sin tomate. Sin miedo.',
-    ingredients: ['Crema de ricotta', 'Mozzarella', 'Ajo', 'Albahaca', 'Pimienta negra'],
-    image: PHOTO.bianca,
-    price: 12.5,
-    extras: PIZZA_EXTRAS,
-    popular: false,
-    vegetarian: true,
-    spicy: false,
-    layout: 'circle',
-  },
-  {
-    id: 'nonno-speciale',
-    category: 'pizzas',
-    name: 'Nonno Speciale',
-    description:
-      'La que pide el Nonno cuando nadie mira. Masa madre, doble curación y todo lo que sabemos hacer.',
-    ingredients: [
-      'Tomate San Marzano', 'Mozzarella fior di latte', 'Jamón curado',
-      'Burrata', 'Albahaca fresca', 'Aceite de oliva virgen extra',
-    ],
-    image: PHOTO.speciale,
-    price: 14.9,
-    extras: PIZZA_EXTRAS,
-    badge: 'FAVORITA',
-    featured: true,
-    popular: true,
-    vegetarian: false,
-    spicy: false,
-    layout: 'wide',
-  },
+  clasica('fungi', 'Fungi', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Champiñón fresco'], 10.9,
+    { image: PHOTO.funghi }),
+  clasica('braulia', 'Braulia', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Salami', 'Champiñón fresco'], 10.9),
+  clasica('atunazo', 'Atunazo', ['Tomate', 'Mozzarella', 'Atún', 'Cebolla', 'Orégano'], 10.9),
+  clasica('todo-al-queso', 'Todo al queso', ['Tomate', 'Mozzarella', 'Gorgonzola', 'Gouda', 'Edam', 'Parmesano'], 10.9,
+    { image: PHOTO.formaggi, vegetarian: true }),
+  clasica('bacon', 'Bacon', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Bacon', 'Miel'], 10.9),
+  clasica('guiris', 'Guiris', ['Tomate', 'Mozzarella', 'Bacon', 'Huevo fresco al centro'], 10.9),
 
+  /* ── PIZZAS ESPECIALES ─────────────────────────────────────── */
+  especial('nonno', 'Nonno', [
+    'Tomate', 'Mozzarella', 'Rodajas de tomate fresco', 'Pimiento italiano',
+    'Alcaparras', 'Cebolla', 'Champiñón fresco', 'Aceite de oliva',
+  ], 11.9, { image: PHOTO.speciale, badge: 'LA DE LA CASA', featured: true, vegetarian: true }),
+  especial('dulce-de-cabra', 'Dulce de cabra', ['Tomate', 'Mozzarella', 'Queso de cabra', 'Mermelada de tomate'], 11.9,
+    { vegetarian: true }),
+  especial('kebab', 'Kebab', ['Tomate', 'Mozzarella', 'Carne pollo kebab', 'Salsa blanca casera'], 11.9),
+  especial('la-jefa', 'La Jefa', [
+    'Tomate', 'Mozzarella', 'Jamón cocido', 'Alcachofas', 'Aceitunas negras', 'Anchoas',
+  ], 11.9, { image: PHOTO.vegetale }),
+  especial('chato-y-cabra', 'Chato y cabra', [
+    'Tomate', 'Mozzarella', 'Sobrasada de chato murciano', 'Queso de cabra', 'Miel',
+  ], 11.9),
+  especial('mexicana', 'Mexicana', [
+    'Tomate', 'Mozzarella', 'Chorizo picante', 'Ternera picada', 'Jalapeños', 'Aceite picante Nonno',
+  ], 12.9, { spicy: true }),
+  especial('iberica', 'Ibérica', [
+    'Tomate', 'Mozzarella', 'Tomate fresco', 'Jamón serrano', 'Queso parmesano', 'Módena',
+  ], 12.9, { image: PHOTO.bufala }),
+  especial('carbonara', 'Carbonara tradicional', [
+    'Mozzarella', 'Guanciale', 'Cebolla', 'Champiñón fresco', 'Pimienta',
+  ], 12.9, { image: PHOTO.bianca }),
+  especial('carnivora', 'Carnívora', [
+    'Tomate', 'Mozzarella', 'Jamón cocido', 'Bacon', 'Carne de ternera', 'Pollo', 'Pepperoni',
+  ], 12.9, { image: PHOTO.rustica }),
+  especial('trufada', 'Trufada', ['Tomate', 'Mozzarella', 'Nueces', 'Champiñón fresco', 'Salsa de trufa'], 12.9,
+    { image: PHOTO.tartufo, vegetarian: true }),
+  especial('marinera', 'Marinera', ['Tomate', 'Mozzarella', 'Gambas', 'Calamares', 'Salsa verde casera'], 12.9),
+  especial('barbacoa', 'Barbacoa', [
+    'Base de salsa barbacoa', 'Mozzarella', 'Pollo', 'Bacon', 'Ternera picada', 'Cebolla',
+  ], 12.9),
+
+  /* ── CALZONES ──────────────────────────────────────────────── */
+  calzone('calzone-prosciutto', 'Calzone Prosciutto', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Parmesano'], 10.9),
+  calzone('calzone-kebab', 'Calzone Kebab', ['Tomate', 'Mozzarella', 'Carne pollo kebab', 'Salsa blanca casera'], 11.9),
+  calzone('calzone-serrano', 'Calzone Serrano', [
+    'Tomate', 'Mozzarella', 'Berenjena', 'Jamón serrano', 'Parmesano', 'Módena',
+  ], 11.9),
+
+  /* ── ENTRANTES ─────────────────────────────────────────────── */
+  {
+    id: 'provolone',
+    category: 'entrantes',
+    name: 'Provolone',
+    description: 'Base de tomate, queso provolone, tomate natural y orégano.',
+    ingredients: ['Base de tomate', 'Queso provolone', 'Tomate natural', 'Orégano'],
+    image: PHOTO.cheesePull,
+    price: 5.9,
+    vegetarian: true,
+  },
   {
     id: 'pan-de-ajo',
     category: 'entrantes',
-    name: 'Pan de ajo del horno',
-    description: 'Misma masa, mismo horno, cero excusas.',
-    ingredients: ['Masa artesanal', 'Ajo', 'Perejil', 'Aceite de oliva'],
+    name: 'Pan de ajo',
+    description: 'Mozzarella, cebolla y salsa verde casera.',
+    ingredients: ['Mozzarella', 'Cebolla', 'Salsa verde casera'],
     image: PHOTO.panDeAjo,
-    price: 4.9,
-    extras: ['mozzarella', 'parmesano', 'picante'],
+    price: 5.9,
     vegetarian: true,
-    layout: 'wide',
   },
   {
-    id: 'ensalada-nonno',
+    id: 'patatas-cheese-bacon',
     category: 'entrantes',
-    name: 'Ensalada Nonno',
-    description: 'Verde, fresca y sorprendentemente necesaria.',
-    ingredients: ['Hoja verde', 'Tomate', 'Parmesano', 'Vinagreta de la casa'],
-    image: PHOTO.ensalada,
-    price: 6.5,
-    extras: ['burrata', 'parmesano'],
-    vegetarian: true,
-    layout: 'tall',
-  },
-  {
-    id: 'alitas',
-    category: 'entrantes',
-    name: 'Alitas al horno',
-    description: 'Crujientes por fuera. Peligrosas por dentro.',
-    ingredients: ['Alitas de pollo', 'Especias de la casa', 'Limón'],
-    image: PHOTO.alitas,
+    name: 'Patatas cheese bacon',
+    description: 'Patatas fritas con queso fundido y bacon.',
+    ingredients: ['Queso', 'Bacon'],
+    image: null,
     price: 7.9,
-    extras: ['picante'],
-    spicy: true,
-    layout: 'circle',
+    portions: [
+      { id: 'racion', label: 'Ración', price: 7.9 },
+      { id: 'media', label: '½ ración', price: 4.9 },
+    ],
   },
   {
-    id: 'tabla-quesos',
+    id: 'patatas-cheese-kebab',
     category: 'entrantes',
-    name: 'Tabla de quesos',
-    description: 'Para los que empiezan por el final.',
-    ingredients: ['Selección de quesos', 'Pan del horno', 'Miel'],
-    image: PHOTO.cheeses,
-    price: 9.5,
-    extras: ['burrata'],
-    vegetarian: true,
-    layout: 'wide',
-  },
-
-  {
-    id: 'limonada',
-    category: 'bebidas',
-    name: 'Limonada de la casa',
-    description: 'Ácida, fría y con muy buen criterio.',
-    ingredients: ['Limón', 'Menta', 'Hielo'],
-    image: PHOTO.limonada,
-    price: 3.2,
-    vegetarian: true,
-    layout: 'circle',
+    name: 'Patatas cheese kebab',
+    description: 'Patatas fritas con queso fundido y carne kebab.',
+    ingredients: ['Queso', 'Carne kebab'],
+    image: null,
+    price: 7.9,
+    portions: [
+      { id: 'racion', label: 'Ración', price: 7.9 },
+      { id: 'media', label: '½ ración', price: 4.9 },
+    ],
   },
   {
-    id: 'zumo-naranja',
-    category: 'bebidas',
-    name: 'Zumo de naranja',
-    description: 'Naranja. Exprimida. Punto.',
-    ingredients: ['Naranja natural'],
-    image: PHOTO.zumo,
-    price: 3.5,
+    id: 'patatas-fritas',
+    category: 'entrantes',
+    name: 'Ración de patatas fritas',
+    description: 'Patatas fritas.',
+    ingredients: [],
+    image: null,
+    price: 2.9,
     vegetarian: true,
-    layout: 'tall',
   },
   {
-    id: 'vino-casa',
-    category: 'bebidas',
-    name: 'Vino de la casa',
-    description: 'Tinto que entiende de pizza.',
-    ingredients: ['Copa 15 cl'],
-    image: PHOTO.vino,
+    id: 'boniatos',
+    category: 'entrantes',
+    name: 'Ración de boniatos fritos',
+    description: 'Boniato frito.',
+    ingredients: [],
+    image: null,
     price: 3.9,
     vegetarian: true,
-    layout: 'wide',
   },
   {
-    id: 'cafe',
-    category: 'bebidas',
-    name: 'Café',
-    description: 'El punto final de cualquier mesa italiana.',
-    ingredients: ['Café de tueste natural'],
-    image: PHOTO.cafe,
-    price: 1.8,
-    vegetarian: true,
-    layout: 'circle',
-  },
-
-  {
-    id: 'tarta-nonna',
-    category: 'postres',
-    name: 'Tarta de la Nonna',
-    description: 'Chocolate serio. Nada de adornos.',
-    ingredients: ['Chocolate negro', 'Mantequilla', 'Cacao'],
-    image: PHOTO.tarta,
-    price: 5.5,
-    vegetarian: true,
-    popular: true,
-    layout: 'tall',
+    id: 'nuggets',
+    category: 'entrantes',
+    name: 'Nuggets de pollo',
+    description: '6 unidades.',
+    ingredients: [],
+    image: null,
+    price: 4.9,
   },
   {
-    id: 'panna-cotta',
-    category: 'postres',
-    name: 'Panna cotta',
-    description: 'Tiembla un poco. Es buena señal.',
-    ingredients: ['Nata', 'Vainilla', 'Frutos rojos'],
-    image: PHOTO.pannaCotta,
+    id: 'fingers',
+    category: 'entrantes',
+    name: 'Fingers de pollo',
+    description: '3 unidades.',
+    ingredients: [],
+    image: PHOTO.alitas,
+    price: 4.9,
+  },
+  {
+    id: 'ovni-camembert',
+    category: 'entrantes',
+    name: 'Ovni de camembert',
+    description: '6 unidades.',
+    ingredients: [],
+    image: PHOTO.cheeses,
     price: 4.9,
     vegetarian: true,
-    layout: 'circle',
   },
   {
-    id: 'helado',
-    category: 'postres',
-    name: 'Helado artesanal',
-    description: 'Frío contra horno. Siempre funciona.',
-    ingredients: ['Helado de la casa', 'Caramelo', 'Barquillo'],
-    image: PHOTO.helado,
-    price: 4.5,
+    id: 'tequenos',
+    category: 'entrantes',
+    name: 'Tequeños',
+    description: '4 unidades.',
+    ingredients: [],
+    image: null,
+    price: 4.9,
     vegetarian: true,
-    layout: 'wide',
   },
   {
-    id: 'cookies',
-    category: 'postres',
-    name: 'Cookies del horno',
-    description: 'Salen cuando ya no queda sitio. Y aun así entran.',
-    ingredients: ['Chocolate', 'Mantequilla', 'Sal Maldon'],
-    image: PHOTO.cookies,
-    price: 3.9,
+    id: 'palitos-mozzarella',
+    category: 'entrantes',
+    name: 'Palitos de mozzarella',
+    description: '6 unidades.',
+    ingredients: [],
+    image: null,
+    price: 4.9,
     vegetarian: true,
-    layout: 'tall',
   },
 
+  /* ── CALZONES DULCES ───────────────────────────────────────── */
   {
-    id: 'extra-mozzarella',
-    category: 'extras',
-    name: 'Extra de mozzarella',
-    description: 'Porque una vez no fue suficiente.',
-    ingredients: ['Mozzarella fior di latte'],
-    image: PHOTO.cheesePull,
-    price: 1.5,
+    id: 'calzone-oreo',
+    category: 'calzones-dulces',
+    name: 'Oreo',
+    description: 'Base de masa horneada, crema de chocolate blanco y galleta Oreo triturada.',
+    ingredients: ['Crema de chocolate blanco', 'Galleta Oreo triturada'],
+    image: null,
+    price: 8.9,
     vegetarian: true,
-    layout: 'circle',
   },
   {
-    id: 'salsa-tomate',
-    category: 'extras',
-    name: 'Salsa de tomate de la casa',
-    description: 'La base de todo lo bueno que pasa aquí.',
-    ingredients: ['Tomate San Marzano', 'Albahaca', 'Aceite'],
-    image: PHOTO.tomato,
+    id: 'calzone-tostarica',
+    category: 'calzones-dulces',
+    name: 'Tostarica',
+    description: 'Base de masa horneada, crema de avellana y galleta Tosta Rica triturada.',
+    ingredients: ['Crema de avellana', 'Galleta Tosta Rica triturada'],
+    image: null,
+    price: 8.9,
+    vegetarian: true,
+  },
+  {
+    id: 'calzone-pistacho',
+    category: 'calzones-dulces',
+    name: 'Dulce de pistacho',
+    description: 'Base de masa horneada, crema de pistacho y almendra krunky.',
+    ingredients: ['Crema de pistacho', 'Almendra krunky'],
+    image: null,
+    price: 8.9,
+    vegetarian: true,
+  },
+  {
+    id: 'calzone-lotus',
+    category: 'calzones-dulces',
+    name: 'Sweet Lotus',
+    description: 'Base de masa horneada, crema de Lotus y galleta Lotus triturada.',
+    ingredients: ['Crema de Lotus', 'Galleta Lotus triturada'],
+    image: null,
+    price: 8.9,
+    vegetarian: true,
+  },
+
+  /* ── BEBIDAS ───────────────────────────────────────────────── */
+  {
+    id: 'bote',
+    category: 'bebidas',
+    name: 'Refresco en bote',
+    description: 'Lata de 33 cl. Indica el sabor en la nota.',
+    ingredients: [],
+    image: null,
     price: 1.2,
-    vegetarian: true,
-    layout: 'wide',
   },
   {
-    id: 'aceite-albahaca',
-    category: 'extras',
-    name: 'Aceite de albahaca',
-    description: 'Un chorrito y otra pizza distinta.',
-    ingredients: ['Aceite de oliva virgen extra', 'Albahaca'],
-    image: PHOTO.oliveOil,
-    price: 1.0,
-    vegetarian: true,
-    layout: 'tall',
+    id: 'agua',
+    category: 'bebidas',
+    name: 'Agua 1,5 L',
+    description: 'Botella de 1,5 litros.',
+    ingredients: [],
+    image: null,
+    price: 1.2,
+  },
+  {
+    id: 'cerveza-1l',
+    category: 'bebidas',
+    name: 'Cerveza 1 L',
+    description: 'Botella de 1 litro.',
+    ingredients: [],
+    image: null,
+    price: 3,
+  },
+  {
+    id: 'coca-cola-2l',
+    category: 'bebidas',
+    name: 'Coca-Cola 2 L',
+    description: 'Botella de 2 litros.',
+    ingredients: [],
+    image: null,
+    price: 3,
+  },
+]
+
+/* ── LLÉVATELAS POR MENOS ───────────────────────────────────────
+   Ofertas de la carta, válidas SOLO para recogida en el local.
+   Cada pack sustituye el precio base de esas pizzas; los toppings
+   extra se siguen cobrando aparte. Clásicas y especiales no se
+   mezclan en un mismo pack. */
+export const PICKUP_DEALS = [
+  {
+    category: 'pizzas-clasicas',
+    label: 'pizzas clásicas',
+    packs: [{ qty: 2, price: 19 }, { qty: 3, price: 28 }, { qty: 5, price: 45 }],
+  },
+  {
+    category: 'pizzas-especiales',
+    label: 'pizzas especiales',
+    packs: [{ qty: 2, price: 21 }, { qty: 3, price: 31 }, { qty: 5, price: 50 }],
   },
 ]
 
@@ -383,10 +399,14 @@ export const productsByCategory = (categoryId) =>
 
 export const featuredProduct = () => PRODUCTS.find((p) => p.featured) || PRODUCTS[0]
 
-export const popularProducts = () => PRODUCTS.filter((p) => p.popular)
+/** Ración elegida (o la primera si el producto tiene raciones). */
+export const getPortion = (product, portionId) =>
+  product?.portions?.find((p) => p.id === portionId) || product?.portions?.[0] || null
 
 /** Precio del producto. Quitar ingredientes no lo modifica. */
-export const priceOf = (product) => product?.price ?? 0
+export const priceOf = (product, portionId) =>
+  getPortion(product, portionId)?.price ?? product?.price ?? 0
 
 /** ¿Es una pizza? Solo las pizzas muestran el diámetro. */
-export const isPizza = (product) => product?.category === 'pizzas'
+export const isPizza = (product) =>
+  product?.category === 'pizzas-clasicas' || product?.category === 'pizzas-especiales'

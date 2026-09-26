@@ -1,12 +1,17 @@
-import { Star, Truck, Package, Check } from 'lucide-react'
+import { Star, Truck, Package, Check, Clock } from 'lucide-react'
 import { img, srcSet } from '../data/images'
 import { decimal } from '../lib/format'
+import { hourOf } from '../lib/kitchenSlots'
+import { useKitchenEta, minutesUntil } from '../hooks/useKitchenEta'
 
 /**
  * Tarjeta grande de sede — no una card genérica. Imagen editorial,
  * valoración real, servicios indicados y CTA doble.
  */
-export default function LocationCard({ location, selected, onSelect, onOrder, onViewMenu }) {
+export default function LocationCard({ location, selected, closed, onSelect, onOrder, onViewMenu }) {
+  const eta = useKitchenEta(closed ? null : location.id, 1)
+  const full = eta?.ok === false
+
   return (
     <article
       className={[
@@ -26,7 +31,12 @@ export default function LocationCard({ location, selected, onSelect, onOrder, on
         />
         <div className="absolute inset-0 bg-gradient-to-t from-carbon via-carbon/10 to-transparent" />
         <span className="absolute top-4 left-4 mono text-crema/60">{location.code}</span>
-        {selected && (
+        {closed && (
+          <span className="absolute top-4 right-4 mono normal-case flex items-center gap-1.5 rounded-full bg-carbon/80 px-3 py-1.5 text-crema/80">
+            CERRADO AHORA
+          </span>
+        )}
+        {!closed && selected && (
           <span className="absolute top-4 right-4 mono normal-case flex items-center gap-1.5 rounded-full bg-tomate px-3 py-1.5 text-crema">
             <Check className="w-3.5 h-3.5" /> SEDE SELECCIONADA
           </span>
@@ -58,6 +68,18 @@ export default function LocationCard({ location, selected, onSelect, onOrder, on
           )}
         </div>
 
+        {!closed && eta && (
+          <p className={[
+            'mt-4 mono normal-case flex items-center gap-1.5',
+            eta.ok ? 'text-horno' : 'text-crema/60',
+          ].join(' ')}>
+            <Clock className="w-3.5 h-3.5" />
+            {eta.ok
+              ? `Pide ahora y recógela a las ${hourOf(eta.readyAt)} (${minutesUntil(eta.readyAt)} min)`
+              : eta.message}
+          </p>
+        )}
+
         <p className="mt-4 text-sm text-crema/50 flex-1">{location.tagline}</p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -70,13 +92,16 @@ export default function LocationCard({ location, selected, onSelect, onOrder, on
           </button>
           <button
             onClick={onOrder}
+            disabled={closed || full}
             className={[
-              'btn px-5 py-2.5 min-h-[44px] flex-1',
+              'btn px-5 py-2.5 min-h-[44px] flex-1 disabled:opacity-50 disabled:cursor-not-allowed',
               selected ? 'bg-albahaca text-crema' : 'bg-tomate text-crema',
             ].join(' ')}
           >
             <span className="btn-layer bg-horno" />
-            <span className="btn-label">{selected ? 'PEDIR AQUÍ ✓' : 'PEDIR EN ESTA SEDE'}</span>
+            <span className="btn-label">
+              {closed ? 'CERRADO AHORA' : full ? (eta.reason === 'full' ? 'COMPLETO POR HOY' : 'COCINA CERRADA') :selected ? 'PEDIR AQUÍ ✓' : 'PEDIR EN ESTA SEDE'}
+            </span>
           </button>
         </div>
       </div>
