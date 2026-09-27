@@ -42,6 +42,10 @@ export const fetchStock = (locationId) =>
 export const stockAction = (locationId, action, data) =>
   request('/api/stock', { method: 'POST', body: JSON.stringify({ location: locationId, action, ...data }) })
 
+/** action: 'dispatch' { ids } | 'undo' { routeId } (ver api/routes.js) */
+export const routeAction = (locationId, action, data) =>
+  request('/api/routes', { method: 'POST', body: JSON.stringify({ location: locationId, action, ...data }) })
+
 export const fetchDisplay = (locationId) =>
   request(`/api/display?location=${encodeURIComponent(locationId)}`)
 

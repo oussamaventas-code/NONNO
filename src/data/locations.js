@@ -53,6 +53,12 @@ export const LOCATIONS = [
         { upToKm: 1, fee: 1.5, minutes: 10 },
         { upToKm: 3, fee: 3, minutes: 20 },
       ],
+      /* Organizador de rutas. TODO: CONFIRMAR CON NONNO.
+         maxStops: pedidos por salida del repartidor
+         groupWindowMin: pedidos listos con esta diferencia pueden ir juntos
+         nearKm: distancia máxima entre paradas de una misma salida
+         speedKmh / stopMinutes: para estimar la hora de llegada a cada casa */
+      routing: { maxStops: 4, groupWindowMin: 10, nearKm: 1.5, speedKmh: 25, stopMinutes: 3 },
     },
 
     /* Horno: de jueves a domingo y festivos, 19:00–23:00 (carta).

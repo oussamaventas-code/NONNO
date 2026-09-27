@@ -90,8 +90,10 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: 'Ese pedido no es de esta sede.' })
   }
 
-  /* Aviso al cliente cuando cocina lo marca listo o se cancela. */
-  if (status === 'listo' || status === 'cancelado') {
+  /* Aviso al cliente cuando cocina lo marca listo o se cancela. En los
+     pedidos a domicilio el "sale ya" lo manda la salida del reparto
+     (api/routes.js), que es cuando de verdad sale. */
+  if ((status === 'listo' && data.mode === 'pickup') || status === 'cancelado') {
     try {
       const sms = await notifyCustomer(db(), data, status)
       if (sms) data.sms = sms

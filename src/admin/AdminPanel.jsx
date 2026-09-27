@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, RefreshCw, LogOut, Pizza, Power, ChefHat, Store, Printer, ClipboardList } from 'lucide-react'
+import { Bell, BellOff, RefreshCw, LogOut, Pizza, Power, ChefHat, Store, Printer, ClipboardList, Truck } from 'lucide-react'
 import Counter from './Counter'
+import Routes from './Routes'
 import Stock from './Stock'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
 import { printTicket } from './printTicket'
@@ -318,7 +319,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
       {sede && (
         <div className={`${sede.banda} ${sede.texto} py-2 text-center`}>
           <p className="mono normal-case tracking-[0.2em] font-bold">
-            {{ mostrador: 'MOSTRADOR', stock: 'STOCK' }[view] || 'COCINA'} · {sede.nombre.toUpperCase()}
+            {{ mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO' }[view] || 'COCINA'} · {sede.nombre.toUpperCase()}
           </p>
         </div>
       )}
@@ -367,10 +368,11 @@ export default function AdminPanel({ scope, onSignedOut }) {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex rounded-full border border-carbon/15 p-1" role="tablist" aria-label="Vista del panel">
+              <div className="flex flex-wrap rounded-3xl border border-carbon/15 p-1" role="tablist" aria-label="Vista del panel">
                 {[
                   { id: 'cocina', label: 'Cocina', Icon: ChefHat },
                   { id: 'mostrador', label: 'Mostrador', Icon: Store },
+                  { id: 'reparto', label: 'Reparto', Icon: Truck },
                   { id: 'stock', label: 'Stock', Icon: ClipboardList },
                 ].map(({ id, label, Icon }) => (
                   <button
@@ -522,6 +524,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
           <Stock locationIds={locationIds} onError={setError} />
         ) : loading ? (
           <p className="mono text-carbon/40 py-16 text-center">CARGANDO PEDIDOS…</p>
+        ) : view === 'reparto' ? (
+          <Routes orders={porSede} locationIds={locationIds} onSaved={upsertOrder} onError={setError} />
         ) : view === 'mostrador' ? (
           <Counter
             orders={[

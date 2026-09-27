@@ -100,6 +100,22 @@ Para que no falle durante el servicio:
 
 ---
 
+## Reparto (pestaña "Reparto" del panel)
+
+El panel agrupa solo los pedidos a domicilio en **salidas**: los que están listos a horas parecidas y cerca entre sí van juntos (máximo 4 paradas), en el orden de paradas más corto.
+
+Para cada salida:
+
+- **Google Maps**: abre la ruta ya trazada en el móvil del repartidor.
+- **Hoja de ruta**: se imprime con direcciones, teléfonos y lo que hay que cobrar en cada casa. Sirve aunque el móvil se quede sin batería o sin cobertura.
+- **Sale el reparto**: fija la salida (ya no se reorganiza), marca los pedidos como listos y manda al cliente el SMS de "sale ya".
+
+En **En reparto** se marca cada parada como *Entregado · efectivo*, *Entregado · tarjeta* o *Entregado* si ya estaba pagado. Si se pulsó "Sale el reparto" por error, **Deshacer salida** la devuelve a "Por salir".
+
+Los pedidos con la dirección sin verificar (el cliente eligió la distancia a mano) salen en una salida propia con aviso de llamar antes. Los ajustes (paradas por salida, minutos de margen, velocidad) están en `src/data/locations.js`, en `delivery.routing`.
+
+---
+
 ## Pantalla de pedidos en la TV del local
 
 Para que quien espera vea cómo va su pedido: **En preparación** y **¡Listo! Recoge tu pedido**, con el número y el nombre abreviado. Solo aparecen los pedidos para recoger; nunca teléfonos ni direcciones.

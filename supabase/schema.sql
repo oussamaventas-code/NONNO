@@ -87,6 +87,11 @@ create unique index if not exists orders_client_key_idx on public.orders (client
 -- { "recibido": {"ok":true,"at":"..."}, "listo": {...}, "cancelado": {...} }
 alter table public.orders add column if not exists sms jsonb not null default '{}'::jsonb;
 
+-- Reparto: cuándo salió el pedido con el repartidor y en qué salida
+-- (los pedidos de una misma salida comparten route_id).
+alter table public.orders add column if not exists dispatched_at timestamptz;
+alter table public.orders add column if not exists route_id      text;
+
 do $$
 begin
   if not exists (
