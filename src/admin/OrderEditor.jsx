@@ -51,8 +51,13 @@ function linesFromOrder(order) {
 
 function customerFromOrder(order) {
   const verified = order.delivery_verified && order.delivery_lat != null
+  /* Pedidos nuevos ya guardan el tramo elegido a mano tal cual. Los
+     anteriores a este cambio no tienen esa columna: para esos se
+     reconstruye comparando con la tarifa guardada (plan B del plan B). */
   const tier = order.mode === 'delivery' && !verified
-    ? deliveryTiers(order.location_id).findIndex((t) => t.fee === Number(order.delivery_fee))
+    ? (Number.isInteger(order.delivery_tier)
+      ? order.delivery_tier
+      : deliveryTiers(order.location_id).findIndex((t) => t.fee === Number(order.delivery_fee)))
     : -1
   return {
     name: order.customer_name || '',

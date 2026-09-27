@@ -81,6 +81,11 @@ export function sanitizeOrder(body, { staff = false } = {}) {
       delivery_lat: delivery?.ok && delivery.verified ? where.coords.lat : null,
       delivery_lng: delivery?.ok && delivery.verified ? where.coords.lng : null,
       delivery_verified: delivery?.ok ? delivery.verified : null,
+      /* Tramo elegido a mano (plan B), guardado tal cual: si más
+         adelante cambian los precios de envío, no hay que reconstruir
+         qué tramo era comparando la tarifa guardada con las tarifas
+         de ese momento — eso se rompería con cualquier cambio de precio. */
+      delivery_tier: delivery?.ok && !delivery.verified ? where.tier : null,
       client_key: trim(body?.clientKey, 64) || null,
       notes: trim(body?.customer?.notes, 400) || null,
       items,
@@ -120,7 +125,10 @@ export function validateOrder({ order, unknownProduct, delivery }) {
   if (!order.items.length) return 'El pedido está vacío.'
   if (!location) return 'Falta la sede.'
   if (!order.customer_name) return 'Falta el nombre.'
-  if (!order.customer_phone && order.channel !== 'mostrador') return 'Falta el teléfono.'
+  /* En mostrador el teléfono es opcional SOLO si el cliente se lo lleva
+     él mismo: para una entrega hace falta poder llamarle, venga de
+     donde venga el pedido. */
+  if (!order.customer_phone && (order.channel !== 'mostrador' || order.mode === 'delivery')) return 'Falta el teléfono.'
   if (order.mode === 'delivery') {
     if (!order.address) return 'Falta la dirección de entrega.'
     if (!delivery?.ok) return deliveryProblem(delivery)

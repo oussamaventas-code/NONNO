@@ -13,7 +13,7 @@ const PAYMENT_STATUSES = ['pendiente', 'pagado']
    de antes para poder deshacerla si el horno no tiene hueco. */
 const EDITABLE = [
   'mode', 'customer_name', 'customer_phone', 'address', 'notes',
-  'delivery_zone', 'delivery_km', 'delivery_lat', 'delivery_lng', 'delivery_verified',
+  'delivery_zone', 'delivery_km', 'delivery_lat', 'delivery_lng', 'delivery_verified', 'delivery_tier',
   'items', 'item_count', 'pizza_count', 'subtotal', 'discount', 'deals', 'delivery_fee', 'total',
   'oven_slots', 'ready_at', 'eta_at', 'edited_at', 'printed_at',
 ]

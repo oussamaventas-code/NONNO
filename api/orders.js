@@ -5,6 +5,8 @@ import { sanitizeOrder, validateOrder } from './_lib/order.js'
 import { isStoreOpen } from './_lib/store.js'
 import { precheck, assignSlot, SLOT_ERRORS } from './_lib/slots.js'
 import { notifyCustomer } from './_lib/sms.js'
+import { forcedSlot } from '../src/lib/kitchenSlots.js'
+import { getLocation } from '../src/data/locations.js'
 
 const reply = (row, staff) => ({
   id: row.id,
@@ -112,7 +114,17 @@ export default async function handler(req, res) {
       assigned = { ok: false }
     }
     if (!assigned.ok && offlineAt) {
-      const { data: kept } = await db().from('orders').update({ oven_slots: [] }).eq('id', data.id).select('*').single()
+      /* No cabía en el cálculo normal, pero ya se está haciendo de
+         verdad: se apunta su carga real (aunque deje la franja por
+         encima del tope) para que los SIGUIENTES pedidos sí la vean
+         y no se planifiquen encima de un horno que ya está ocupado. */
+      const kitchen = getLocation(order.location_id).kitchen
+      const forced = forcedSlot({ atMs: Date.parse(offlineAt), kitchen, pizzas: order.pizza_count })
+      const readyAt = new Date(forced.readyAt)
+      const etaAt = parsed.delivery?.ok ? new Date(forced.readyAt + parsed.delivery.minutes * 60000) : readyAt
+      const { data: kept } = await db().from('orders')
+        .update({ oven_slots: forced.slots, ready_at: readyAt.toISOString(), eta_at: etaAt.toISOString() })
+        .eq('id', data.id).select('*').single()
       assigned = { ok: true, row: kept }
     }
     if (!assigned.ok) {
@@ -121,18 +133,15 @@ export default async function handler(req, res) {
     }
     const row = assigned.row
 
-    /* Los avisos no deben tumbar el pedido si fallan. */
-    try {
-      await notifyNewOrder(row)
-    } catch (err) {
-      console.error('Error enviando la notificación:', err)
-    }
-    try {
-      const sms = await notifyCustomer(db(), row, 'recibido')
-      if (sms) row.sms = sms
-    } catch (err) {
-      console.error('Error enviando el SMS:', err)
-    }
+    /* Los avisos no deben tumbar el pedido si fallan, y son
+       independientes entre sí: van a la vez, no uno detrás del otro
+       (el SMS puede tardar hasta 5 s si el móvil de la pasarela no
+       responde, y el cliente no tiene por qué esperar ese tiempo). */
+    const [, smsResult] = await Promise.all([
+      notifyNewOrder(row).catch((err) => console.error('Error enviando la notificación:', err)),
+      notifyCustomer(db(), row, 'recibido').catch((err) => console.error('Error enviando el SMS:', err)),
+    ])
+    if (smsResult) row.sms = smsResult
 
     return res.status(201).json(reply(row, staff))
   }

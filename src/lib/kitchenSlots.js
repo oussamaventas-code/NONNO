@@ -75,6 +75,20 @@ export function planOrder({ nowMs, kitchen, load = new Map(), pizzas }) {
   return { ok: true, readyAt: Date.parse(slots[slots.length - 1].start) + slotMs, slots }
 }
 
+/**
+ * Igual que planOrder pero SIN comprobar hueco: para un pedido que ya
+ * se está cocinando de verdad (recuperado tras quedarse sin conexión
+ * el mostrador) y solo hace falta apuntar su carga real en el horno,
+ * no decidir si cabía. Si el tope ya estaba lleno, este pedido lo deja
+ * por encima del tope — es lo correcto: las pizzas ya están dentro.
+ */
+export function forcedSlot({ atMs, kitchen, pizzas }) {
+  const slotMs = kitchen.slotMinutes * MIN
+  const start = Math.floor(atMs / slotMs) * slotMs
+  if (pizzas <= 0) return { readyAt: start + slotMs, slots: [] }
+  return { readyAt: start + slotMs, slots: [{ start: new Date(start).toISOString(), pizzas }] }
+}
+
 const addToLoad = (load, slots) =>
   slots.forEach((s) => {
     const key = Date.parse(s.start)

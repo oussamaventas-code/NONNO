@@ -91,32 +91,43 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
           <p className="mt-6 font-serif italic text-lg text-carbon/55">No hay repartos pendientes.</p>
         ) : (
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            {trips.map((trip, n) => (
-              <TripCard
-                key={trip.id}
-                title={`Salida ${n + 1}`}
-                trip={trip}
-                origin={origin}
-                header={trip.verified
-                  ? `Sale hacia las ${hourOf(trip.departAt)} · ${trip.stops.length} parada(s) · ${km1(trip.km)} · ~${trip.minutes} min`
-                  : `Sale hacia las ${hourOf(trip.departAt)} · dirección sin ubicar`}
-              >
-                <div className="flex flex-wrap gap-2">
-                  <a href={mapsRouteUrl(origin, trip.stops)} target="_blank" rel="noopener noreferrer" className="btn border border-carbon/20 bg-transparent text-carbon px-4">
-                    <span className="btn-layer bg-carbon/5" />
-                    <span className="btn-label"><MapIcon className="w-4 h-4" /> GOOGLE MAPS</span>
-                  </a>
-                  <button onClick={() => printSheet(trip)} className="btn border border-carbon/20 bg-transparent text-carbon px-4">
-                    <span className="btn-layer bg-carbon/5" />
-                    <span className="btn-label"><Printer className="w-4 h-4" /> HOJA DE RUTA</span>
-                  </button>
-                  <button onClick={() => dispatch(trip)} disabled={busy === trip.id} className="btn flex-1 min-w-[11rem] bg-tomate text-crema disabled:opacity-50">
-                    <span className="btn-layer bg-horno" />
-                    <span className="btn-label"><Send className="w-4 h-4" /> {busy === trip.id ? 'GUARDANDO…' : 'SALE EL REPARTO'}</span>
-                  </button>
-                </div>
-              </TripCard>
-            ))}
+            {trips.map((trip, n) => {
+              const notReady = trip.stops.filter((s) => s.status !== 'listo')
+              return (
+                <TripCard
+                  key={trip.id}
+                  title={`Salida ${n + 1}`}
+                  trip={trip}
+                  origin={origin}
+                  header={trip.verified
+                    ? `Sale hacia las ${hourOf(trip.departAt)} · ${trip.stops.length} parada(s) · ${km1(trip.km)} · ~${trip.minutes} min`
+                    : `Sale hacia las ${hourOf(trip.departAt)} · dirección sin ubicar`}
+                >
+                  <div className="flex flex-wrap gap-2">
+                    <a href={mapsRouteUrl(origin, trip.stops)} target="_blank" rel="noopener noreferrer" className="btn border border-carbon/20 bg-transparent text-carbon px-4">
+                      <span className="btn-layer bg-carbon/5" />
+                      <span className="btn-label"><MapIcon className="w-4 h-4" /> GOOGLE MAPS</span>
+                    </a>
+                    <button onClick={() => printSheet(trip)} className="btn border border-carbon/20 bg-transparent text-carbon px-4">
+                      <span className="btn-layer bg-carbon/5" />
+                      <span className="btn-label"><Printer className="w-4 h-4" /> HOJA DE RUTA</span>
+                    </button>
+                    <button
+                      onClick={() => dispatch(trip)}
+                      disabled={busy === trip.id || notReady.length > 0}
+                      title={notReady.length ? `Espera a que cocina marque listo: ${notReady.map((s) => s.ref).join(', ')}` : undefined}
+                      className="btn flex-1 min-w-[11rem] bg-tomate text-crema disabled:opacity-50"
+                    >
+                      <span className="btn-layer bg-horno" />
+                      <span className="btn-label">
+                        <Send className="w-4 h-4" />
+                        {busy === trip.id ? 'GUARDANDO…' : notReady.length ? 'FALTA POR HORNEAR' : 'SALE EL REPARTO'}
+                      </span>
+                    </button>
+                  </div>
+                </TripCard>
+              )
+            })}
           </div>
         )}
       </section>

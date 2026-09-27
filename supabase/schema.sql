@@ -77,6 +77,9 @@ alter table public.orders add column if not exists delivery_km       numeric(6,2
 alter table public.orders add column if not exists delivery_lat      double precision;
 alter table public.orders add column if not exists delivery_lng      double precision;
 alter table public.orders add column if not exists delivery_verified boolean;
+-- Tramo elegido a mano en el plan B (índice en delivery.tiers), guardado
+-- tal cual para no tener que reconstruirlo comparando con la tarifa.
+alter table public.orders add column if not exists delivery_tier    integer;
 
 -- Clave única del pedido que pone el navegador: si un pedido se
 -- reenvía (reintento o cola sin conexión del mostrador) no se duplica.

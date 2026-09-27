@@ -50,6 +50,16 @@ async function dispatch(req, res, locationId) {
     return res.status(409).json({ error: 'Algún pedido ya ha salido o ha cambiado. Actualiza y vuelve a intentarlo.' })
   }
 
+  /* No se manda a nadie a repartir (ni se le avisa por SMS) una pizza
+     que todavía no está hecha: cocina tiene que haberla marcado lista
+     antes de que esta salida pueda confirmarse. */
+  const notReady = found.filter((o) => o.status !== 'listo')
+  if (notReady.length) {
+    return res.status(409).json({
+      error: `${notReady.map((o) => o.ref).join(', ')} aún no está${notReady.length > 1 ? 'n' : ''} listo en cocina.`,
+    })
+  }
+
   const routeId = randomUUID()
   const { data: updated, error: updError } = await db().from('orders')
     .update({ dispatched_at: new Date().toISOString(), route_id: routeId, status: 'listo' })
