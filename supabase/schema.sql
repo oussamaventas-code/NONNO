@@ -135,3 +135,38 @@ alter table public.push_subscriptions
   add column if not exists scope text not null default 'all';
 
 alter table public.push_subscriptions enable row level security;
+
+-- ── Checklist de stock ─────────────────────────────────────────
+-- Cada sede tiene su lista de productos con el objetivo diario
+-- (lo que tiene que haber al empezar el servicio). Cada día se
+-- apunta cuánto hay y la compra es objetivo − lo que hay.
+create table if not exists public.stock_items (
+  id          uuid primary key default gen_random_uuid(),
+  location_id text not null,
+  name        text not null,
+  unit        text not null default 'kg',
+  target      numeric(10,2) not null default 0,
+  position    integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+create index if not exists stock_items_location_idx on public.stock_items (location_id, position);
+
+create table if not exists public.stock_counts (
+  location_id text not null,
+  day         date not null,                        -- día de servicio (hora de Madrid)
+  item_id     uuid not null references public.stock_items (id) on delete cascade,
+  on_hand     numeric(10,2),                        -- lo que hay; null = sin contar
+  bought      boolean not null default false,       -- tachado en la lista de la compra
+  updated_at  timestamptz not null default now(),
+  primary key (location_id, day, item_id)
+);
+
+-- Punto de partida: el objetivo que dio el cliente (80 kg al día).
+-- Solo se crea si la sede aún no tiene ningún producto.
+insert into public.stock_items (location_id, name, unit, target, position)
+select s.id, 'Harina / masa', 'kg', 80, 0
+from (values ('sangonera'), ('santo-angel')) as s(id)
+where not exists (select 1 from public.stock_items i where i.location_id = s.id);
+
+alter table public.stock_items  enable row level security;
+alter table public.stock_counts enable row level security;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, RefreshCw, LogOut, Pizza, Power, ChefHat, Store, Printer } from 'lucide-react'
+import { Bell, BellOff, RefreshCw, LogOut, Pizza, Power, ChefHat, Store, Printer, ClipboardList } from 'lucide-react'
 import Counter from './Counter'
+import Stock from './Stock'
 import { printTicket } from './printTicket'
 import { fetchOrders, updateOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus } from './api'
 import { useOrderAlert } from './useOrderAlert'
@@ -272,7 +273,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
       {sede && (
         <div className={`${sede.banda} ${sede.texto} py-2 text-center`}>
           <p className="mono normal-case tracking-[0.2em] font-bold">
-            {view === 'mostrador' ? 'MOSTRADOR' : 'COCINA'} · {sede.nombre.toUpperCase()}
+            {{ mostrador: 'MOSTRADOR', stock: 'STOCK' }[view] || 'COCINA'} · {sede.nombre.toUpperCase()}
           </p>
         </div>
       )}
@@ -294,6 +295,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
                 {[
                   { id: 'cocina', label: 'Cocina', Icon: ChefHat },
                   { id: 'mostrador', label: 'Mostrador', Icon: Store },
+                  { id: 'stock', label: 'Stock', Icon: ClipboardList },
                 ].map(({ id, label, Icon }) => (
                   <button
                     key={id}
@@ -440,7 +442,9 @@ export default function AdminPanel({ scope, onSignedOut }) {
           </p>
         )}
 
-        {loading ? (
+        {view === 'stock' ? (
+          <Stock locationIds={locationIds} onError={setError} />
+        ) : loading ? (
           <p className="mono text-carbon/40 py-16 text-center">CARGANDO PEDIDOS…</p>
         ) : view === 'mostrador' ? (
           <Counter

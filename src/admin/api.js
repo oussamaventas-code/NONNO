@@ -35,6 +35,13 @@ export const editOrder = (id, edit) =>
 export const fetchSlots = (locationId, pizzas) =>
   request(`/api/slots?location=${encodeURIComponent(locationId)}&pizzas=${pizzas}`)
 
+export const fetchStock = (locationId) =>
+  request(`/api/stock?location=${encodeURIComponent(locationId)}`)
+
+/** action: 'count' | 'saveItem' | 'deleteItem' (ver api/stock.js) */
+export const stockAction = (locationId, action, data) =>
+  request('/api/stock', { method: 'POST', body: JSON.stringify({ location: locationId, action, ...data }) })
+
 export const fetchStoreStatus = () => request('/api/store-status')
 
 export const setStoreStatus = (locationId, isOpen) =>

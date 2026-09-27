@@ -18,7 +18,7 @@ import { hourOf } from '../lib/kitchenSlots'
    modo kiosco (--kiosk-printing) salen sin diálogo.
    ═══════════════════════════════════════════════════════════════ */
 
-const esc = (s) =>
+export const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ))
@@ -223,6 +223,9 @@ function printOne(html) {
   queue = queue.then(job, job)
   return queue
 }
+
+/** Cualquier otra hoja a 80 mm (p. ej. la lista de la compra). `bodyHtml` ya viene escapado. */
+export const printDocument = (title, bodyHtml) => printOne(page(title, bodyHtml))
 
 /** Ticket de cliente del mostrador: un único ticket completo, sin secciones de cocina. */
 export function printReceipt(order) {
