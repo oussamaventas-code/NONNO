@@ -1,4 +1,4 @@
-import { Star, Truck, Package, Check, Clock } from 'lucide-react'
+import { Star, Truck, Package, Check, Clock, MapPin, Phone, CalendarClock } from 'lucide-react'
 import { img, srcSet } from '../data/images'
 import { decimal } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
@@ -78,6 +78,21 @@ export default function LocationCard({ location, selected, closed, onSelect, onO
               ? `Pide ahora y recógela a las ${hourOf(eta.readyAt)} (${minutesUntil(eta.readyAt)} min)`
               : eta.message}
           </p>
+        )}
+
+        {(location.address || location.hours || location.phones?.length > 0) && (
+          <div className="mt-4 flex flex-col gap-1.5 text-sm text-crema/70">
+            {location.address && <p className="flex items-start gap-2"><MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />{location.address}</p>}
+            {location.hours && <p className="flex items-start gap-2"><CalendarClock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />{location.hours}</p>}
+            {location.phones?.length > 0 && (
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                {location.phones.map((p) => (
+                  <a key={p} href={`tel:+34${p.replace(/\s/g, '')}`} className="font-semibold text-crema underline-offset-2 hover:underline">{p}</a>
+                ))}
+              </p>
+            )}
+          </div>
         )}
 
         <p className="mt-4 text-sm text-crema/50 flex-1">{location.tagline}</p>

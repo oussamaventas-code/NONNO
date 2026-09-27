@@ -5,6 +5,29 @@ import { sanitizeOrder, validateOrder } from './_lib/order.js'
 import { isStoreOpen } from './_lib/store.js'
 import { precheck, assignSlot, SLOT_ERRORS } from './_lib/slots.js'
 
+const reply = (row, staff) => ({
+  id: row.id,
+  ref: row.ref,
+  status: row.status,
+  total: row.total,
+  readyAt: row.ready_at,
+  etaAt: row.eta_at,
+  ...(staff ? { order: row } : {}),
+})
+
+async function findByClientKey(key) {
+  if (!key) return null
+  const { data } = await db().from('orders').select('*').eq('client_key', key).maybeSingle()
+  return data
+}
+
+/** Hora ISO de las últimas 12 h (nunca futura), o null. */
+function validPastTime(value) {
+  const t = Date.parse(value)
+  if (!Number.isFinite(t) || t > Date.now() + 60000 || t < Date.now() - 12 * 3600000) return null
+  return new Date(t).toISOString()
+}
+
 export default async function handler(req, res) {
   if (!isConfigured()) {
     return res.status(503).json({
@@ -17,8 +40,11 @@ export default async function handler(req, res) {
      con `channel` y sesión: entonces no depende del interruptor de la
      web, pero sí de las franjas del horno, igual que todos. */
   if (req.method === 'POST') {
-    const session = req.body?.channel ? readSession(req) : null
-    if (req.body?.channel && !session) return res.status(401).json({ error: 'No autorizado' })
+    /* Solo mostrador y teléfono son pedidos del personal. La web manda
+       channel: 'web' y tiene que seguir entrando sin sesión. */
+    const staffChannel = ['mostrador', 'telefono'].includes(req.body?.channel)
+    const session = staffChannel ? readSession(req) : null
+    if (staffChannel && !session) return res.status(401).json({ error: 'No autorizado' })
     const staff = Boolean(session)
 
     const parsed = sanitizeOrder(req.body, { staff })
@@ -30,20 +56,33 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'No puedes crear pedidos en otra sede.' })
     }
 
+    /* Mismo pedido reenviado (reintento, o cola del mostrador sin
+       conexión): se devuelve el que ya existe en vez de duplicarlo. */
+    const existing = await findByClientKey(order.client_key)
+    if (existing) return res.status(200).json(reply(existing, staff))
+
+    /* Pedido que el mostrador tomó SIN CONEXIÓN y ya salió en papel a
+       cocina: se registra aunque el horno ya no tenga hueco, porque
+       ya se está haciendo. Solo el personal puede hacerlo. */
+    const offlineAt = staff ? validPastTime(req.body?.offlineAt) : null
+    if (offlineAt) order.created_at = offlineAt
+
     /* La web ya avisa si la sede está cerrada, pero el servidor es
        quien de verdad lo impide: nadie se lo salta reenviando la
        petición a mano. */
     if (!staff && !(await isStoreOpen(order.location_id))) {
-      return res.status(503).json({ error: 'Esta sede está cerrada ahora mismo. No se pueden hacer pedidos.' })
+      return res.status(503).json({ code: 'closed', error: 'Esta sede está cerrada ahora mismo. No se pueden hacer pedidos.' })
     }
 
     /* Primer filtro: si ya no cabe, ni se guarda. */
-    try {
-      const plan = await precheck(order.location_id, order.pizza_count)
-      if (!plan.ok) return res.status(409).json({ error: SLOT_ERRORS[plan.reason] })
-    } catch (err) {
-      console.error('Error leyendo la carga del horno:', err)
-      return res.status(500).json({ error: 'No hemos podido registrar el pedido.' })
+    if (!offlineAt) {
+      try {
+        const plan = await precheck(order.location_id, order.pizza_count)
+        if (!plan.ok) return res.status(409).json({ code: 'full', error: SLOT_ERRORS[plan.reason] })
+      } catch (err) {
+        console.error('Error leyendo la carga del horno:', err)
+        return res.status(500).json({ error: 'No hemos podido registrar el pedido.' })
+      }
     }
 
     const { data, error } = await db()
@@ -53,23 +92,31 @@ export default async function handler(req, res) {
       .single()
 
     if (error) {
+      /* Dos envíos del mismo pedido a la vez: gana uno, el otro lo recoge. */
+      const dup = error.code === '23505' ? await findByClientKey(order.client_key) : null
+      if (dup) return res.status(200).json(reply(dup, staff))
       console.error('Error guardando el pedido:', error)
       return res.status(500).json({ error: 'No hemos podido registrar el pedido.' })
     }
 
     /* Franja definitiva, con este pedido ya dentro. Si no cabe o algo
        falla, el pedido se retira: mejor un error claro que un pedido
-       sin hora en cocina. */
+       sin hora en cocina. Salvo los tomados sin conexión: esos se
+       quedan sin franja, porque ya están en el horno. */
     let assigned
     try {
-      assigned = await assignSlot(data.id, order.location_id, parsed.zone)
+      assigned = await assignSlot(data.id, order.location_id, parsed.delivery)
     } catch (err) {
       console.error('Error asignando franja:', err)
       assigned = { ok: false }
     }
+    if (!assigned.ok && offlineAt) {
+      const { data: kept } = await db().from('orders').update({ oven_slots: [] }).eq('id', data.id).select('*').single()
+      assigned = { ok: true, row: kept }
+    }
     if (!assigned.ok) {
       await db().from('orders').delete().eq('id', data.id)
-      return res.status(409).json({ error: SLOT_ERRORS[assigned.reason] || 'No hemos podido registrar el pedido.' })
+      return res.status(409).json({ code: 'full', error: SLOT_ERRORS[assigned.reason] || 'No hemos podido registrar el pedido.' })
     }
     const row = assigned.row
 
@@ -80,15 +127,7 @@ export default async function handler(req, res) {
       console.error('Error enviando la notificación:', err)
     }
 
-    return res.status(201).json({
-      id: row.id,
-      ref: row.ref,
-      status: row.status,
-      total: row.total,
-      readyAt: row.ready_at,
-      etaAt: row.eta_at,
-      ...(staff ? { order: row } : {}),
-    })
+    return res.status(201).json(reply(row, staff))
   }
 
   /* ── Listar pedidos (solo panel) ────────────────────────────── */

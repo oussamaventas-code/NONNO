@@ -140,7 +140,24 @@ export default function OrderCard({ order, onStatus, busy }) {
         {order.address && (
           <span className="flex items-start gap-1.5 text-carbon/70">
             <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-            {order.address}{order.delivery_zone ? ` · ${order.delivery_zone}` : ''}
+            <span>
+              {order.address}{order.delivery_zone ? ` · ${order.delivery_zone}` : ''}
+              {order.delivery_lat != null && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${order.delivery_lat},${order.delivery_lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 font-semibold text-tomate underline"
+                >
+                  Ver en el mapa
+                </a>
+              )}
+            </span>
+          </span>
+        )}
+        {order.mode === 'delivery' && order.delivery_verified === false && (
+          <span className="rounded-xl bg-horno/15 px-3 py-2 text-sm font-semibold text-horno">
+            Dirección sin verificar: el cliente eligió la distancia a mano. Confírmala por teléfono.
           </span>
         )}
         {order.notes && (

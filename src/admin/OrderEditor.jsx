@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react'
-import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Store, Phone } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Store, Phone, Printer } from 'lucide-react'
 import { CATEGORIES, productsByCategory, getProduct, getExtra, priceOf } from '../data/menu'
 import { getLocation } from '../data/locations'
 import { buildLine, lineTotal } from '../lib/pricing'
 import { orderTotals } from '../lib/orderTotals'
 import { ovenUnits, hourOf } from '../lib/kitchenSlots'
 import { price } from '../lib/format'
+import { deliveryTiers, deliveryProblem } from '../lib/delivery'
+import DeliveryPicker from '../components/DeliveryPicker'
 import { createOrder, editOrder, fetchSlots } from './api'
+import { enqueue, isConnectionError, newClientKey } from './offlineQueue'
+import { printTicket } from './printTicket'
 
 /* ═══════════════════════════════════════════════════════════════
    EDITOR DE PEDIDOS DEL MOSTRADOR
@@ -17,7 +21,7 @@ import { createOrder, editOrder, fetchSlots } from './api'
    con las mismas reglas que la web.
    ═══════════════════════════════════════════════════════════════ */
 
-const EMPTY_CUSTOMER = { name: '', phone: '', address: '', zone: '', notes: '' }
+const EMPTY_CUSTOMER = { name: '', phone: '', address: '', coords: null, tier: null, notes: '' }
 
 const selectionOf = (l) => ({
   productId: l.productId, portionId: l.portionId, extraIds: l.extraIds,
@@ -46,12 +50,16 @@ function linesFromOrder(order) {
 }
 
 function customerFromOrder(order) {
-  const zone = getLocation(order.location_id)?.deliveryZones?.find((z) => z.name === order.delivery_zone)
+  const verified = order.delivery_verified && order.delivery_lat != null
+  const tier = order.mode === 'delivery' && !verified
+    ? deliveryTiers(order.location_id).findIndex((t) => t.fee === Number(order.delivery_fee))
+    : -1
   return {
     name: order.customer_name || '',
     phone: order.customer_phone || '',
     address: order.address || '',
-    zone: zone?.id || '',
+    coords: verified ? { lat: order.delivery_lat, lng: order.delivery_lng } : null,
+    tier: tier >= 0 ? tier : null,
     notes: order.notes || '',
   }
 }
@@ -73,10 +81,13 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
   const [eta, setEta] = useState(null)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [offline, setOffline] = useState(false)
+  /* Una clave por pedido: si se reintenta, el servidor no lo duplica. */
+  const clientKey = useRef(newClientKey())
 
   const pizzas = ovenUnits(lines)
-  const totals = orderTotals({ lines, mode, locationId: locId, zoneId: customer.zone })
-  const zones = location?.deliveryZones || []
+  const totals = orderTotals({ lines, mode, locationId: locId, where: { coords: customer.coords, tier: customer.tier } })
+  const trip = mode === 'delivery' && totals.delivery?.ok ? totals.delivery : null
   const canDeliver = Boolean(location?.services.delivery)
 
   useEffect(() => {
@@ -122,40 +133,84 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
     if (!customer.name.trim()) return 'Falta el nombre del cliente.'
     if (channel === 'telefono' && !customer.phone.trim()) return 'En pedidos por teléfono hace falta el teléfono.'
     if (mode === 'delivery') {
-      if (!zones.some((z) => z.id === customer.zone)) return 'Elige la zona de entrega.'
       if (!customer.address.trim()) return 'Falta la dirección de entrega.'
+      if (!trip) return deliveryProblem(totals.delivery)
       if (!customer.phone.trim()) return 'Para una entrega hace falta el teléfono.'
     }
     return null
   }
+
+  const buildPayload = () => ({
+    location: { id: locId },
+    mode,
+    channel,
+    customer: mode === 'delivery' ? customer : { ...customer, coords: null, tier: null },
+    items: lines.map((l) => ({
+      id: l.productId, portionId: l.portionId, extraIds: l.extraIds,
+      removed: l.removed, note: l.note, qty: l.qty,
+    })),
+    paymentStatus: paidNow ? 'pagado' : 'pendiente',
+    paymentMethod: method,
+    clientKey: clientKey.current,
+  })
 
   const save = async () => {
     const p = problem()
     if (p) { setError(p); return }
     setSaving(true)
     setError(null)
-    const items = lines.map((l) => ({
-      id: l.productId, portionId: l.portionId, extraIds: l.extraIds,
-      removed: l.removed, note: l.note, qty: l.qty,
-    }))
-    const cust = { ...customer, zone: mode === 'delivery' ? customer.zone : '' }
+    setOffline(false)
+    const payload = buildPayload()
     try {
       const res = editing
-        ? await editOrder(order.id, { items, mode, customer: cust })
-        : await createOrder({
-          location: { id: locId },
-          mode,
-          channel,
-          customer: cust,
-          items,
-          paymentStatus: paidNow ? 'pagado' : 'pendiente',
-          paymentMethod: method,
-        })
+        ? await editOrder(order.id, { items: payload.items, mode, customer: payload.customer })
+        : await createOrder(payload)
       onSaved(res.order, { isNew: !editing })
     } catch (err) {
-      setError(err.message)
+      /* Sin conexión con el servidor: en un pedido nuevo se ofrece el plan B. */
+      if (!editing && isConnectionError(err)) setOffline(true)
+      setError(isConnectionError(err) ? 'No hay conexión con el servidor.' : err.message)
       setSaving(false)
     }
+  }
+
+  /* PLAN B: la comanda sale ya en papel y el pedido espera en este
+     equipo hasta que vuelva la conexión (ver offlineQueue.js). */
+  const saveOffline = () => {
+    const now = new Date()
+    const ref = `SC-${now.toTimeString().slice(0, 8).replace(/:/g, '')}`
+    const payload = { ...buildPayload(), ref, offlineAt: now.toISOString() }
+    const local = {
+      id: `offline:${payload.clientKey}`,
+      offline: true,
+      ref,
+      created_at: payload.offlineAt,
+      status: 'nuevo',
+      channel,
+      mode,
+      location_id: locId,
+      location_name: location.name,
+      customer_name: customer.name.trim(),
+      customer_phone: customer.phone.trim(),
+      address: mode === 'delivery' ? customer.address.trim() : null,
+      notes: customer.notes.trim() || null,
+      delivery_zone: trip?.label || null,
+      items: lines.map((l) => ({
+        id: l.productId, name: l.name, category: l.category, size: l.sizeLabel,
+        extras: l.extraLabels, removed: l.removed, note: l.note || null,
+        qty: l.qty, unitPrice: l.unitPrice, total: lineTotal(l),
+      })),
+      subtotal: totals.subtotal,
+      discount: totals.discount,
+      deals: totals.deals,
+      delivery_fee: totals.deliveryFee,
+      total: totals.total,
+      payment_status: paidNow ? 'pagado' : 'pendiente',
+      payment_method: paidNow ? method : null,
+    }
+    enqueue({ payload, order: local })
+    printTicket(local)
+    onSaved(local, { isNew: true })
   }
 
   return (
@@ -321,23 +376,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
             </div>
 
             {mode === 'delivery' && (
-              <>
-                <div className="grid grid-cols-2 gap-2">
-                  {zones.map((z) => (
-                    <button
-                      key={z.id}
-                      onClick={() => patchCustomer({ zone: z.id })}
-                      className={[
-                        'flex justify-between gap-1 rounded-xl border px-3 py-2 text-left text-sm',
-                        customer.zone === z.id ? 'border-tomate bg-tomate/5 font-semibold' : 'border-carbon/12 text-carbon/70',
-                      ].join(' ')}
-                    >
-                      <span>{z.name}</span><span className="mono normal-case text-carbon/50">+{price(z.fee)}</span>
-                    </button>
-                  ))}
-                </div>
-                <Input label="Dirección" value={customer.address} onChange={(v) => patchCustomer({ address: v })} />
-              </>
+              <DeliveryPicker locationId={locId} value={customer} onChange={patchCustomer} compact />
             )}
             <Input label="Notas (opcional)" value={customer.notes} onChange={(v) => patchCustomer({ notes: v })} />
           </div>
@@ -351,7 +390,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
               <p key={d.label} className="text-albahaca text-xs">Oferta {d.count > 1 ? `${d.count}× ` : ''}{d.label} por {price(d.price)}</p>
             ))}
             {totals.discount > 0 && <Row label="Descuento recogida" value={`−${price(totals.discount)}`} tone="text-albahaca font-semibold" />}
-            {totals.deliveryFee > 0 && <Row label={`Envío ${totals.zone.name}`} value={`+${price(totals.deliveryFee)}`} />}
+            {trip && <Row label={`Envío · ${trip.label}`} value={`+${price(trip.fee)}`} />}
             <div className="flex items-center justify-between pt-1">
               <span className="mono text-carbon/60">TOTAL</span>
               <span className="font-serif italic font-semibold text-3xl text-carbon">{price(totals.total)}</span>
@@ -360,8 +399,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
               <p className={['mt-1 flex items-center gap-1.5 font-semibold', eta.ok ? 'text-carbon' : 'text-tomate'].join(' ')}>
                 <Clock className="w-4 h-4" />
                 {eta.ok
-                  ? `${mode === 'delivery' && totals.zone
-                    ? `Llega hacia las ${hourOf(Date.parse(eta.readyAt) + totals.zone.minutes * 60000)}`
+                  ? `${trip
+                    ? `Llega hacia las ${hourOf(Date.parse(eta.readyAt) + trip.minutes * 60000)}`
                     : `Listo a las ${hourOf(eta.readyAt)}`}${editing ? ' (aprox.)' : ''} · ${pizzas} al horno`
                   : eta.message}
               </p>
@@ -395,6 +434,19 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
 
           {error && (
             <p className="rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">{error}</p>
+          )}
+
+          {offline && (
+            <div className="rounded-2xl border-2 border-horno bg-horno/10 p-4">
+              <p className="text-sm font-semibold text-carbon">Plan B: trabajar sin conexión</p>
+              <p className="mt-1 text-sm text-carbon/70">
+                Se imprime la comanda para cocina y el pedido se guarda en este equipo. Se enviará solo al sistema en cuanto vuelva la conexión.
+              </p>
+              <button onClick={saveOffline} className="btn mt-3 w-full bg-horno text-crema">
+                <span className="btn-layer bg-carbon" />
+                <span className="btn-label"><Printer className="w-4 h-4" /> IMPRIMIR COMANDA Y GUARDAR</span>
+              </button>
+            </div>
           )}
 
           <button

@@ -9,7 +9,8 @@ const PAYMENT_STATUSES = ['pendiente', 'pagado']
 /* Campos que cambia una edición desde el mostrador. Se guardan los
    de antes para poder deshacerla si el horno no tiene hueco. */
 const EDITABLE = [
-  'mode', 'customer_name', 'customer_phone', 'address', 'delivery_zone', 'notes',
+  'mode', 'customer_name', 'customer_phone', 'address', 'notes',
+  'delivery_zone', 'delivery_km', 'delivery_lat', 'delivery_lng', 'delivery_verified',
   'items', 'item_count', 'pizza_count', 'subtotal', 'discount', 'deals', 'delivery_fee', 'total',
   'oven_slots', 'ready_at', 'eta_at', 'edited_at', 'printed_at',
 ]
@@ -125,7 +126,7 @@ async function editOrder(req, res, id, scoped) {
 
   let assigned
   try {
-    assigned = await assignSlot(id, current.location_id, parsed.zone)
+    assigned = await assignSlot(id, current.location_id, parsed.delivery)
   } catch (err) {
     console.error('Error reasignando franja:', err)
     assigned = { ok: false }

@@ -70,6 +70,19 @@ alter table public.orders add column if not exists payment_method text;
 alter table public.orders add column if not exists paid_at        timestamptz;
 alter table public.orders add column if not exists edited_at      timestamptz;
 
+-- Envío por distancia: punto de entrega y km al local. Si el cliente
+-- no pudo localizar la dirección (plan B), delivery_verified = false
+-- y el local tiene que confirmar la distancia.
+alter table public.orders add column if not exists delivery_km       numeric(6,2);
+alter table public.orders add column if not exists delivery_lat      double precision;
+alter table public.orders add column if not exists delivery_lng      double precision;
+alter table public.orders add column if not exists delivery_verified boolean;
+
+-- Clave única del pedido que pone el navegador: si un pedido se
+-- reenvía (reintento o cola sin conexión del mostrador) no se duplica.
+alter table public.orders add column if not exists client_key text;
+create unique index if not exists orders_client_key_idx on public.orders (client_key) where client_key is not null;
+
 do $$
 begin
   if not exists (

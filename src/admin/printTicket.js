@@ -126,7 +126,8 @@ function ticketFoot(order, { full }) {
   <div class="field"><strong>${esc(order.customer_name)}</strong></div>
   ${order.customer_phone ? `<div class="field">Tel: ${esc(order.customer_phone)}</div>` : ''}
   ${order.address ? `<div class="field">Dir: ${esc(order.address)}</div>` : ''}
-  ${order.delivery_zone ? `<div class="field"><strong>ZONA: ${esc(order.delivery_zone.toUpperCase())}</strong></div>` : ''}
+  ${order.delivery_zone ? `<div class="field"><strong>DISTANCIA: ${esc(order.delivery_zone.toUpperCase())}</strong></div>` : ''}
+  ${order.delivery_verified === false ? '<div class="payment">DIRECCIÓN SIN VERIFICAR · LLAMAR AL CLIENTE</div>' : ''}
   ${order.notes ? `<div class="field">Notas: ${esc(order.notes)}</div>` : ''}
   ` : `<div class="field center">${esc(order.customer_name)}</div>`}
   ${paymentLine}

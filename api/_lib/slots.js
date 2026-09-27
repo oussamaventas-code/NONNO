@@ -40,14 +40,14 @@ export async function precheck(locationId, pizzas) {
  * tope de pizzas por franja se respeta siempre.
  * @returns {Promise<{ ok: true, row: object } | { ok: false, reason?: string }>}
  */
-export async function assignSlot(orderId, locationId, zone) {
+export async function assignSlot(orderId, locationId, delivery) {
   const kitchen = getLocation(locationId).kitchen
   const { plans } = await kitchenLoad(locationId, kitchen)
   const plan = plans.get(orderId)
   if (!plan?.ok) return { ok: false, reason: plan?.reason }
 
   const readyAt = new Date(plan.readyAt)
-  const etaAt = zone ? new Date(plan.readyAt + zone.minutes * 60000) : readyAt
+  const etaAt = delivery?.ok ? new Date(plan.readyAt + delivery.minutes * 60000) : readyAt
   const { data, error } = await db()
     .from('orders')
     .update({ oven_slots: plan.slots, ready_at: readyAt.toISOString(), eta_at: etaAt.toISOString() })

@@ -2,6 +2,7 @@ import { buildLine } from '../../src/lib/pricing.js'
 import { orderTotals } from '../../src/lib/orderTotals.js'
 import { getLocation } from '../../src/data/locations.js'
 import { ovenUnits } from '../../src/lib/kitchenSlots.js'
+import { deliveryProblem } from '../../src/lib/delivery.js'
 
 /* ═══════════════════════════════════════════════════════════════
    Saneado y validación del pedido que llega desde el navegador.
@@ -44,8 +45,9 @@ export function sanitizeOrder(body, { staff = false } = {}) {
 
   const mode = body?.mode === 'delivery' ? 'delivery' : 'pickup'
   const locationId = trim(body?.location?.id, 40)
-  const zoneId = trim(body?.customer?.zone, 40)
-  const totals = orderTotals({ lines, mode, locationId, zoneId })
+  const where = whereOf(body?.customer)
+  const totals = orderTotals({ lines, mode, locationId, where })
+  const delivery = totals.delivery
 
   const items = lines.map((l) => ({
     /* Lo que se pidió, para poder editar el pedido desde el mostrador */
@@ -74,7 +76,12 @@ export function sanitizeOrder(body, { staff = false } = {}) {
       customer_name: trim(body?.customer?.name, 80),
       customer_phone: trim(body?.customer?.phone, 40),
       address: mode === 'delivery' ? trim(body?.customer?.address, 200) || null : null,
-      delivery_zone: totals.zone?.name || null,
+      delivery_zone: delivery?.ok ? delivery.label : null,
+      delivery_km: delivery?.ok ? delivery.km : null,
+      delivery_lat: delivery?.ok && delivery.verified ? where.coords.lat : null,
+      delivery_lng: delivery?.ok && delivery.verified ? where.coords.lng : null,
+      delivery_verified: delivery?.ok ? delivery.verified : null,
+      client_key: trim(body?.clientKey, 64) || null,
       notes: trim(body?.customer?.notes, 400) || null,
       items,
       item_count: items.reduce((n, i) => n + i.qty, 0),
@@ -94,12 +101,20 @@ export function sanitizeOrder(body, { staff = false } = {}) {
         : {}),
     },
     unknownProduct,
-    zoneRequested: zoneId,
-    zone: totals.zone,
+    delivery,
   }
 }
 
-export function validateOrder({ order, unknownProduct, zoneRequested }) {
+/** Punto de entrega que manda el navegador: coordenadas o, como plan B, un tramo. */
+function whereOf(customer) {
+  const lat = Number(customer?.coords?.lat)
+  const lng = Number(customer?.coords?.lng)
+  const coords = Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null
+  const tier = Number.isInteger(customer?.tier) ? customer.tier : undefined
+  return { coords, tier }
+}
+
+export function validateOrder({ order, unknownProduct, delivery }) {
   const location = getLocation(order.location_id)
   if (unknownProduct) return 'Algún producto ya no está en la carta. Revisa tu pedido.'
   if (!order.items.length) return 'El pedido está vacío.'
@@ -107,11 +122,8 @@ export function validateOrder({ order, unknownProduct, zoneRequested }) {
   if (!order.customer_name) return 'Falta el nombre.'
   if (!order.customer_phone && order.channel !== 'mostrador') return 'Falta el teléfono.'
   if (order.mode === 'delivery') {
-    if (!location.services.delivery) return 'Esta sede no hace entregas a domicilio.'
-    if (!order.delivery_zone) {
-      return zoneRequested ? 'No repartimos en esa zona.' : 'Falta la zona de entrega.'
-    }
     if (!order.address) return 'Falta la dirección de entrega.'
+    if (!delivery?.ok) return deliveryProblem(delivery)
   } else if (!location.services.pickup) {
     return 'Esta sede no admite recogida.'
   }

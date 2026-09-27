@@ -1,7 +1,8 @@
 import { SITE } from '../data/site'
-import { getLocation, getDeliveryZone } from '../data/locations'
+import { getLocation } from '../data/locations'
 import { cartCount } from './pricing'
 import { orderTotals } from './orderTotals'
+import { deliveryQuote, deliveryProblem } from './delivery'
 import { price, orderRef } from './format'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -19,12 +20,18 @@ import { price, orderRef } from './format'
    - Sin enviar      -> adapter 'none'
    ═══════════════════════════════════════════════════════════════ */
 
+const whereOf = (customer) => ({ coords: customer?.coords || null, tier: customer?.tier ?? null })
+
 /** Payload normalizado. Este es el contrato con cualquier backend. */
-export function buildOrderPayload({ lines, locationId, mode, customer }) {
+export function buildOrderPayload({ lines, locationId, mode, customer, clientKey, ref }) {
   const location = getLocation(locationId)
-  const totals = orderTotals({ lines, mode, locationId, zoneId: customer?.zone })
+  const totals = orderTotals({ lines, mode, locationId, where: whereOf(customer) })
   return {
-    ref: orderRef(),
+    /* La referencia no cambia entre reintentos: si el cliente acaba
+       mandándolo por WhatsApp, cocina ve la misma que en el panel. */
+    ref: ref || orderRef(),
+    /* Misma clave en cada reintento del mismo pedido: el servidor no lo duplica. */
+    clientKey,
     createdAt: new Date().toISOString(),
     channel: 'web',
     version: SITE.brand.version,
@@ -36,7 +43,8 @@ export function buildOrderPayload({ lines, locationId, mode, customer }) {
       name: customer?.name?.trim() || '',
       phone: customer?.phone?.trim() || '',
       address: mode === 'delivery' ? customer?.address?.trim() || '' : null,
-      zone: mode === 'delivery' ? customer?.zone || '' : null,
+      coords: mode === 'delivery' ? customer?.coords || null : null,
+      tier: mode === 'delivery' ? customer?.tier ?? null : null,
       notes: customer?.notes?.trim() || '',
     },
     items: lines.map((l) => ({
@@ -57,7 +65,7 @@ export function buildOrderPayload({ lines, locationId, mode, customer }) {
     subtotal: totals.subtotal,
     discount: totals.discount,
     deals: totals.deals,
-    deliveryZone: totals.zone?.name || null,
+    deliveryZone: totals.delivery?.ok ? totals.delivery.label : null,
     deliveryFee: totals.deliveryFee,
     total: totals.total,
   }
@@ -72,10 +80,12 @@ export function validateOrder({ lines, locationId, mode, customer }) {
   if (!customer?.name?.trim()) errors.name = 'Necesitamos un nombre.'
   if (!customer?.phone?.trim()) errors.phone = 'Necesitamos un teléfono de contacto.'
   else if (!/^[+\d][\d\s.-]{6,}$/.test(customer.phone.trim())) errors.phone = 'Revisa el teléfono.'
-  if (mode === 'delivery' && !getDeliveryZone(locationId, customer?.zone))
-    errors.zone = 'Elige tu zona de entrega.'
   if (mode === 'delivery' && !customer?.address?.trim())
     errors.address = 'Necesitamos la dirección de entrega.'
+  if (mode === 'delivery') {
+    const problem = deliveryProblem(deliveryQuote(locationId, whereOf(customer)))
+    if (problem) errors.delivery = problem
+  }
   return errors
 }
 
@@ -113,6 +123,19 @@ export function orderToText(payload) {
     .join('\n')
 }
 
+/* Aviso al local de que el pedido le llega por el plan B. */
+const fallbackText = (text) =>
+  `${text}\n\n(La web no ha podido enviarlo a cocina. Si ya lo tenéis en el panel con esta referencia, no lo repitáis.)`
+
+/** Enlaces del plan B para una sede: WhatsApp con el pedido escrito y teléfonos. */
+export function fallbackContacts(locationId, text) {
+  const location = getLocation(locationId)
+  return {
+    whatsappUrl: location?.whatsapp ? `https://wa.me/${location.whatsapp}?text=${encodeURIComponent(text)}` : null,
+    phones: location?.phones || [],
+  }
+}
+
 /**
  * Envía el pedido por el canal configurado.
  * @returns {Promise<{status:'ready'|'sent'|'error', payload, text, url?, message?}>}
@@ -136,13 +159,30 @@ export async function submitOrder(input) {
     }
 
     if (adapter === 'api') {
-      const res = await fetch(apiEndpoint || '/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      let res
+      let data = {}
+      try {
+        res = await fetch(apiEndpoint || '/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(15000),
+        })
+        data = await res.json().catch(() => ({}))
+      } catch {
+        res = null
+      }
 
-      const data = await res.json().catch(() => ({}))
+      /* PLAN B: sin respuesta, o fallo del servidor que no es una
+         negativa normal (sede cerrada, horno lleno, dato que falta).
+         El pedido no se pierde: se ofrece mandarlo por WhatsApp ya
+         escrito, o llamar. */
+      const systemDown = !res
+        || (res.status >= 500 && !data.code)
+        || (!res.ok && !data.error) /* respuesta que no es de nuestra API */
+      if (systemDown) {
+        return { status: 'error', fallback: true, payload, text: fallbackText(text), message: SITE.messages.error }
+      }
       if (!res.ok) {
         return {
           status: 'error',

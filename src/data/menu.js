@@ -54,13 +54,15 @@ export const stationOf = (categoryId) =>
 export const PIZZA_SIZE = { diameter: '33 cm' }
 
 /* ── TOPPINGS ───────────────────────────────────────────────────
-   La carta dice "TOPPING +1€": todos al mismo precio.
-   TODO: CONFIRMAR CON NONNO LA LISTA EXACTA DE TOPPINGS. */
+   La carta dice "TOPPING +1€": se puede añadir cualquier ingrediente
+   de las pizzas de la carta, todos al mismo precio. */
 const TOPPING = 1
 export const EXTRAS = [
   { id: 'mozzarella', label: 'Extra mozzarella', price: TOPPING, group: 'Quesos' },
   { id: 'cabra', label: 'Queso de cabra', price: TOPPING, group: 'Quesos' },
   { id: 'gorgonzola', label: 'Gorgonzola', price: TOPPING, group: 'Quesos' },
+  { id: 'gouda', label: 'Gouda', price: TOPPING, group: 'Quesos' },
+  { id: 'edam', label: 'Edam', price: TOPPING, group: 'Quesos' },
   { id: 'parmesano', label: 'Parmesano', price: TOPPING, group: 'Quesos' },
   { id: 'jamon-cocido', label: 'Jamón cocido', price: TOPPING, group: 'Carnes' },
   { id: 'jamon-serrano', label: 'Jamón serrano', price: TOPPING, group: 'Carnes' },
@@ -71,17 +73,32 @@ export const EXTRAS = [
   { id: 'kebab', label: 'Carne kebab', price: TOPPING, group: 'Carnes' },
   { id: 'ternera', label: 'Ternera picada', price: TOPPING, group: 'Carnes' },
   { id: 'chorizo', label: 'Chorizo picante', price: TOPPING, group: 'Carnes' },
+  { id: 'sobrasada', label: 'Sobrasada de chato murciano', price: TOPPING, group: 'Carnes' },
+  { id: 'guanciale', label: 'Guanciale', price: TOPPING, group: 'Carnes' },
   { id: 'atun', label: 'Atún', price: TOPPING, group: 'Del mar' },
   { id: 'anchoas', label: 'Anchoas', price: TOPPING, group: 'Del mar' },
+  { id: 'gambas', label: 'Gambas', price: TOPPING, group: 'Del mar' },
+  { id: 'calamares', label: 'Calamares', price: TOPPING, group: 'Del mar' },
   { id: 'champinon', label: 'Champiñón', price: TOPPING, group: 'Verduras' },
   { id: 'cebolla', label: 'Cebolla', price: TOPPING, group: 'Verduras' },
   { id: 'pimiento', label: 'Pimiento italiano', price: TOPPING, group: 'Verduras' },
+  { id: 'tomate-fresco', label: 'Tomate fresco', price: TOPPING, group: 'Verduras' },
   { id: 'aceitunas', label: 'Aceitunas negras', price: TOPPING, group: 'Verduras' },
   { id: 'alcachofa', label: 'Alcachofas', price: TOPPING, group: 'Verduras' },
-  { id: 'pina', label: 'Piña', price: TOPPING, group: 'Verduras' },
+  { id: 'alcaparras', label: 'Alcaparras', price: TOPPING, group: 'Verduras' },
+  { id: 'berenjena', label: 'Berenjena', price: TOPPING, group: 'Verduras' },
   { id: 'jalapenos', label: 'Jalapeños', price: TOPPING, group: 'Verduras' },
-  { id: 'tomate-fresco', label: 'Tomate fresco', price: TOPPING, group: 'Verduras' },
-  { id: 'huevo', label: 'Huevo', price: TOPPING, group: 'Otros' },
+  { id: 'pina', label: 'Piña', price: TOPPING, group: 'Verduras' },
+  { id: 'nueces', label: 'Nueces', price: TOPPING, group: 'Otros' },
+  { id: 'huevo', label: 'Huevo fresco', price: TOPPING, group: 'Otros' },
+  { id: 'miel', label: 'Miel', price: TOPPING, group: 'Salsas y toques' },
+  { id: 'mermelada-tomate', label: 'Mermelada de tomate', price: TOPPING, group: 'Salsas y toques' },
+  { id: 'salsa-blanca', label: 'Salsa blanca casera', price: TOPPING, group: 'Salsas y toques' },
+  { id: 'salsa-verde', label: 'Salsa verde casera', price: TOPPING, group: 'Salsas y toques' },
+  { id: 'salsa-trufa', label: 'Salsa de trufa', price: TOPPING, group: 'Salsas y toques' },
+  { id: 'salsa-barbacoa', label: 'Salsa barbacoa', price: TOPPING, group: 'Salsas y toques' },
+  { id: 'aceite-picante', label: 'Aceite picante Nonno', price: TOPPING, group: 'Salsas y toques' },
+  { id: 'modena', label: 'Módena', price: TOPPING, group: 'Salsas y toques' },
 ]
 
 export const getExtra = (id) => EXTRAS.find((e) => e.id === id) || null

@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Bell, BellOff, RefreshCw, LogOut, Pizza, Power, ChefHat, Store, Printer, ClipboardList } from 'lucide-react'
 import Counter from './Counter'
 import Stock from './Stock'
+import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
 import { printTicket } from './printTicket'
-import { fetchOrders, updateOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus } from './api'
+import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus } from './api'
 import { useOrderAlert } from './useOrderAlert'
 import OrderCard from './OrderCard'
 import { price } from '../lib/format'
@@ -36,6 +37,9 @@ const writePref = (key, value) => {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch { /* modo privado: solo dura la sesión */ }
 }
 
+/* Últimos pedidos cargados, por si se abre el panel sin conexión. */
+const cacheKey = (scope) => `nonno.panel.cache.${scope}`
+
 /* Un pedido modificado vuelve a imprimirse: la clave cambia con la edición. */
 const printKey = (o) => `${o.id}:${o.edited_at || ''}`
 
@@ -55,7 +59,10 @@ function urlBase64ToUint8Array(base64) {
 }
 
 export default function AdminPanel({ scope, onSignedOut }) {
-  const [orders, setOrders] = useState([])
+  /* Plan B: al abrir sin conexión se ven los últimos pedidos guardados. */
+  const [orders, setOrders] = useState(() => readPref(cacheKey(scope), { orders: [] }).orders)
+  const [offlineSince, setOfflineSince] = useState(null)
+  const [queue, setQueue] = useState(readQueue)
   const [filter, setFilter] = useState('activos')
   /* Solo lo usa la dirección: las sedes no eligen, ven la suya y ya. */
   const [sedeVista, setSedeVista] = useState('todas')
@@ -109,13 +116,50 @@ export default function AdminPanel({ scope, onSignedOut }) {
       firstLoad.current = false
 
       setOrders(list)
+      setOfflineSince(null)
+      writePref(cacheKey(scope), { orders: list, at: Date.now() })
+      syncQueue()
     } catch (err) {
       if (err.status === 401) { onSignedOut(); return }
-      setError(err.message)
+      /* Sin conexión: se sigue enseñando lo último que se cargó y se
+         reintenta en cada vuelta. El aviso lo pinta la cabecera. */
+      if (isConnectionError(err)) setOfflineSince((t) => t || Date.now())
+      else setError(err.message)
     } finally {
       setLoading(false)
     }
-  }, [play, onSignedOut])
+  }, [play, onSignedOut, scope])
+
+  /* Pedidos del mostrador tomados sin conexión: se envían en cuanto
+     el servidor vuelve a responder. Su clave única evita duplicados. */
+  const syncing = useRef(false)
+  const syncQueue = async () => {
+    if (syncing.current) return
+    const pending = readQueue().filter((e) => !e.error)
+    if (!pending.length) return
+    syncing.current = true
+    for (const entry of pending) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const { order } = await createOrder(entry.payload)
+        dequeue(entry.payload.clientKey)
+        if (order) {
+          knownIds.current.add(order.id)
+          printedKeys.current.add(printKey(order))
+          /* Su comanda ya salió en papel: que cocina no la vuelva a imprimir. */
+          updateOrder(order.id, { printed: true }).catch(() => {})
+          setOrders((prev) => [order, ...prev.filter((o) => o.id !== order.id)])
+        }
+      } catch (err) {
+        if (isConnectionError(err)) break
+        /* El servidor lo rechaza (dato que falta, etc.): se queda
+           apuntado para que alguien lo revise; la comanda ya salió. */
+        enqueue({ ...entry, error: err.message })
+      }
+    }
+    syncing.current = false
+    setQueue(readQueue())
+  }
 
   useEffect(() => {
     load()
@@ -218,6 +262,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
   /* Pedido creado o cambiado desde el mostrador: entra ya en la lista
      sin esperar al sondeo, y sin sonar en el equipo que lo ha creado. */
   const upsertOrder = (order) => {
+    if (order.offline) { setQueue(readQueue()); return }
     knownIds.current.add(order.id)
     setOrders((prev) => (prev.some((o) => o.id === order.id)
       ? prev.map((o) => (o.id === order.id ? order : o))
@@ -278,7 +323,38 @@ export default function AdminPanel({ scope, onSignedOut }) {
         </div>
       )}
 
-      <header className={`sticky top-0 z-30 bg-crema/95 backdrop-blur-md border-b border-carbon/10 ${sede ? '' : ''}`}>
+      {/* Plan B visible: nadie trabaja creyendo que el panel está al día */}
+      {offlineSince && (
+        <div className="bg-carbon text-crema px-4 py-3 text-center" role="alert">
+          <p className="font-sans font-bold text-sm">
+            SIN CONEXIÓN CON EL SERVIDOR desde las {new Date(offlineSince).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+          </p>
+          <p className="text-xs text-crema/70 mt-0.5">
+            Se ven los últimos pedidos guardados y se reintenta solo. En el mostrador los pedidos se pueden seguir tomando: sale la comanda en papel y se envían al volver la conexión.
+            Los clientes de la web ven la opción de pedir por WhatsApp o por teléfono.
+          </p>
+        </div>
+      )}
+      {queue.length > 0 && (
+        <div className="bg-horno text-crema px-4 py-2 text-sm">
+          <p className="font-semibold text-center">
+            {queue.filter((e) => !e.error).length > 0 && `${queue.filter((e) => !e.error).length} pedido(s) del mostrador esperando a enviarse. `}
+          </p>
+          {queue.filter((e) => e.error).map((e) => (
+            <p key={e.payload.clientKey} className="text-center">
+              {e.order.ref} ({e.order.customer_name}) no se pudo registrar: {e.error}{' '}
+              <button
+                className="underline"
+                onClick={() => { dequeue(e.payload.clientKey); setQueue(readQueue()) }}
+              >
+                Descartar (ya está en papel)
+              </button>
+            </p>
+          ))}
+        </div>
+      )}
+
+      <header className="sticky top-0 z-30 bg-crema/95 backdrop-blur-md border-b border-carbon/10">
         <div className="shell py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
@@ -448,7 +524,10 @@ export default function AdminPanel({ scope, onSignedOut }) {
           <p className="mono text-carbon/40 py-16 text-center">CARGANDO PEDIDOS…</p>
         ) : view === 'mostrador' ? (
           <Counter
-            orders={porSede}
+            orders={[
+              ...queue.map((e) => e.order).filter((o) => locationIds.includes(o.location_id)),
+              ...porSede,
+            ]}
             locationIds={locationIds}
             defaultLocationId={locationIds[0]}
             onSaved={upsertOrder}

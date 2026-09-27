@@ -38,7 +38,7 @@ export const SITE = {
     adapter: 'api',
     apiEndpoint: '/api/orders',
     externalUrl: null,
-    /* El coste de envío va por zonas: ver deliveryZones en locations.js */
+    /* El coste de envío va por distancia: ver `delivery` en locations.js */
   },
 
   /* Estados de UI centralizados: mismo idioma en toda la web */

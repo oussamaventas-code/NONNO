@@ -1,17 +1,24 @@
 import { useRef, useState } from 'react'
-import { X, ChevronLeft, MapPin, Package, Truck, Check, Pizza } from 'lucide-react'
+import { X, ChevronLeft, MapPin, Package, Truck, Check, Pizza, Phone, MessageCircle } from 'lucide-react'
 import { LOCATIONS } from '../data/locations'
 import { useStore, useActions, useCart, useSelectedLocation } from '../store/StoreContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useStoreStatus } from '../hooks/useStoreStatus'
-import { submitOrder } from '../lib/orderGateway'
-import { price } from '../lib/format'
+import { submitOrder, fallbackContacts } from '../lib/orderGateway'
+import { deliveryTiers } from '../lib/delivery'
+import DeliveryPicker from './DeliveryPicker'
+import { price, orderRef } from '../lib/format'
 import { lineTotal } from '../lib/pricing'
 import { orderTotals, pickupDeals } from '../lib/orderTotals'
 import { hourOf, ovenUnits } from '../lib/kitchenSlots'
 import { useKitchenEta } from '../hooks/useKitchenEta'
 import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
+
+const newClientKey = () =>
+  (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
 
 const STEPS = [
   { id: 1, label: 'SEDE' },
@@ -48,6 +55,7 @@ export default function Checkout() {
   const panelRef = useRef(null)
   const dialogRef = useRef(null)
   const bodyRef = useRef(null)
+  const clientKey = useRef(null)
 
   useLockBodyScroll(open)
   useFocusTrap(dialogRef, open, closeCheckout)
@@ -65,9 +73,11 @@ export default function Checkout() {
 
   if (!open || isEmpty) return null
 
-  const totals = orderTotals({ lines, mode: order.mode, locationId, zoneId: customer.zone })
+  const totals = orderTotals({
+    lines, mode: order.mode, locationId, where: { coords: customer.coords, tier: customer.tier },
+  })
   const pickupSaving = pickupDeals(lines).discount
-  const zones = location?.deliveryZones || []
+  const tiers = deliveryTiers(locationId)
   const readyAt = eta?.ok ? Date.parse(eta.readyAt) : null
 
   const goTo = (n) => setCheckoutStep(Math.min(4, Math.max(1, n)))
@@ -80,8 +90,7 @@ export default function Checkout() {
       const errs = {}
       if (!customer.name.trim()) errs.name = true
       if (!customer.phone.trim()) errs.phone = true
-      if (order.mode === 'delivery' && !zones.some((z) => z.id === customer.zone)) errs.zone = true
-      if (order.mode === 'delivery' && !customer.address.trim()) errs.address = true
+      if (order.mode === 'delivery' && (!customer.address.trim() || !totals.delivery?.ok)) errs.delivery = true
       setFieldErrors(errs)
       return Object.keys(errs).length === 0
     }
@@ -96,7 +105,13 @@ export default function Checkout() {
   const handleSubmit = async () => {
     if (blocked) return
     setSubmitting(true)
-    const result = await submitOrder({ lines, locationId, mode: order.mode, customer })
+    /* La misma clave en cada reintento: si el primer envío sí llegó,
+       el servidor no crea un segundo pedido. */
+    clientKey.current ||= { key: newClientKey(), ref: orderRef() }
+    const result = await submitOrder({
+      lines, locationId, mode: order.mode, customer, clientKey: clientKey.current.key, ref: clientKey.current.ref,
+    })
+    if (result.status !== 'error') clientKey.current = null
     setSubmitting(false)
     setOrderStatus(result.status === 'error' ? 'error' : 'success', {
       result,
@@ -161,7 +176,9 @@ export default function Checkout() {
           )}
 
           {order.status === 'error' && (
-            <OrderError message={order.result?.message} onRetry={() => setOrderStatus('idle')} />
+            order.result?.fallback
+              ? <OrderFallback result={order.result} locationId={locationId} onRetry={handleSubmit} retrying={submitting} onDone={resetOrder} />
+              : <OrderError message={order.result?.message} onRetry={() => setOrderStatus('idle')} />
           )}
 
           {order.status === 'idle' && step === 1 && (
@@ -169,14 +186,14 @@ export default function Checkout() {
           )}
 
           {order.status === 'idle' && step === 2 && (
-            <StepMode modes={modes} value={order.mode} onPick={setMode} location={location} pickupSaving={pickupSaving} zones={zones} readyAt={readyAt} />
+            <StepMode modes={modes} value={order.mode} onPick={setMode} location={location} pickupSaving={pickupSaving} tiers={tiers} readyAt={readyAt} />
           )}
 
           {order.status === 'idle' && step === 3 && (
             <StepCustomer
               customer={customer}
               mode={order.mode}
-              zones={zones}
+              locationId={locationId}
               errors={fieldErrors}
               onChange={(patch) => { setCustomer(patch); setFieldErrors({}) }}
             />
@@ -242,9 +259,9 @@ function StepLocation({ locationId, onPick }) {
 }
 
 /* ── Paso 2: recoger o entrega ────────────────────────────────── */
-function StepMode({ modes, value, onPick, location, pickupSaving, zones, readyAt }) {
-  const minFee = zones.length ? Math.min(...zones.map((z) => z.fee)) : null
-  const minTravel = zones.length ? Math.min(...zones.map((z) => z.minutes)) : 0
+function StepMode({ modes, value, onPick, location, pickupSaving, tiers, readyAt }) {
+  const minFee = tiers.length ? tiers[0].fee : null
+  const minTravel = tiers.length ? tiers[0].minutes : 0
   const when = readyAt && {
     pickup: `Lista a las ${hourOf(readyAt)}`,
     delivery: `Llega desde las ${hourOf(readyAt + minTravel * 60000)}`,
@@ -296,7 +313,7 @@ function StepMode({ modes, value, onPick, location, pickupSaving, zones, readyAt
 }
 
 /* ── Paso 3: datos ────────────────────────────────────────────── */
-function StepCustomer({ customer, mode, zones, errors, onChange }) {
+function StepCustomer({ customer, mode, locationId, errors, onChange }) {
   const field = (key, label, placeholder, type = 'text') => (
     <div>
       <label htmlFor={`f-${key}`} className="mono text-carbon/50 mb-2 block">{label}</label>
@@ -323,33 +340,13 @@ function StepCustomer({ customer, mode, zones, errors, onChange }) {
         {field('name', 'NOMBRE', 'Tu nombre')}
         {field('phone', 'TELÉFONO', '600 000 000', 'tel')}
         {mode === 'delivery' && (
-          <div>
-            <p className="mono text-carbon/50 mb-2">ZONA DE ENTREGA</p>
-            <div className="grid grid-cols-2 gap-2">
-              {zones.map((z) => {
-                const active = customer.zone === z.id
-                return (
-                  <button
-                    key={z.id}
-                    type="button"
-                    onClick={() => onChange({ zone: z.id })}
-                    aria-pressed={active}
-                    className={[
-                      'flex items-center justify-between gap-2 rounded-2xl border px-3.5 py-3 text-left text-sm transition-all',
-                      active ? 'border-tomate bg-tomate/5 font-semibold text-carbon' : 'border-carbon/12 text-carbon/70 hover:border-carbon/30',
-                    ].join(' ')}
-                  >
-                    <span>{z.name}</span>
-                    <span className="mono normal-case text-carbon/50 whitespace-nowrap">+{price(z.fee)}</span>
-                  </button>
-                )
-              })}
-            </div>
-            {errors.zone && <p className="mt-1 text-xs text-tomate">Elige tu zona.</p>}
-            <p className="mt-2 text-xs text-carbon/40">¿No ves tu zona? De momento no llegamos ahí: puedes pedir para recoger.</p>
-          </div>
+          <DeliveryPicker
+            locationId={locationId}
+            value={customer}
+            onChange={onChange}
+            invalid={errors.delivery}
+          />
         )}
-        {mode === 'delivery' && field('address', 'DIRECCIÓN DE ENTREGA', 'Calle, número, piso')}
         <div>
           <label htmlFor="f-notes" className="mono text-carbon/50 mb-2 block">NOTAS (OPCIONAL)</label>
           <textarea
@@ -368,7 +365,8 @@ function StepCustomer({ customer, mode, zones, errors, onChange }) {
 
 /* ── Paso 4: resumen ──────────────────────────────────────────── */
 function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
-  const arrival = readyAt && (mode === 'delivery' && totals.zone ? readyAt + totals.zone.minutes * 60000 : readyAt)
+  const trip = mode === 'delivery' && totals.delivery?.ok ? totals.delivery : null
+  const arrival = readyAt && (trip ? readyAt + trip.minutes * 60000 : readyAt)
   return (
     <div>
       <p className="mono text-tomate mb-2">04 / RESUMEN</p>
@@ -397,7 +395,7 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
           <div className="p-4 flex items-center justify-between gap-4">
             <span className="mono text-carbon/45 flex-shrink-0">DIRECCIÓN</span>
             <span className="text-sm font-semibold text-carbon text-right">
-              {customer.address}{totals.zone ? ` · ${totals.zone.name}` : ''}
+              {customer.address}{trip ? ` · ${trip.label}` : ''}
             </span>
           </div>
         )}
@@ -442,7 +440,7 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
         )}
         {totals.deliveryFee > 0 && (
           <div className="flex items-center justify-between text-carbon/60">
-            <span>Envío · {totals.zone.name}</span>
+            <span>Envío · {trip.label}</span>
             <span className="mono">+{price(totals.deliveryFee)}</span>
           </div>
         )}
@@ -485,6 +483,46 @@ function OrderSuccess({ result, onClose }) {
         <span className="btn-layer bg-tomate" />
         <span className="btn-label">CERRAR</span>
       </button>
+    </div>
+  )
+}
+
+/* ── Estado: plan B ───────────────────────────────────────────────
+   La web no ha podido dejar el pedido en cocina (sin conexión o
+   servidor caído). El pedido no se pierde: sale ya escrito por
+   WhatsApp, se puede llamar, o reintentar. */
+function OrderFallback({ result, locationId, onRetry, retrying, onDone }) {
+  const { whatsappUrl, phones } = fallbackContacts(locationId, result.text)
+  return (
+    <div className="text-center py-4">
+      <span className="inline-flex w-16 h-16 rounded-full bg-horno/15 text-horno items-center justify-center mb-5">
+        <Phone className="w-7 h-7" strokeWidth={1.5} />
+      </span>
+      <h3 className="font-sans font-extrabold uppercase text-xl text-carbon">No hemos podido enviarlo a cocina</h3>
+      <p className="mt-2 text-sm text-carbon/60 max-w-sm mx-auto">
+        Tu pedido no se ha perdido. {whatsappUrl ? 'Mándanoslo por WhatsApp (ya va escrito) o llámanos.' : 'Llámanos y te lo tomamos por teléfono.'}
+      </p>
+
+      <div className="mt-6 flex flex-col gap-3 max-w-xs mx-auto">
+        {whatsappUrl && (
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn w-full bg-albahaca text-crema">
+            <span className="btn-layer bg-carbon" />
+            <span className="btn-label"><MessageCircle className="w-4 h-4" /> ENVIAR POR WHATSAPP</span>
+          </a>
+        )}
+        {phones.map((p) => (
+          <a key={p} href={`tel:+34${p.replace(/\s/g, '')}`} className="btn w-full border border-carbon/20 bg-transparent text-carbon">
+            <span className="btn-layer bg-carbon/5" />
+            <span className="btn-label"><Phone className="w-4 h-4" /> LLAMAR AL {p}</span>
+          </a>
+        ))}
+        <button onClick={onRetry} disabled={retrying} className="mono normal-case mt-1 text-carbon/60 hover:text-tomate disabled:opacity-50">
+          {retrying ? 'Reintentando…' : 'Volver a intentarlo por la web'}
+        </button>
+        <button onClick={onDone} className="mono normal-case text-carbon/40 hover:text-carbon">
+          Ya lo he enviado · vaciar el carrito
+        </button>
+      </div>
     </div>
   )
 }

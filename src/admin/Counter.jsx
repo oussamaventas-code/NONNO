@@ -134,7 +134,10 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
             const st = STATUS[o.status] || STATUS.nuevo
             const ch = CHANNEL[o.channel] || CHANNEL.web
             const paid = o.payment_status === 'pagado'
-            const editable = isActive(o) && (o.items || []).every((i) => i.id)
+            /* Pedido tomado sin conexión, aún en la cola de este equipo:
+               solo se puede reimprimir hasta que llegue al sistema. */
+            const local = Boolean(o.offline)
+            const editable = !local && isActive(o) && (o.items || []).every((i) => i.id)
             const busy = busyId === o.id
             return (
               <li key={o.id} className="rounded-card border border-carbon/10 bg-crema p-4 sm:p-5">
@@ -152,6 +155,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
                           : <><Package className="w-3.5 h-3.5" /> Recoge</>}
                       </span>
                       {o.edited_at && <span className="mono normal-case rounded-full bg-horno/15 px-2.5 py-1 text-horno">Modificado</span>}
+                      {local && <span className="mono normal-case rounded-full bg-carbon px-2.5 py-1 text-crema font-bold">SIN ENVIAR · en papel</span>}
                     </div>
                     <p className="mt-2 font-semibold text-carbon">
                       {o.customer_name}{o.customer_phone ? ` · ${o.customer_phone}` : ''}
@@ -162,7 +166,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
                     {o.ready_at && isActive(o) && (
                       <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-carbon">
                         <Clock className="w-3.5 h-3.5" />
-                        {o.mode === 'delivery' ? `Sale ${hourOf(o.ready_at)} · llega ${hourOf(o.eta_at)}` : `Listo a las ${hourOf(o.ready_at)}`}
+                        {o.mode === 'delivery' && o.eta_at ? `Sale ${hourOf(o.ready_at)} · llega ${hourOf(o.eta_at)}` : `Listo a las ${hourOf(o.ready_at)}`}
                       </p>
                     )}
                   </div>
@@ -176,13 +180,13 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {!paid && o.status !== 'cancelado' && (
+                  {!local && !paid && o.status !== 'cancelado' && (
                     <button onClick={() => setCharging(o)} disabled={busy} className="btn bg-albahaca text-crema px-5 disabled:opacity-50">
                       <span className="btn-layer bg-carbon" />
                       <span className="btn-label"><Euro className="w-4 h-4" /> COBRAR</span>
                     </button>
                   )}
-                  {isActive(o) && (
+                  {!local && isActive(o) && (
                     <button onClick={() => patch(o, { status: 'entregado' })} disabled={busy} className="btn bg-carbon text-crema px-5 disabled:opacity-50">
                       <span className="btn-layer bg-tomate" />
                       <span className="btn-label"><PackageCheck className="w-4 h-4" /> ENTREGADO</span>
@@ -198,7 +202,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
                     <span className="btn-layer bg-carbon/5" />
                     <span className="btn-label"><Printer className="w-4 h-4" /> TICKET</span>
                   </button>
-                  {paid && (
+                  {!local && paid && (
                     <button
                       onClick={() => patch(o, { paymentStatus: 'pendiente' })}
                       disabled={busy}

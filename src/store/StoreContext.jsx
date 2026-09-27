@@ -18,7 +18,9 @@ import { getProduct } from '../data/menu'
    del cliente. La UI nunca se persiste.
    ═══════════════════════════════════════════════════════════════ */
 
-const EMPTY_CUSTOMER = { name: '', phone: '', address: '', zone: '', notes: '' }
+/* coords: punto de entrega localizado. tier: tramo de distancia elegido
+   a mano cuando no se pudo localizar (plan B). */
+const EMPTY_CUSTOMER = { name: '', phone: '', address: '', coords: null, tier: null, notes: '' }
 
 const initialState = {
   locationId: null,

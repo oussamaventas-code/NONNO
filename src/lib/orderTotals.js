@@ -1,5 +1,5 @@
 import { getProduct, priceOf, PICKUP_DEALS } from '../data/menu.js'
-import { getDeliveryZone } from '../data/locations.js'
+import { deliveryQuote } from './delivery.js'
 
 /* ═══════════════════════════════════════════════════════════════
    TOTALES DEL PEDIDO
@@ -81,19 +81,20 @@ export function pickupDeals(lines = []) {
  * @param {Array<{productId, portionId?, qty, unitPrice}>} input.lines
  * @param {'pickup'|'delivery'|null} input.mode
  * @param {string} input.locationId
- * @param {string} [input.zoneId]  zona de reparto (solo entrega)
+ * @param {{ coords?: {lat, lng}, tier?: number }} [input.where]  punto de entrega (solo entrega)
+ * @returns delivery: presupuesto de envío (ver deliveryQuote) o null si es recogida
  */
-export function orderTotals({ lines = [], mode, locationId, zoneId }) {
+export function orderTotals({ lines = [], mode, locationId, where }) {
   const subtotalCents = lines.reduce((sum, l) => sum + cents(l.unitPrice) * l.qty, 0)
   const { discount, deals } = mode === 'pickup' ? pickupDeals(lines) : { discount: 0, deals: [] }
-  const zone = mode === 'delivery' ? getDeliveryZone(locationId, zoneId) : null
-  const deliveryFee = zone ? zone.fee : 0
+  const delivery = mode === 'delivery' ? deliveryQuote(locationId, where) : null
+  const deliveryFee = delivery?.ok ? delivery.fee : 0
 
   return {
     subtotal: euros(subtotalCents),
     discount,
     deals,
-    zone,
+    delivery,
     deliveryFee,
     total: euros(subtotalCents - cents(discount) + cents(deliveryFee)),
   }
