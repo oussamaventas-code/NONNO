@@ -49,6 +49,12 @@ export const routeAction = (locationId, action, data) =>
 export const fetchDisplay = (locationId) =>
   request(`/api/display?location=${encodeURIComponent(locationId)}`)
 
+/** { from, to, location? }. Solo la dirección puede verlo (ver api/billing.js). */
+export const fetchBilling = ({ from, to, location }) => {
+  const qs = new URLSearchParams({ from, to, ...(location ? { location } : {}) })
+  return request(`/api/billing?${qs}`)
+}
+
 export const fetchStoreStatus = () => request('/api/store-status')
 
 export const setStoreStatus = (locationId, isOpen) =>

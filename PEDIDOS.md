@@ -100,6 +100,23 @@ Para que no falle durante el servicio:
 
 ---
 
+## Facturación (pestaña "Facturación" del panel, solo dirección)
+
+Solo aparece con la contraseña que ve las dos sedes (`ADMIN_PASSWORD`); las contraseñas de un solo local (`ADMIN_PASSWORD_SANGONERA`, `ADMIN_PASSWORD_SANTO_ANGEL`) no la ven, ni desde el servidor aunque se manipule la petición.
+
+Es un informe calculado contra la base de datos (no los últimos pedidos cargados): elige **Hoy, Ayer, Esta semana, Este mes o un rango personalizado**, y con el filtro de sede de arriba (**Todas las sedes / Sangonera / Santo Ángel**) se puede ver junto o por separado.
+
+Muestra:
+
+- **Facturación, nº de pedidos y ticket medio.**
+- **Cobrado** frente a **pendiente de cobro** (según el estado de pago de cada pedido).
+- Gráfico simple **por día**.
+- Desglose **por sede**, **recogida/entrega**, **de dónde viene el pedido** (web/mostrador/teléfono) y **forma de pago** (efectivo/tarjeta, solo lo ya cobrado).
+
+"Facturación" cuenta todos los pedidos no cancelados del rango, se hayan cobrado ya o no — igual que el aviso rápido de "hoy" que ya había en la cabecera del panel, que sigue ahí para un vistazo rápido sin entrar en la pestaña.
+
+---
+
 ## Reparto (pestaña "Reparto" del panel)
 
 El panel agrupa solo los pedidos a domicilio en **salidas**: los que están listos a horas parecidas y cerca entre sí van juntos (máximo 4 paradas), en el orden de paradas más corto.

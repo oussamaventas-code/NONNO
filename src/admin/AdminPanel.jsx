@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, RefreshCw, LogOut, Pizza, Power, ChefHat, Store, Printer, ClipboardList, Truck } from 'lucide-react'
+import { Bell, BellOff, RefreshCw, LogOut, Pizza, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro } from 'lucide-react'
 import Counter from './Counter'
 import Routes from './Routes'
 import Stock from './Stock'
+import Billing from './Billing'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
 import { printTicket } from './printTicket'
 import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus } from './api'
@@ -60,6 +61,10 @@ function urlBase64ToUint8Array(base64) {
 }
 
 export default function AdminPanel({ scope, onSignedOut }) {
+  /* Solo la dirección (sesión con las dos sedes) ve la facturación:
+     es dinero, no algo que necesite el mostrador de un local. */
+  const esDireccion = scope === 'all'
+
   /* Plan B: al abrir sin conexión se ven los últimos pedidos guardados. */
   const [orders, setOrders] = useState(() => readPref(cacheKey(scope), { orders: [] }).orders)
   const [offlineSince, setOfflineSince] = useState(null)
@@ -74,8 +79,14 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const [storeStatuses, setStoreStatuses] = useState({})
   const [togglingStore, setTogglingStore] = useState(null)
   /* Cada equipo recuerda su papel: el ordenador de cocina y el del
-     mostrador imprimen cosas distintas en su propia impresora. */
-  const [view, setView] = useState(() => readPref(PREF_VIEW, 'cocina'))
+     mostrador imprimen cosas distintas en su propia impresora. La
+     preferencia es del navegador, no de la sesión: si en ese mismo
+     equipo entra luego una sede sin permiso de ver facturación, no
+     se queda ahí abierta. */
+  const [view, setView] = useState(() => {
+    const saved = readPref(PREF_VIEW, 'cocina')
+    return saved === 'facturacion' && !esDireccion ? 'cocina' : saved
+  })
   const [autoPrint, setAutoPrint] = useState(() => readPref(PREF_AUTOPRINT, false))
 
   const { play } = useOrderAlert()
@@ -281,7 +292,6 @@ export default function AdminPanel({ scope, onSignedOut }) {
   }
 
   /* ── Datos derivados ─────────────────────────────────────────── */
-  const esDireccion = scope === 'all'
   const sede = SEDES[scope]
 
   /* El servidor ya envía solo lo que esta sesión puede ver. La
@@ -319,7 +329,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
       {sede && (
         <div className={`${sede.banda} ${sede.texto} py-2 text-center`}>
           <p className="mono normal-case tracking-[0.2em] font-bold">
-            {{ mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO' }[view] || 'COCINA'} · {sede.nombre.toUpperCase()}
+            {{ mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO', facturacion: 'FACTURACIÓN' }[view] || 'COCINA'} · {sede.nombre.toUpperCase()}
           </p>
         </div>
       )}
@@ -374,6 +384,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
                   { id: 'mostrador', label: 'Mostrador', Icon: Store },
                   { id: 'reparto', label: 'Reparto', Icon: Truck },
                   { id: 'stock', label: 'Stock', Icon: ClipboardList },
+                  /* Solo dirección: es dinero, no algo que vea el mostrador de un local. */
+                  ...(esDireccion ? [{ id: 'facturacion', label: 'Facturación', Icon: Euro }] : []),
                 ].map(({ id, label, Icon }) => (
                   <button
                     key={id}
@@ -520,7 +532,9 @@ export default function AdminPanel({ scope, onSignedOut }) {
           </p>
         )}
 
-        {view === 'stock' ? (
+        {view === 'facturacion' && esDireccion ? (
+          <Billing locationId={sedeVista === 'todas' ? null : sedeVista} onError={setError} />
+        ) : view === 'stock' ? (
           <Stock locationIds={locationIds} onError={setError} />
         ) : loading ? (
           <p className="mono text-carbon/40 py-16 text-center">CARGANDO PEDIDOS…</p>
