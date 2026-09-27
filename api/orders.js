@@ -4,6 +4,7 @@ import { notifyNewOrder } from './_lib/push.js'
 import { sanitizeOrder, validateOrder } from './_lib/order.js'
 import { isStoreOpen } from './_lib/store.js'
 import { precheck, assignSlot, SLOT_ERRORS } from './_lib/slots.js'
+import { notifyCustomer } from './_lib/sms.js'
 
 const reply = (row, staff) => ({
   id: row.id,
@@ -120,11 +121,17 @@ export default async function handler(req, res) {
     }
     const row = assigned.row
 
-    /* El aviso no debe tumbar el pedido si falla. */
+    /* Los avisos no deben tumbar el pedido si fallan. */
     try {
       await notifyNewOrder(row)
     } catch (err) {
       console.error('Error enviando la notificación:', err)
+    }
+    try {
+      const sms = await notifyCustomer(db(), row, 'recibido')
+      if (sms) row.sms = sms
+    } catch (err) {
+      console.error('Error enviando el SMS:', err)
     }
 
     return res.status(201).json(reply(row, staff))

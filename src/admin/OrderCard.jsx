@@ -2,6 +2,7 @@ import { Printer, Truck, Package, Phone, MapPin, Clock, Euro, CircleDollarSign }
 import { price } from '../lib/format'
 import { printTicket } from './printTicket'
 import { hourOf } from '../lib/kitchenSlots'
+import SmsStatus from './SmsStatus'
 
 const FLOW = [
   { id: 'nuevo', label: 'NUEVO', next: 'horno', action: 'AL HORNO' },
@@ -29,7 +30,7 @@ const BADGE = {
 
 const minutesAgo = (iso) => Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000))
 
-export default function OrderCard({ order, onStatus, busy }) {
+export default function OrderCard({ order, onStatus, onUpdated, busy }) {
   const step = FLOW.find((s) => s.id === order.status) || FLOW[0]
   const waiting = minutesAgo(order.created_at)
   const isOpen = !['entregado', 'cancelado'].includes(order.status)
@@ -160,6 +161,7 @@ export default function OrderCard({ order, onStatus, busy }) {
             Dirección sin verificar: el cliente eligió la distancia a mano. Confírmala por teléfono.
           </span>
         )}
+        <SmsStatus order={order} onUpdated={onUpdated} />
         {order.notes && (
           <span className="mt-1 rounded-xl bg-carbon/5 px-3 py-2 text-carbon/80">
             <strong>Notas:</strong> {order.notes}

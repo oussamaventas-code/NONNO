@@ -83,6 +83,10 @@ alter table public.orders add column if not exists delivery_verified boolean;
 alter table public.orders add column if not exists client_key text;
 create unique index if not exists orders_client_key_idx on public.orders (client_key) where client_key is not null;
 
+-- SMS al cliente: qué avisos se han mandado y si llegaron a salir.
+-- { "recibido": {"ok":true,"at":"..."}, "listo": {...}, "cancelado": {...} }
+alter table public.orders add column if not exists sms jsonb not null default '{}'::jsonb;
+
 do $$
 begin
   if not exists (

@@ -2,6 +2,9 @@ import { db, isConfigured } from '../_lib/supabase.js'
 import { requireSession, SCOPE_ALL } from '../_lib/auth.js'
 import { sanitizeOrder, validateOrder, PAYMENT_METHODS } from '../_lib/order.js'
 import { assignSlot, SLOT_ERRORS } from '../_lib/slots.js'
+import { notifyCustomer } from '../_lib/sms.js'
+
+const SMS_KINDS = ['recibido', 'listo', 'cancelado']
 
 const STATUSES = ['nuevo', 'horno', 'listo', 'entregado', 'cancelado']
 const PAYMENT_STATUSES = ['pendiente', 'pagado']
@@ -42,7 +45,15 @@ export default async function handler(req, res) {
   if (req.body?.edit) return editOrder(req, res, id, scoped)
 
   const patch = {}
-  const { status, printed, seen, paymentStatus, paymentMethod } = req.body || {}
+  const { status, printed, seen, paymentStatus, paymentMethod, resendSms } = req.body || {}
+
+  /* Reintentar un SMS que no salió (móvil apagado, sin cobertura…). */
+  if (SMS_KINDS.includes(resendSms)) {
+    const { data: current } = await scoped(db().from('orders').select('*').eq('id', id)).maybeSingle()
+    if (!current) return res.status(404).json({ error: 'Ese pedido no es de esta sede.' })
+    const sms = await notifyCustomer(db(), { ...current, channel: 'web' }, resendSms)
+    return res.status(200).json({ order: { ...current, sms: sms || current.sms } })
+  }
 
   if (status !== undefined) {
     if (!STATUSES.includes(status)) {
@@ -77,6 +88,16 @@ export default async function handler(req, res) {
   }
   if (!data) {
     return res.status(404).json({ error: 'Ese pedido no es de esta sede.' })
+  }
+
+  /* Aviso al cliente cuando cocina lo marca listo o se cancela. */
+  if (status === 'listo' || status === 'cancelado') {
+    try {
+      const sms = await notifyCustomer(db(), data, status)
+      if (sms) data.sms = sms
+    } catch (err) {
+      console.error('Error enviando el SMS:', err)
+    }
   }
 
   return res.status(200).json({ order: data })

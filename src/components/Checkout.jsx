@@ -338,7 +338,10 @@ function StepCustomer({ customer, mode, locationId, errors, onChange }) {
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">¿A nombre de quién?</h3>
       <div className="flex flex-col gap-5">
         {field('name', 'NOMBRE', 'Tu nombre')}
-        {field('phone', 'TELÉFONO', '600 000 000', 'tel')}
+        <div>
+          {field('phone', 'TELÉFONO MÓVIL', '600 000 000', 'tel')}
+          <p className="mt-1.5 text-xs text-carbon/45">Te mandamos un SMS con la confirmación y la hora, y otro cuando esté listo.</p>
+        </div>
         {mode === 'delivery' && (
           <DeliveryPicker
             locationId={locationId}

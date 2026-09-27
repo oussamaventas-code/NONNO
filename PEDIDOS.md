@@ -80,6 +80,26 @@ Con el panel abierto en el ordenador del local, el aviso sonoro ya cubre el caso
 
 ---
 
+## SMS al cliente (gratis, desde un Android del local)
+
+El cliente recibe un SMS al confirmar el pedido (con la hora), otro cuando cocina lo marca **listo** (o "sale ya" si es a domicilio) y otro si se **cancela**. A quien pide en el mostrador solo le llega el de "listo".
+
+Los SMS salen desde un móvil Android del local con su propia tarifa: si la tarifa incluye SMS, no cuesta nada.
+
+1. En el móvil Android, instala **SMS Gateway for Android** (gratuita y de código abierto, [sms-gate.app](https://sms-gate.app)).
+2. Ábrela, activa **Cloud server** y pulsa **Online**. La app muestra un **usuario** y una **contraseña**.
+3. En Vercel → **Environment Variables**, añade `SMS_GATEWAY_USER` y `SMS_GATEWAY_PASSWORD` con esos dos valores. Vuelve a desplegar.
+4. Haz un pedido de prueba con tu móvil: debe llegarte el SMS en unos segundos.
+
+Para que no falle durante el servicio:
+
+- El móvil tiene que estar **encendido, cargando y con cobertura o wifi**.
+- En Ajustes → Batería, quita la **optimización de batería** a la app, o Android la dormirá.
+
+**Si el móvil está apagado o sin cobertura**, el pedido entra igual: solo no sale el SMS. En el panel aparece "No salió el SMS" con un botón para **reintentar**; si no, se llama al cliente. Sin estas variables configuradas, la web funciona igual pero no manda SMS.
+
+---
+
 ## Cómo funciona por dentro
 
 ```

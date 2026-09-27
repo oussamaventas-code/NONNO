@@ -551,6 +551,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
                 order={order}
                 busy={busyId === order.id}
                 onStatus={handleStatus}
+                onUpdated={upsertOrder}
               />
             ))}
           </div>
