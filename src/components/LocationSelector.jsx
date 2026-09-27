@@ -1,7 +1,8 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { LOCATIONS } from '../data/locations'
 import { useSelectedLocation, useActions } from '../store/StoreContext'
 import { useStoreStatus } from '../hooks/useStoreStatus'
+import { useNearestLocation } from '../hooks/useNearestLocation'
 import LocationCard from './LocationCard'
 import { gsap, useGSAP, EASE, STAGGER, onEnter , revealFrom } from '../lib/motion'
 import { scrollToSection } from '../lib/scroll'
@@ -14,7 +15,16 @@ export default function LocationSelector() {
   const { locationId } = useSelectedLocation()
   const { setLocation, openCart } = useActions()
   const { isOpen } = useStoreStatus()
+  const nearest = useNearestLocation()
   const rootRef = useRef(null)
+
+  /* Si nadie ha elegido sede todavía (ni queda una guardada de una
+     visita anterior), se le pone directamente la más cercana. El
+     cliente sigue pudiendo cambiarla tocando la otra tarjeta. */
+  useEffect(() => {
+    if (nearest && !locationId) setLocation(nearest.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nearest])
 
   useGSAP(() => {
     revealFrom('.location-card', {
@@ -56,6 +66,7 @@ export default function LocationSelector() {
                 location={loc}
                 selected={locationId === loc.id}
                 closed={!isOpen(loc.id)}
+                nearestKm={nearest?.id === loc.id ? nearest.km : null}
                 onSelect={() => setLocation(loc.id)}
                 onViewMenu={scrollToMenu}
                 onOrder={() => handleOrder(loc.id)}

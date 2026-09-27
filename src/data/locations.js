@@ -34,6 +34,9 @@ export const LOCATIONS = [
 
     // DATOS DE LA CARTA
     address: 'C. Mayor 1, Sangonera la Verde, Murcia',
+    /* Punto físico del local: para saber qué sede está más cerca del
+       cliente (por eso vive aquí y no solo dentro de `delivery`). */
+    coords: { lat: 37.9314349, lng: -1.2125326 },
     phones: ['611 98 18 08', '611 98 18 25'],
     /* Plan B: si la web no puede enviar un pedido, se ofrece mandarlo
        por WhatsApp ya escrito a este número, o llamar.
@@ -90,6 +93,9 @@ export const LOCATIONS = [
     kitchen: { open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
 
     address: null, // TODO
+    /* Centro aproximado del barrio de Santo Ángel — de momento no hay
+       dirección exacta. TODO: SUSTITUIR POR LA DIRECCIÓN REAL Y AJUSTAR. */
+    coords: { lat: 37.9332589, lng: -1.1251159 },
     phones: [], // TODO
     whatsapp: null, // TODO
     hours: null, // TODO

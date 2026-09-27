@@ -1,4 +1,4 @@
-import { Star, Truck, Package, Check, Clock, MapPin, Phone, CalendarClock } from 'lucide-react'
+import { Star, Truck, Package, Check, Clock, MapPin, Phone, CalendarClock, Navigation } from 'lucide-react'
 import { img, srcSet } from '../data/images'
 import { decimal } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
@@ -8,7 +8,7 @@ import { useKitchenEta, minutesUntil } from '../hooks/useKitchenEta'
  * Tarjeta grande de sede — no una card genérica. Imagen editorial,
  * valoración real, servicios indicados y CTA doble.
  */
-export default function LocationCard({ location, selected, closed, onSelect, onOrder, onViewMenu }) {
+export default function LocationCard({ location, selected, closed, nearestKm, onSelect, onOrder, onViewMenu }) {
   const eta = useKitchenEta(closed ? null : location.id, 1)
   const full = eta?.ok === false
 
@@ -49,10 +49,15 @@ export default function LocationCard({ location, selected, closed, onSelect, onO
           <span className="block mt-0.5 text-crema/60 text-base sm:text-lg font-bold">{location.name}</span>
         </h3>
 
-        <div className="mt-3 flex items-center gap-2 mono normal-case text-crema/70">
+        <div className="mt-3 flex flex-wrap items-center gap-2 mono normal-case text-crema/70">
           <Star className="w-3.5 h-3.5 fill-horno text-horno" />
           <span className="text-crema font-semibold">{decimal(location.rating)}</span>
           <span>· {location.reviews} reseñas</span>
+          {nearestKm != null && (
+            <span className="flex items-center gap-1.5 rounded-full bg-albahaca px-2.5 py-1 text-crema">
+              <Navigation className="w-3 h-3" /> A {decimal(nearestKm)} km de ti — la más cercana
+            </span>
+          )}
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
