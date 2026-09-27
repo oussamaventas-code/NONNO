@@ -100,6 +100,18 @@ Para que no falle durante el servicio:
 
 ---
 
+## Pantalla de pedidos en la TV del local
+
+Para que quien espera vea cómo va su pedido: **En preparación** y **¡Listo! Recoge tu pedido**, con el número y el nombre abreviado. Solo aparecen los pedidos para recoger; nunca teléfonos ni direcciones.
+
+1. En la TV (o un ordenador/Chromecast/Fire TV conectado a ella) abre `tu-dominio/pantalla/sangonera` (o `/pantalla/santo-angel`).
+2. Entra con la contraseña del local. Se queda guardada 30 días.
+3. Pulsa **Pantalla completa y sonido** una vez: activa el aviso sonoro cuando un pedido pasa a listo.
+
+Los pedidos pasan a "¡Listo!" cuando cocina pulsa **MARCAR LISTO** en el panel, y desaparecen al marcarlos **ENTREGADO**. Si se corta internet, la TV sigue enseñando lo último que sabía y se pone al día sola al volver.
+
+---
+
 ## Cómo funciona por dentro
 
 ```

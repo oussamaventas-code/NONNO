@@ -23,7 +23,7 @@ const COLOR = {
  * Por eso, tras entrar, la dirección se corrige para que coincida con
  * lo que esa clave abre de verdad.
  */
-export default function Admin({ sedeEnRuta = null }) {
+export default function Admin({ sedeEnRuta = null, base = '/admin', title = 'PANEL DE COCINA', Inside = AdminPanel }) {
   const [state, setState] = useState('comprobando') // comprobando | fuera | dentro
   const [configured, setConfigured] = useState(true)
   const [scope, setScope] = useState(null)
@@ -36,11 +36,13 @@ export default function Admin({ sedeEnRuta = null }) {
 
   /** Deja la dirección acorde con lo que abre la contraseña usada. */
   const ajustarRuta = useCallback((abre) => {
-    const destino = abre && abre !== 'all' ? `/admin/${abre}` : '/admin'
+    /* La dirección puede ver cualquier sede: se respeta la de la URL. */
+    const sedeFinal = abre && abre !== 'all' ? abre : (base === '/pantalla' ? sedeEnRuta : null)
+    const destino = sedeFinal ? `${base}/${sedeFinal}` : base
     if (window.location.pathname.replace(/\/+$/, '') !== destino) {
       window.history.replaceState(null, '', destino)
     }
-  }, [])
+  }, [base, sedeEnRuta])
 
   useEffect(() => {
     getSession()
@@ -79,7 +81,7 @@ export default function Admin({ sedeEnRuta = null }) {
   }
 
   if (state === 'dentro') {
-    return <AdminPanel scope={scope} onSignedOut={() => { setScope(null); setState('fuera') }} />
+    return <Inside scope={scope} sedeEnRuta={sedeEnRuta} onSignedOut={() => { setScope(null); setState('fuera') }} />
   }
 
   return (
@@ -99,7 +101,7 @@ export default function Admin({ sedeEnRuta = null }) {
               LA PIZZA DE <em className="font-serif italic font-semibold">NONNO</em>
             </p>
             <p className="mono text-crema/40 mt-1">
-              {sede ? sede.name.toUpperCase() : 'PANEL DE COCINA'}
+              {sede ? `${title} · ${sede.name.toUpperCase()}` : title}
             </p>
           </div>
 
