@@ -53,21 +53,49 @@ export const PHOTO = {
   bianca: '1571997478779-2adcbbe9ab2f',
   tartufo: '1552539618-7eec9b4d1796',
   rustica: '1594007654729-407eedc4be65',
+  hawaiana: '1597715469889-dd75fe4a1765',
+  salami: '1628840042765-356cda07504e',
+  braulia: '1692737580563-7ba2d896f0f6', // jamón y champiñón
+  atunazo: '1632641730239-fd127af7d679',
+  bacon: '1782402481918-3f558edff05e',
+  guiris: '1627819873302-998f1bdaa562', // huevo y champiñón
+  dulceDeCabra: '1627461985459-51600559fffe',
+  kebabPizza: '1644648965270-55f11e0d7709',
+  chatoYCabra: '1584782930656-e2bc1e803fc7',
+  mexicana: '1657799831232-e9548089a643',
+  marinera: '1763049078203-a13163b549d9',
+  barbacoa: '1734769484424-36b99dd84818',
+  calzone: '1753656681797-3234c89d6d4d',
 
   // Entrantes
   panDeAjo: '1608198093002-ad4e005484ec',
   ensalada: '1540189549336-e6e99c3679fe',
   alitas: '1580217593608-61931cefc821',
+  patatasCheeseBacon: '1743193711514-4f7bc5d78d4d',
+  patatasCheeseKebab: '1762284513031-3d7ad15562bc',
+  patatasFritas: '1606755456206-b25206cde27e',
+  boniatos: '1745792714512-77cffdb16020',
+  nuggets: '1627662055487-551888db3aa8',
+  tequenos: '1778850855907-8fbf7b089621',
+  palitosMozzarella: '1778449665117-2c607bbc7415',
 
   // Bebidas
   limonada: '1621263764928-df1444c5e859',
   zumo: '1600271886742-f049cd451bba',
   vino: '1437418747212-8d9709afab22',
   cafe: '1544787219-7f47ccb76574',
+  refrescoBote: '1554866585-cd94860890b7',
+  aguaBotella: '1523362628745-0c100150b504',
+  cervezaBotella: '1597822738124-151fb72dcb79',
+  colaBotella: '1648569883125-d01072540b4c',
 
   // Postres
   tarta: '1571877227200-a0d98ea607e9',
   pannaCotta: '1488477181946-6428a0291777',
   helado: '1551024506-0bccd828d307',
   cookies: '1499636136210-6f4ee915583e',
+  oreoDessert: '1623548694299-c3eb13a26c5b',
+  nutellaCrepe: '1515467837915-15c4777ba46a',
+  pistachoDessert: '1482930172332-2293d7138235',
+  lotusDessert: '1771220433638-173b9579d199',
 }

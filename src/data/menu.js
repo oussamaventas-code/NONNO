@@ -6,8 +6,8 @@ import { PHOTO } from './images.js'
    MENÚ — CARTA OFICIAL DE LA PIZZA DE NONNO
 
    Nombres, ingredientes y precios transcritos de la carta impresa.
-   Las fotos siguen siendo de banco (o sin foto): sustituir por
-   fotografía propia en src/data/images.js.
+   Las fotos son de banco (elegidas a mano por plato, no genéricas):
+   sustituir por fotografía propia en src/data/images.js.
 
    ESQUEMA DE PRODUCTO
    ───────────────────
@@ -128,8 +128,10 @@ export const PRODUCTS = [
     { image: PHOTO.margherita, vegetarian: true }),
   clasica('prosciutto', 'Prosciutto', ['Tomate', 'Mozzarella', 'Jamón cocido'], 10.5,
     { image: PHOTO.prosciutto }),
-  clasica('hawaiana', 'Hawaiana', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Piña'], 10.9),
-  clasica('salami', 'Salami', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Salami'], 10.9),
+  clasica('hawaiana', 'Hawaiana', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Piña'], 10.9,
+    { image: PHOTO.hawaiana }),
+  clasica('salami', 'Salami', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Salami'], 10.9,
+    { image: PHOTO.salami }),
   clasica('pepperoni', 'Pepperoni', ['Tomate', 'Mozzarella', 'Pepperoni italiano'], 10.9,
     { image: PHOTO.diavola }),
   {
@@ -146,12 +148,16 @@ export const PRODUCTS = [
   },
   clasica('fungi', 'Fungi', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Champiñón fresco'], 10.9,
     { image: PHOTO.funghi }),
-  clasica('braulia', 'Braulia', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Salami', 'Champiñón fresco'], 10.9),
-  clasica('atunazo', 'Atunazo', ['Tomate', 'Mozzarella', 'Atún', 'Cebolla', 'Orégano'], 10.9),
+  clasica('braulia', 'Braulia', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Salami', 'Champiñón fresco'], 10.9,
+    { image: PHOTO.braulia }),
+  clasica('atunazo', 'Atunazo', ['Tomate', 'Mozzarella', 'Atún', 'Cebolla', 'Orégano'], 10.9,
+    { image: PHOTO.atunazo }),
   clasica('todo-al-queso', 'Todo al queso', ['Tomate', 'Mozzarella', 'Gorgonzola', 'Gouda', 'Edam', 'Parmesano'], 10.9,
     { image: PHOTO.formaggi, vegetarian: true }),
-  clasica('bacon', 'Bacon', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Bacon', 'Miel'], 10.9),
-  clasica('guiris', 'Guiris', ['Tomate', 'Mozzarella', 'Bacon', 'Huevo fresco al centro'], 10.9),
+  clasica('bacon', 'Bacon', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Bacon', 'Miel'], 10.9,
+    { image: PHOTO.bacon }),
+  clasica('guiris', 'Guiris', ['Tomate', 'Mozzarella', 'Bacon', 'Huevo fresco al centro'], 10.9,
+    { image: PHOTO.guiris }),
 
   /* ── PIZZAS ESPECIALES ─────────────────────────────────────── */
   especial('nonno', 'Nonno', [
@@ -159,17 +165,18 @@ export const PRODUCTS = [
     'Alcaparras', 'Cebolla', 'Champiñón fresco', 'Aceite de oliva',
   ], 11.9, { image: PHOTO.speciale, badge: 'LA DE LA CASA', featured: true, vegetarian: true }),
   especial('dulce-de-cabra', 'Dulce de cabra', ['Tomate', 'Mozzarella', 'Queso de cabra', 'Mermelada de tomate'], 11.9,
-    { vegetarian: true }),
-  especial('kebab', 'Kebab', ['Tomate', 'Mozzarella', 'Carne pollo kebab', 'Salsa blanca casera'], 11.9),
+    { image: PHOTO.dulceDeCabra, vegetarian: true }),
+  especial('kebab', 'Kebab', ['Tomate', 'Mozzarella', 'Carne pollo kebab', 'Salsa blanca casera'], 11.9,
+    { image: PHOTO.kebabPizza }),
   especial('la-jefa', 'La Jefa', [
     'Tomate', 'Mozzarella', 'Jamón cocido', 'Alcachofas', 'Aceitunas negras', 'Anchoas',
   ], 11.9, { image: PHOTO.vegetale }),
   especial('chato-y-cabra', 'Chato y cabra', [
     'Tomate', 'Mozzarella', 'Sobrasada de chato murciano', 'Queso de cabra', 'Miel',
-  ], 11.9),
+  ], 11.9, { image: PHOTO.chatoYCabra }),
   especial('mexicana', 'Mexicana', [
     'Tomate', 'Mozzarella', 'Chorizo picante', 'Ternera picada', 'Jalapeños', 'Aceite picante Nonno',
-  ], 12.9, { spicy: true }),
+  ], 12.9, { image: PHOTO.mexicana, spicy: true }),
   especial('iberica', 'Ibérica', [
     'Tomate', 'Mozzarella', 'Tomate fresco', 'Jamón serrano', 'Queso parmesano', 'Módena',
   ], 12.9, { image: PHOTO.bufala }),
@@ -181,17 +188,20 @@ export const PRODUCTS = [
   ], 12.9, { image: PHOTO.rustica }),
   especial('trufada', 'Trufada', ['Tomate', 'Mozzarella', 'Nueces', 'Champiñón fresco', 'Salsa de trufa'], 12.9,
     { image: PHOTO.tartufo, vegetarian: true }),
-  especial('marinera', 'Marinera', ['Tomate', 'Mozzarella', 'Gambas', 'Calamares', 'Salsa verde casera'], 12.9),
+  especial('marinera', 'Marinera', ['Tomate', 'Mozzarella', 'Gambas', 'Calamares', 'Salsa verde casera'], 12.9,
+    { image: PHOTO.marinera }),
   especial('barbacoa', 'Barbacoa', [
     'Base de salsa barbacoa', 'Mozzarella', 'Pollo', 'Bacon', 'Ternera picada', 'Cebolla',
-  ], 12.9),
+  ], 12.9, { image: PHOTO.barbacoa }),
 
   /* ── CALZONES ──────────────────────────────────────────────── */
-  calzone('calzone-prosciutto', 'Calzone Prosciutto', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Parmesano'], 10.9),
-  calzone('calzone-kebab', 'Calzone Kebab', ['Tomate', 'Mozzarella', 'Carne pollo kebab', 'Salsa blanca casera'], 11.9),
+  calzone('calzone-prosciutto', 'Calzone Prosciutto', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Parmesano'], 10.9,
+    { image: PHOTO.calzone }),
+  calzone('calzone-kebab', 'Calzone Kebab', ['Tomate', 'Mozzarella', 'Carne pollo kebab', 'Salsa blanca casera'], 11.9,
+    { image: PHOTO.calzone }),
   calzone('calzone-serrano', 'Calzone Serrano', [
     'Tomate', 'Mozzarella', 'Berenjena', 'Jamón serrano', 'Parmesano', 'Módena',
-  ], 11.9),
+  ], 11.9, { image: PHOTO.calzone }),
 
   /* ── ENTRANTES ─────────────────────────────────────────────── */
   {
@@ -220,7 +230,7 @@ export const PRODUCTS = [
     name: 'Patatas cheese bacon',
     description: 'Patatas fritas con queso fundido y bacon.',
     ingredients: ['Queso', 'Bacon'],
-    image: null,
+    image: PHOTO.patatasCheeseBacon,
     price: 7.9,
     portions: [
       { id: 'racion', label: 'Ración', price: 7.9 },
@@ -233,7 +243,7 @@ export const PRODUCTS = [
     name: 'Patatas cheese kebab',
     description: 'Patatas fritas con queso fundido y carne kebab.',
     ingredients: ['Queso', 'Carne kebab'],
-    image: null,
+    image: PHOTO.patatasCheeseKebab,
     price: 7.9,
     portions: [
       { id: 'racion', label: 'Ración', price: 7.9 },
@@ -246,7 +256,7 @@ export const PRODUCTS = [
     name: 'Ración de patatas fritas',
     description: 'Patatas fritas.',
     ingredients: [],
-    image: null,
+    image: PHOTO.patatasFritas,
     price: 2.9,
     vegetarian: true,
   },
@@ -256,7 +266,7 @@ export const PRODUCTS = [
     name: 'Ración de boniatos fritos',
     description: 'Boniato frito.',
     ingredients: [],
-    image: null,
+    image: PHOTO.boniatos,
     price: 3.9,
     vegetarian: true,
   },
@@ -266,7 +276,7 @@ export const PRODUCTS = [
     name: 'Nuggets de pollo',
     description: '6 unidades.',
     ingredients: [],
-    image: null,
+    image: PHOTO.nuggets,
     price: 4.9,
   },
   {
@@ -294,7 +304,7 @@ export const PRODUCTS = [
     name: 'Tequeños',
     description: '4 unidades.',
     ingredients: [],
-    image: null,
+    image: PHOTO.tequenos,
     price: 4.9,
     vegetarian: true,
   },
@@ -304,7 +314,7 @@ export const PRODUCTS = [
     name: 'Palitos de mozzarella',
     description: '6 unidades.',
     ingredients: [],
-    image: null,
+    image: PHOTO.palitosMozzarella,
     price: 4.9,
     vegetarian: true,
   },
@@ -316,7 +326,7 @@ export const PRODUCTS = [
     name: 'Oreo',
     description: 'Base de masa horneada, crema de chocolate blanco y galleta Oreo triturada.',
     ingredients: ['Crema de chocolate blanco', 'Galleta Oreo triturada'],
-    image: null,
+    image: PHOTO.oreoDessert,
     price: 8.9,
     vegetarian: true,
   },
@@ -326,7 +336,7 @@ export const PRODUCTS = [
     name: 'Tostarica',
     description: 'Base de masa horneada, crema de avellana y galleta Tosta Rica triturada.',
     ingredients: ['Crema de avellana', 'Galleta Tosta Rica triturada'],
-    image: null,
+    image: PHOTO.nutellaCrepe,
     price: 8.9,
     vegetarian: true,
   },
@@ -336,7 +346,7 @@ export const PRODUCTS = [
     name: 'Dulce de pistacho',
     description: 'Base de masa horneada, crema de pistacho y almendra krunky.',
     ingredients: ['Crema de pistacho', 'Almendra krunky'],
-    image: null,
+    image: PHOTO.pistachoDessert,
     price: 8.9,
     vegetarian: true,
   },
@@ -346,7 +356,7 @@ export const PRODUCTS = [
     name: 'Sweet Lotus',
     description: 'Base de masa horneada, crema de Lotus y galleta Lotus triturada.',
     ingredients: ['Crema de Lotus', 'Galleta Lotus triturada'],
-    image: null,
+    image: PHOTO.lotusDessert,
     price: 8.9,
     vegetarian: true,
   },
@@ -358,7 +368,7 @@ export const PRODUCTS = [
     name: 'Refresco en bote',
     description: 'Lata de 33 cl. Indica el sabor en la nota.',
     ingredients: [],
-    image: null,
+    image: PHOTO.refrescoBote,
     price: 1.2,
   },
   {
@@ -367,7 +377,7 @@ export const PRODUCTS = [
     name: 'Agua 1,5 L',
     description: 'Botella de 1,5 litros.',
     ingredients: [],
-    image: null,
+    image: PHOTO.aguaBotella,
     price: 1.2,
   },
   {
@@ -376,7 +386,7 @@ export const PRODUCTS = [
     name: 'Cerveza 1 L',
     description: 'Botella de 1 litro.',
     ingredients: [],
-    image: null,
+    image: PHOTO.cervezaBotella,
     price: 3,
   },
   {
@@ -385,7 +395,7 @@ export const PRODUCTS = [
     name: 'Coca-Cola 2 L',
     description: 'Botella de 2 litros.',
     ingredients: [],
-    image: null,
+    image: PHOTO.colaBotella,
     price: 3,
   },
 ]
