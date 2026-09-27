@@ -24,27 +24,27 @@ export const LOCATIONS = [
     tagline: 'Entrega de pizza',
     image: PHOTO.venueSangonera,
 
-    // DATOS PROPORCIONADOS
+    // DATOS PROPORCIONADOS (ficha de Google del local)
     rating: 4.9,
-    reviews: 179,
+    reviews: 182,
     verified: true,
 
     /* Servicios indicados para esta sede: llevar y entrega */
     services: { pickup: true, delivery: true },
 
     // DATOS DE LA CARTA
-    address: 'C. Mayor 1, Sangonera la Verde, Murcia',
+    address: 'C. Mayor 1, 30833 Sangonera la Verde, Murcia',
     /* Punto físico del local: para saber qué sede está más cerca del
        cliente (por eso vive aquí y no solo dentro de `delivery`). */
     coords: { lat: 37.9314349, lng: -1.2125326 },
-    phones: ['611 98 18 08', '611 98 18 25'],
+    phones: ['611 98 18 08'],
     /* Plan B: si la web no puede enviar un pedido, se ofrece mandarlo
        por WhatsApp ya escrito a este número, o llamar.
        TODO: CONFIRMAR QUE ESTE NÚMERO TIENE WHATSAPP. */
     whatsapp: '34611981808',
-    hours: 'De jueves a domingo y festivos, de 19:00 a 23:00',
+    hours: 'Jueves y domingo, de 19:30 a 22:30. Viernes y sábado, de 19:30 a 23:00.',
     mapsUrl: null, // TODO
-    orderUrl: null, // TODO (pideme.net u otra plataforma)
+    orderUrl: null, // TODO (enlace exacto de pideme.net de esta sede)
 
     /* Envío por distancia en línea recta desde el local:
        hasta 1 km 1,50 €, de 1 a 3 km 3 €. Más lejos no se reparte.
@@ -64,9 +64,11 @@ export const LOCATIONS = [
       routing: { maxStops: 4, groupWindowMin: 10, nearKm: 1.5, speedKmh: 25, stopMinutes: 3 },
     },
 
-    /* Horno: de jueves a domingo y festivos, 19:00–23:00 (carta).
-       Qué días se abre lo decide el interruptor del panel. */
-    kitchen: { open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
+    /* Horno: jueves y domingo cierra a las 22:30; viernes y sábado a
+       las 23:00 (ficha de Google del local). Qué días se abre lo
+       decide el interruptor del panel, esto solo pone el límite de
+       cada día que sí está abierto. */
+    kitchen: { open: '19:30', close: '23:00', closeByDay: { thu: '22:30', sun: '22:30' }, slotMinutes: 15, pizzasPerSlot: 15 },
 
     deliveryNote:
       'Envío 1,50 € hasta 1 km y 3 € hasta 3 km del local. Las ofertas "Llévatelas por menos" son solo para recoger.',
@@ -79,31 +81,44 @@ export const LOCATIONS = [
     tagline: 'Pizza',
     image: PHOTO.venueSantoAngel,
 
-    // DATOS PROPORCIONADOS
+    // DATOS PROPORCIONADOS (ficha de Google del local)
     rating: 5.0,
-    reviews: 33,
+    reviews: 59,
     verified: true,
 
-    /* Para esta sede solo consta la categoría "Pizza": no se afirma
-       entrega a domicilio. Recogida activada como opción por defecto.
-       TODO: CONFIRMAR SERVICIOS REALES DE ESTA SEDE. */
-    services: { pickup: true, delivery: false },
+    /* Ficha de Google muestra "Pedir para llevar" y "Pedir a domicilio". */
+    services: { pickup: true, delivery: true },
 
-    /* TODO: CONFIRMAR HORARIO Y CAPACIDAD DE ESTA SEDE (se asume la misma). */
-    kitchen: { open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
+    /* Jueves a domingo, 19:30–23:00 (ficha de Google), sin excepciones
+       de cierre anticipado como en Sangonera. */
+    kitchen: { open: '19:30', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
 
-    address: null, // TODO
-    /* Centro aproximado del barrio de Santo Ángel — de momento no hay
-       dirección exacta. TODO: SUSTITUIR POR LA DIRECCIÓN REAL Y AJUSTAR. */
-    coords: { lat: 37.9332589, lng: -1.1251159 },
-    phones: [], // TODO
-    whatsapp: null, // TODO
-    hours: null, // TODO
+    address: 'C. Isaac Peral 2, 30151 Santo Ángel, Murcia',
+    /* Geocodificado a partir de la dirección real (calle, sin poder
+       precisar el número exacto). TODO: AJUSTAR SI EL PUNTO NO
+       COINCIDE CON LA PUERTA DEL LOCAL. */
+    coords: { lat: 37.9410779, lng: -1.1300820 },
+    phones: ['611 98 18 25'],
+    /* Plan B por WhatsApp, igual que Sangonera.
+       TODO: CONFIRMAR QUE ESTE NÚMERO TIENE WHATSAPP. */
+    whatsapp: '34611981825',
+    hours: 'De jueves a domingo, de 19:30 a 23:00.',
     mapsUrl: null, // TODO
-    orderUrl: null, // TODO
+    orderUrl: null, // TODO (enlace exacto de pideme.net de esta sede)
+
+    /* Envío por distancia: se asume la misma tarifa que Sangonera.
+       TODO: CONFIRMAR CON NONNO SI ESTA SEDE TIENE SU PROPIA TARIFA. */
+    delivery: {
+      origin: { lat: 37.9410779, lng: -1.1300820 },
+      tiers: [
+        { upToKm: 1, fee: 1.5, minutes: 10 },
+        { upToKm: 3, fee: 3, minutes: 20 },
+      ],
+      routing: { maxStops: 4, groupWindowMin: 10, nearKm: 1.5, speedKmh: 25, stopMinutes: 3 },
+    },
 
     deliveryNote:
-      'Las opciones disponibles pueden variar según la sede y el horario.',
+      'Envío 1,50 € hasta 1 km y 3 € hasta 3 km del local. Las ofertas "Llévatelas por menos" son solo para recoger.',
   },
 ]
 

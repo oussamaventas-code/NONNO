@@ -41,6 +41,13 @@ export function madridTime(refMs, hhmm) {
 export const hourOf = (value) =>
   new Date(value).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: TZ })
 
+const weekdayParts = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' })
+/** 'sun' | 'mon' | ... en hora de Madrid, para horarios que cierran antes algunos días. */
+const weekdayOf = (ms) => weekdayParts.format(new Date(ms)).slice(0, 3).toLowerCase()
+
+/** Hora de cierre de `kitchen` para el día de `nowMs` (hora de Madrid). */
+const closeOf = (kitchen, nowMs) => kitchen.closeByDay?.[weekdayOf(nowMs)] || kitchen.close
+
 /** Unidades que pasan por el horno (pizzas, calzones y calzones dulces). */
 export const ovenUnits = (items = []) =>
   items.reduce((n, i) => n + (stationOf(i.category) === 'pizzas' ? Number(i.qty) || 0 : 0), 0)
@@ -54,7 +61,7 @@ export const ovenUnits = (items = []) =>
 export function planOrder({ nowMs, kitchen, load = new Map(), pizzas }) {
   const slotMs = kitchen.slotMinutes * MIN
   const open = madridTime(nowMs, kitchen.open)
-  const close = madridTime(nowMs, kitchen.close)
+  const close = madridTime(nowMs, closeOf(kitchen, nowMs))
   /* Nunca la franja en curso: la siguiente que empiece a partir de ahora. */
   const first = Math.max(Math.ceil(nowMs / slotMs) * slotMs, open)
 
