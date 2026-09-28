@@ -57,9 +57,9 @@ export const PHOTO = {
   venueSantoAngel: '1590534247854-e97d5e3feef6',
 
   // Pizzas
-  margherita: '1595854341625-f33ee10dbf94',
-  diavola: '1534308983496-4fabb1a015ee',
-  prosciutto: '1600628421055-4d30de868b8f',
+  margherita: 'own:margarita',
+  diavola: 'own:pepperoni',
+  prosciutto: 'own:prosciutto',
   formaggi: '1548369937-47519962c11a',
   vegetale: '1593560708920-61dd98c46a4e',
   speciale: '1574071318508-1cdbab80d002',
@@ -68,8 +68,8 @@ export const PHOTO = {
   bianca: '1571997478779-2adcbbe9ab2f',
   tartufo: '1552539618-7eec9b4d1796',
   rustica: '1594007654729-407eedc4be65',
-  hawaiana: '1597715469889-dd75fe4a1765',
-  salami: '1628840042765-356cda07504e',
+  hawaiana: 'own:hawaiana',
+  salami: 'own:salami',
   braulia: '1692737580563-7ba2d896f0f6', // jamón y champiñón
   atunazo: '1632641730239-fd127af7d679',
   bacon: '1782402481918-3f558edff05e',
