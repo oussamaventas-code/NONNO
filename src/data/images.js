@@ -16,11 +16,26 @@ const UNSPLASH = 'https://images.unsplash.com/photo-'
  * @param {number} q   calidad 1-100
  */
 export const img = (id, w = 1200, q = 80) =>
-  `${UNSPLASH}${id}?w=${w}&q=${q}&auto=format&fit=crop`
+  isOwn(id)
+    ? ownSrc(id, w)
+    : `${UNSPLASH}${id}?w=${w}&q=${q}&auto=format&fit=crop`
 
 /** srcSet responsive para las imágenes grandes (hero, editorial, destacado) */
 export const srcSet = (id, widths = [640, 960, 1400, 1920]) =>
-  widths.map((w) => `${img(id, w)} ${w}w`).join(', ')
+  isOwn(id)
+    ? OWN_WIDTHS.map((w) => `${ownSrc(id, w)} ${w}w`).join(', ')
+    : widths.map((w) => `${img(id, w)} ${w}w`).join(', ')
+
+/* ── Fotografía propia ───────────────────────────────────────────
+   Los ids 'own:nombre' apuntan a /public/fotos/pizzas/nombre-{ancho}.webp,
+   exportadas en OWN_WIDTHS. Se sirve la menor que cubra el ancho pedido. */
+const OWN = 'own:'
+const OWN_WIDTHS = [600, 1200]
+const isOwn = (id) => typeof id === 'string' && id.startsWith(OWN)
+const ownSrc = (id, w) => {
+  const width = OWN_WIDTHS.find((x) => x >= w) || OWN_WIDTHS[OWN_WIDTHS.length - 1]
+  return `/fotos/pizzas/${id.slice(OWN.length)}-${width}.webp`
+}
 
 /* ── IDs verificados ─────────────────────────────────────────── */
 export const PHOTO = {
@@ -63,7 +78,11 @@ export const PHOTO = {
   kebabPizza: '1644648965270-55f11e0d7709',
   chatoYCabra: '1584782930656-e2bc1e803fc7',
   mexicana: '1657799831232-e9548089a643',
-  marinera: '1763049078203-a13163b549d9',
+  marinera: 'own:marinera',
+  trufada: 'own:trufada',
+  carnivora: 'own:carnivora',
+  carbonara: 'own:carbonara',
+  iberica: 'own:iberica',
   barbacoa: '1734769484424-36b99dd84818',
   calzone: '1753656681797-3234c89d6d4d',
 

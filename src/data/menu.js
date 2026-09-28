@@ -179,15 +179,15 @@ export const PRODUCTS = [
   ], 12.9, { image: PHOTO.mexicana, spicy: true }),
   especial('iberica', 'Ibérica', [
     'Tomate', 'Mozzarella', 'Tomate fresco', 'Jamón serrano', 'Queso parmesano', 'Módena',
-  ], 12.9, { image: PHOTO.bufala }),
+  ], 12.9, { image: PHOTO.iberica }),
   especial('carbonara', 'Carbonara tradicional', [
     'Mozzarella', 'Guanciale', 'Cebolla', 'Champiñón fresco', 'Pimienta',
-  ], 12.9, { image: PHOTO.bianca }),
+  ], 12.9, { image: PHOTO.carbonara }),
   especial('carnivora', 'Carnívora', [
     'Tomate', 'Mozzarella', 'Jamón cocido', 'Bacon', 'Carne de ternera', 'Pollo', 'Pepperoni',
-  ], 12.9, { image: PHOTO.rustica }),
+  ], 12.9, { image: PHOTO.carnivora }),
   especial('trufada', 'Trufada', ['Tomate', 'Mozzarella', 'Nueces', 'Champiñón fresco', 'Salsa de trufa'], 12.9,
-    { image: PHOTO.tartufo, vegetarian: true }),
+    { image: PHOTO.trufada, vegetarian: true }),
   especial('marinera', 'Marinera', ['Tomate', 'Mozzarella', 'Gambas', 'Calamares', 'Salsa verde casera'], 12.9,
     { image: PHOTO.marinera }),
   especial('barbacoa', 'Barbacoa', [
