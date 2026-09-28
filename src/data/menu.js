@@ -140,7 +140,7 @@ export const PRODUCTS = [
     name: 'A tu gusto',
     description: 'Tomate y mozzarella, más los toppings que elijas (+1 € cada uno).',
     ingredients: ['Tomate', 'Mozzarella'],
-    image: PHOTO.slicePull,
+    image: PHOTO.aTuGusto,
     price: 9.5,
     extras: TOPPINGS,
     badge: 'TÚ ELIGES',

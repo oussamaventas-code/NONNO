@@ -74,6 +74,7 @@ export const PHOTO = {
   atunazo: 'own:atunazo',
   bacon: 'own:bacon',
   guiris: 'own:guiris',
+  aTuGusto: 'own:a-tu-gusto',
   dulceDeCabra: 'own:dulce-de-cabra',
   kebabPizza: 'own:kebab',
   chatoYCabra: 'own:chato-y-cabra',
