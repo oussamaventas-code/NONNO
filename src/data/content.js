@@ -10,6 +10,26 @@ import { PHOTO } from './images'
    Sale de la oferta real de la carta (PICKUP_DEALS). */
 export const ANNOUNCE = '¡2 pizzas clásicas por 19 € para recoger en tu sede!'
 
+/* ── CINTA BAJO EL HERO ────────────────────────────────────────── */
+export const TICKER = [
+  'Masa de fermentación lenta',
+  'Horno bien caliente',
+  'Sangonera la Verde',
+  'Santo Ángel',
+  'Recogida y reparto a domicilio',
+  'Pide online en un minuto',
+]
+
+/* Sello giratorio junto a la mascota */
+export const STAMP_TEXT = 'RECIÉN HECHA · DESDE EL HORNO · '
+
+/* ── OFERTAS DE RECOGIDA (sección propia en la landing) ─────── */
+export const DEALS_BAND = {
+  kicker: 'Solo para recoger en el local',
+  title: 'Llévatelas por menos',
+  note: 'El descuento se aplica solo al hacer el pedido. Los ingredientes extra se cobran aparte; clásicas y especiales no se mezclan en un mismo pack.',
+}
+
 /* ── HERO ─────────────────────────────────────────────────────── */
 export const HERO = {
   line1: 'La pizza de siempre',

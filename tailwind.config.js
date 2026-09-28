@@ -66,7 +66,8 @@ export default {
       animation: {
         'pulse-dot': 'pulseDot 2s ease-in-out infinite',
         'ember': 'emberGlow 4s ease-in-out infinite',
-        'marquee': 'marquee 40s linear infinite'
+        'marquee': 'marquee 40s linear infinite',
+        'spin-slow': 'spin 22s linear infinite'
       }
     }
   },

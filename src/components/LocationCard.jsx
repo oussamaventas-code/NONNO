@@ -1,4 +1,4 @@
-import { Clock } from 'lucide-react'
+import { Clock, MapPin } from 'lucide-react'
 import { hourOf } from '../lib/kitchenSlots'
 import { useKitchenEta, minutesUntil } from '../hooks/useKitchenEta'
 import { ORDER_BAND } from '../data/content'
@@ -31,7 +31,10 @@ export default function LocationCard({ location, selected, closed, onOrder }) {
 
         <div className="flex flex-col items-center">
           <div className="flex gap-2">
-            <span className={closed ? 'text-forno/60' : ''}>{closed ? 'CERRADO' : 'ABIERTO'}</span>
+            <span className={['flex items-center gap-1.5 h-6', closed ? 'text-forno/60' : 'text-albahaca'].join(' ')}>
+              <span className={['w-2 h-2 rounded-full', closed ? 'bg-forno/40' : 'bg-albahaca animate-pulse-dot'].join(' ')} />
+              {closed ? 'CERRADO' : 'ABIERTO'}
+            </span>
             {/* Un tramo del horario por línea */}
             <span>
               {location.hours?.split(/\.\s*/).filter(Boolean).map((t) => <span key={t} className="block">{t}</span>)}
@@ -49,6 +52,14 @@ export default function LocationCard({ location, selected, closed, onOrder }) {
 
         <div className="md:text-right">
           <p>{location.address}</p>
+          <a
+            href={location.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.address)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center gap-1 text-base underline underline-offset-4 decoration-1 hover:text-forno"
+          >
+            <MapPin className="w-4 h-4" /> Cómo llegar
+          </a>
           {location.phones?.map((p) => (
             <a key={p} href={`tel:+34${p.replace(/\s/g, '')}`} className="block mt-2 hover:text-forno">{p}</a>
           ))}

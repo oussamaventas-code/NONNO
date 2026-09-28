@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Star } from 'lucide-react'
-import { PRODUCTS } from '../data/menu'
+import { PRODUCTS, priceOf } from '../data/menu'
+import { price } from '../lib/format'
 import { MENU_INTRO, SHOWCASE_TABS } from '../data/content'
 import { useActions } from '../store/StoreContext'
 import { navigate } from '../lib/router'
@@ -90,6 +91,10 @@ export default function MenuShowcase() {
                     sizes="(min-width: 640px) 27rem, 16rem"
                     className="h-full w-full transition-transform duration-700 ease-magnetic group-hover:scale-105"
                   />
+                  {/* Pegatina de precio */}
+                  <span className="absolute top-3 right-3 flex items-center justify-center w-[4.5rem] h-[4.5rem] sm:w-20 sm:h-20 rounded-full bg-queso border border-tomate outline outline-1 outline-offset-[-5px] outline-tomate rotate-12 font-display font-bold text-tomate text-base sm:text-lg leading-none shadow-[2px_2px_0_0_rgb(var(--c-tomate))]">
+                    {price(priceOf(p))}
+                  </span>
                   <span className="absolute left-2 bottom-2 rounded-md bg-masa/95 border border-tomate px-3 py-1.5 font-display italic font-bold text-tomate text-base sm:text-lg">
                     {p.name}
                   </span>

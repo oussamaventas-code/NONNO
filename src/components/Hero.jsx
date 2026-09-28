@@ -1,9 +1,10 @@
 import { useRef } from 'react'
-import { HERO, ILLUSTRATIONS } from '../data/content'
+import { HERO, ILLUSTRATIONS, STAMP_TEXT } from '../data/content'
 import { useGSAP, EASE, DUR, STAGGER, revealTimeline } from '../lib/motion'
 import { navigate } from '../lib/router'
 import Illustration from './Illustration'
 import HeroMedia from './HeroMedia'
+import Ticker, { SpinningStamp } from './Ticker'
 
 /**
  * Hero: titular serif centrado y etiqueta de sedes; debajo, tres
@@ -46,7 +47,8 @@ export default function Hero() {
         {/* Centro */}
         <div className="hero-center col-span-2 lg:col-span-1 order-1 lg:order-2 flex flex-col items-center text-center px-5 lg:pt-8">
           <p className="font-sans font-medium text-tomate text-lg leading-[1.3] max-w-[32rem]">{HERO.sub}</p>
-          <div className="mt-8 w-[17rem] aspect-square">
+          <div className="relative mt-8 w-[17rem] aspect-square">
+            <SpinningStamp text={STAMP_TEXT} className="absolute -top-6 -right-12 sm:-right-16 w-24 h-24 z-10" />
             <Illustration
               src={ILLUSTRATIONS.mascot}
               alt="Nonno, la mascota de la pizzería: una porción de pizza con bigote y gorro de chef"
@@ -67,7 +69,7 @@ export default function Hero() {
         </div>
       </div>
 
-      <div className="checker mt-20 sm:mt-[5.5rem]" aria-hidden="true" />
+      <div className="mt-20 sm:mt-[5.5rem]"><Ticker /></div>
     </section>
   )
 }

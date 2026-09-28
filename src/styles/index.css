@@ -176,6 +176,14 @@
   .btn-retro:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 0 rgb(var(--c-tomate)); }
   .btn-retro:disabled { @apply opacity-50 cursor-not-allowed; }
 
+  /* Tique troquelado: muescas semicirculares a media altura */
+  .ticket-cut {
+    -webkit-mask: radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat,
+                  radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+            mask: radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat,
+                  radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+  }
+
   /* Separador de doble línea entre secciones */
   .double-rule {
     @apply h-[6px] border-y;

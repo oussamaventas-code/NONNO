@@ -3,6 +3,7 @@ import Navbar from './components/Navbar'
 import MobileNav from './components/MobileNav'
 import Hero from './components/Hero'
 import MenuShowcase from './components/MenuShowcase'
+import DealsBand from './components/DealsBand'
 import Menu from './components/Menu'
 import Story from './components/Story'
 import Values from './components/Values'
@@ -20,7 +21,7 @@ import { usePath } from './lib/router'
 /**
  * Dos páginas con la misma cabecera y el mismo footer:
  *   "/"      landing (estructura de diner): Hero → Escaparate de la
- *            carta → Historia → Valores → Pedido en las sedes.
+ *            carta → Ofertas → Historia → Valores → Pedido en las sedes.
  *   "/carta" la carta completa con el pedido online.
  * Los sistemas globales (carrito, modal, checkout, avisos) viven
  * fuera del flujo de scroll y se muestran/ocultan según el estado.
@@ -41,6 +42,7 @@ export default function App() {
           <>
             <Hero />
             <MenuShowcase />
+            <DealsBand />
             <Story />
             <Values />
             <div className="double-rule border-forno bg-masa" aria-hidden="true" />
