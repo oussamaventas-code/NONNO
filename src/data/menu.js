@@ -124,7 +124,7 @@ const calzone = (...args) => pizza('calzones', ...args)
 
 export const PRODUCTS = [
   /* ── PIZZAS CLÁSICAS ───────────────────────────────────────── */
-  clasica('margarita', 'Margarita', ['Tomate', 'Mozzarella'], 9.5,
+  clasica('margarita', 'Margarita', ['Tomate', 'Mozzarella', 'Albahaca'], 9.5,
     { image: PHOTO.margherita, vegetarian: true }),
   clasica('prosciutto', 'Prosciutto', ['Tomate', 'Mozzarella', 'Jamón cocido'], 10.5,
     { image: PHOTO.prosciutto }),
