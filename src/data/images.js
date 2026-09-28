@@ -73,7 +73,7 @@ export const PHOTO = {
   braulia: 'own:braulia',
   atunazo: 'own:atunazo',
   bacon: 'own:bacon',
-  guiris: '1627819873302-998f1bdaa562', // huevo y champiñón
+  guiris: 'own:guiris',
   dulceDeCabra: 'own:dulce-de-cabra',
   kebabPizza: 'own:kebab',
   chatoYCabra: 'own:chato-y-cabra',
