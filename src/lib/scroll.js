@@ -12,7 +12,11 @@ export function scrollToSection(id) {
   const el = document.getElementById(id)
   if (!el) return
 
-  const target = el.getBoundingClientRect().top + window.scrollY
+  /* Si la cabecera fuese fija se descuenta su alto para que no tape
+     el principio de la sección. */
+  const header = document.querySelector('body > #root header')
+  const pinned = header && ['sticky', 'fixed'].includes(getComputedStyle(header).position)
+  const target = el.getBoundingClientRect().top + window.scrollY - (pinned ? header.offsetHeight : 0)
   const start = window.scrollY
 
   if (prefersReducedMotion()) {

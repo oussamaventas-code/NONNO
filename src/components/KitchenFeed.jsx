@@ -30,14 +30,14 @@ export default function KitchenFeed() {
   }, { dependencies: [items.length], scope: listRef })
 
   return (
-    <section className="py-16 sm:py-20 bg-carbon text-crema overflow-hidden">
+    <section className="py-16 sm:py-20 bg-panel text-luz overflow-hidden">
       <div className="shell grid lg:grid-cols-2 gap-10 items-center">
         <div>
           <p className="mono text-horno mb-4">VISUAL EXPERIENCE</p>
           <h2 className="font-sans font-extrabold uppercase text-display-sm leading-[0.95]">
             EL HORNO<br /><em className="font-serif italic font-semibold  text-horno">NO PARA.</em>
           </h2>
-          <p className="mt-5 max-w-sm text-crema/55">
+          <p className="mt-5 max-w-sm text-luz/55">
             Una simulación visual de lo que pasa en cocina. No son pedidos en tiempo real.
           </p>
         </div>

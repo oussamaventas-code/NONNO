@@ -3,23 +3,45 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════
-   NONNO — ARTISAN FIRE / capa base del sistema visual
-   Tokens duplicados como CSS vars para SVG, canvas y estilos inline.
+   NONNO — RETRO / capa base del sistema visual
+   Pizzería de barrio con aire de diner: papel crema, rojo del logo,
+   azul noche y amarillo queso. Bordes dobles, franjas de cuadros y
+   sombras duras en vez de difuminados.
+   Los colores son canales RGB (los lee Tailwind).
+
+   El panel /admin y /pantalla conserva su paleta clara de siempre
+   (clase .tema-clasico en <html>, puesta desde main.jsx).
    ═══════════════════════════════════════════════════════════════ */
 
 @layer base {
   :root {
-    --forno: #171512;
-    --carbon: #24211e;
-    --masa: #f2ebdd;
-    --crema: #faf8f2;
-    --tomate: #c8422f;
-    --horno: #e76f32;
-    --albahaca: #465c3a;
+    --c-forno: 29 43 79;      /* azul noche: historia, footer, texto fuerte */
+    --c-carbon: 29 43 79;     /* tinta */
+    --c-masa: 255 250 233;    /* papel crema */
+    --c-crema: 255 253 245;   /* superficies: cards, modales */
+    --c-panel: 29 43 79;      /* bloques oscuros */
+    --c-luz: 255 250 233;     /* texto claro */
+    --c-tomate: 226 62 87;    /* rojo del logo: acción */
+    --c-horno: 245 150 52;    /* naranja "Nonno" del logo */
+    --c-albahaca: 47 133 90;  /* verde: estados positivos */
+    --c-queso: 255 238 170;   /* amarillo queso: sección de valores */
 
     /* Ritmo de movimiento compartido con GSAP (src/lib/motion.js) */
     --ease-magnetic: cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --ease-curtain: cubic-bezier(0.76, 0, 0.24, 1);
+  }
+
+  /* Tema clásico (crema + tomate) para el panel de cocina */
+  :root.tema-clasico {
+    --c-forno: 23 21 18;
+    --c-carbon: 36 33 30;
+    --c-masa: 242 235 221;
+    --c-crema: 250 248 242;
+    --c-panel: 36 33 30;
+    --c-luz: 250 248 242;
+    --c-tomate: 200 66 47;
+    --c-horno: 231 111 50;
+    --c-albahaca: 70 92 58;
   }
 
   html {
@@ -37,13 +59,13 @@
   }
 
   ::selection {
-    background: var(--tomate);
-    color: var(--masa);
+    background: rgb(var(--c-tomate));
+    color: rgb(var(--c-masa));
   }
 
   /* Foco visible real: nunca eliminar el outline sin sustituto */
   :focus-visible {
-    outline: 2px solid var(--horno);
+    outline: 2px solid rgb(var(--c-horno));
     outline-offset: 3px;
     border-radius: 4px;
   }
@@ -53,7 +75,19 @@
     text-wrap: balance;
   }
 
-  /* La serif italiana siempre respira distinto a la sans */
+  /* Serif retro (Fraunces con las esquinas suavizadas, estilo Cooper) */
+  .font-serif,
+  .font-display {
+    font-variation-settings: 'SOFT' 100, 'WONK' 0;
+  }
+  em.font-serif {
+    text-transform: none;
+  }
+  /* El panel de cocina conserva su serif editorial */
+  .tema-clasico .font-serif {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-variation-settings: normal;
+  }
   .serif {
     @apply font-serif italic font-semibold;
     letter-spacing: -0.01em;
@@ -77,19 +111,28 @@
     @apply py-section;
   }
 
-  /* Botón magnético: capa interna que se desliza en hover */
+  /* Botón: capa interna que se desliza en hover */
   .btn {
     @apply relative inline-flex items-center justify-center gap-2 overflow-hidden
-           rounded-full font-sans font-bold uppercase tracking-[0.08em]
+           rounded-lg font-sans font-bold uppercase tracking-[0.08em]
            min-h-[48px] px-7 text-[0.8125rem] leading-none
-           transition-transform duration-500 ease-magnetic will-change-transform;
+           transition-transform duration-300 ease-magnetic will-change-transform;
   }
   .btn:hover {
-    transform: scale(1.03) translateY(-1px);
+    transform: translate(-1px, -1px);
   }
   .btn:active {
-    transform: scale(0.99);
+    transform: translate(1px, 1px);
   }
+  /* Botón de acción retro: filete crema por dentro y sombra dura */
+  :root:not(.tema-clasico) .btn.bg-tomate,
+  :root:not(.tema-clasico) .btn.bg-albahaca {
+    color: rgb(var(--c-masa));
+  }
+  :root:not(.tema-clasico) .btn.bg-tomate { box-shadow: inset 0 0 0 2px rgb(var(--c-masa) / 0.9), 0 0 0 2px rgb(var(--c-tomate)), 3px 3px 0 2px rgb(var(--c-forno)); }
+  :root:not(.tema-clasico) .btn.bg-albahaca { box-shadow: inset 0 0 0 2px rgb(var(--c-masa) / 0.9), 0 0 0 2px rgb(var(--c-albahaca)), 3px 3px 0 2px rgb(var(--c-forno)); }
+  :root:not(.tema-clasico) .btn.bg-panel,
+  :root:not(.tema-clasico) .btn.bg-forno { box-shadow: inset 0 0 0 2px rgb(var(--c-masa) / 0.9), 0 0 0 2px rgb(var(--c-forno)), 3px 3px 0 2px rgb(var(--c-tomate)); }
   .btn > .btn-layer {
     @apply absolute inset-0 translate-y-full transition-transform duration-500 ease-magnetic;
   }
@@ -98,6 +141,65 @@
   }
   .btn > .btn-label {
     @apply relative z-10 flex items-center gap-2;
+  }
+
+  /* Marco de línea doble: filete exterior con sombra dura de 3px y
+     un segundo filete a 7px por dentro (.frame-in lo dibuja). */
+  .frame {
+    @apply relative rounded-lg border border-tomate p-[7px];
+    box-shadow: 3px 3px 0 0 rgb(var(--c-tomate));
+  }
+  .frame-in {
+    @apply relative h-full rounded-md border border-tomate overflow-hidden;
+  }
+  .frame-navy {
+    @apply relative rounded-lg border border-forno p-[7px];
+    box-shadow: 3px 3px 0 0 rgb(var(--c-forno));
+  }
+  .frame-navy > .frame-in {
+    @apply border-forno;
+  }
+
+  /* Botón retro: caja crema con filete + sombra, y el botón relleno
+     dentro a 7px. Letra serif cursiva. */
+  .btn-retro {
+    @apply relative inline-flex rounded-md border border-tomate bg-masa p-[7px]
+           transition-transform duration-200 ease-magnetic;
+    box-shadow: 3px 3px 0 0 rgb(var(--c-tomate));
+  }
+  .btn-retro > span {
+    @apply flex items-center justify-center gap-2 rounded-md border border-tomate bg-tomate text-masa
+           font-display italic font-bold text-xl sm:text-2xl leading-none whitespace-nowrap px-7 h-[52px] transition-colors;
+  }
+  .btn-retro:hover { transform: translate(-1px, -1px); }
+  .btn-retro:hover > span { @apply bg-forno border-forno; }
+  .btn-retro:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 0 rgb(var(--c-tomate)); }
+  .btn-retro:disabled { @apply opacity-50 cursor-not-allowed; }
+
+  /* Separador de doble línea entre secciones */
+  .double-rule {
+    @apply h-[6px] border-y;
+  }
+
+  /* Carrusel infinito (animate-marquee): se para al pasar el ratón */
+  .marquee:hover .animate-marquee,
+  .marquee:focus-within .animate-marquee {
+    animation-play-state: paused;
+  }
+
+  /* Franja de cuadros de mantel */
+  .checker {
+    height: 25px;
+    background-color: rgb(var(--c-masa));
+    background-image: repeating-conic-gradient(rgb(var(--c-tomate)) 0 25%, transparent 0 50%);
+    background-size: 25px 25px;
+    border-block: 1px solid rgb(var(--c-tomate));
+  }
+
+  /* Línea ondulada separadora */
+  .wavy {
+    height: 8px;
+    background: radial-gradient(circle at 5px -1px, transparent 5px, rgb(var(--c-tomate)) 5.5px 7px, transparent 7.5px) 0 0 / 10px 8px repeat-x;
   }
 
   /* Tickets de cocina: esquinas rectas, dentado inferior */

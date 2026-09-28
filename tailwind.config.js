@@ -4,18 +4,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ── NONNO / ARTISAN FIRE ──────────────────────────────
-        forno: '#171512',   // Negro Horno   — fondos de alto impacto
-        carbon: '#24211E',  // Carbon        — superficies secundarias / texto oscuro
-        masa: '#F2EBDD',    // Crema Masa    — fondo general claro
-        crema: '#FAF8F2',   // Crema Claro   — cards, modales, superficies
-        tomate: '#C8422F',  // Rojo Tomate   — CTA y acción
-        horno: '#E76F32',   // Naranja Horno — hover, fuego, highlights
-        albahaca: '#465C3A' // Verde Albahaca— ingredientes, estados positivos
+        // ── NONNO / RETRO ─────────────────────────────────────
+        // Los valores viven en src/styles/index.css como canales RGB:
+        // el tema se cambia en un solo sitio y admite /opacidad.
+        forno: 'rgb(var(--c-forno) / <alpha-value>)',      // Azul noche — historia, footer
+        carbon: 'rgb(var(--c-carbon) / <alpha-value>)',    // Tinta      — texto principal
+        masa: 'rgb(var(--c-masa) / <alpha-value>)',        // Papel      — lienzo general
+        crema: 'rgb(var(--c-crema) / <alpha-value>)',      // Superficie — cards, modales
+        panel: 'rgb(var(--c-panel) / <alpha-value>)',      // Panel      — bloques oscuros
+        luz: 'rgb(var(--c-luz) / <alpha-value>)',          // Luz        — texto claro
+        tomate: 'rgb(var(--c-tomate) / <alpha-value>)',    // Rojo logo  — CTA y acción
+        horno: 'rgb(var(--c-horno) / <alpha-value>)',      // Naranja    — hover, highlights
+        albahaca: 'rgb(var(--c-albahaca) / <alpha-value>)', // Verde     — estados positivos
+        queso: 'rgb(var(--c-queso) / <alpha-value>)'       // Amarillo   — sección de valores
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-        serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+        sans: ['Barlow', 'system-ui', 'sans-serif'],
+        serif: ['Fraunces', 'Georgia', 'serif'],
+        display: ['Fraunces', 'Georgia', 'serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace']
       },
       fontSize: {
@@ -26,9 +32,9 @@ export default {
         'display-xl': ['clamp(4rem, 16vw, 12rem)', { lineHeight: '0.84', letterSpacing: '-0.045em' }]
       },
       borderRadius: {
-        card: '2rem',
-        block: '3rem',
-        hero: '4rem'
+        card: '0.9rem',
+        block: '1.25rem',
+        hero: '2rem'
       },
       spacing: {
         section: 'clamp(5rem, 12vw, 10rem)'
@@ -38,9 +44,10 @@ export default {
         curtain: 'cubic-bezier(0.76, 0, 0.24, 1)'
       },
       boxShadow: {
-        float: '0 20px 60px -20px rgba(23, 21, 18, 0.35)',
-        island: '0 8px 32px -12px rgba(23, 21, 18, 0.28)',
-        ember: '0 0 60px -10px rgba(231, 111, 50, 0.45)'
+        // Sombras duras de cartel retro, nunca difuminadas
+        float: '6px 6px 0 0 rgb(29 43 79)',
+        island: '4px 4px 0 0 rgb(226 62 87)',
+        ember: '6px 6px 0 0 rgb(226 62 87)'
       },
       keyframes: {
         pulseDot: {

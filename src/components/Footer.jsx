@@ -1,77 +1,59 @@
-import { SITE, NAV_LINKS } from '../data/site'
 import { LOCATIONS } from '../data/locations'
 import { useActions } from '../store/StoreContext'
-import { scrollToSection } from '../lib/scroll'
+import { followLink, navigate } from '../lib/router'
 
 /**
- * Footer de marca. Cuatro columnas, esquinas redondeadas arriba,
- * estado del sistema con punto verde pulsante.
+ * Footer bajo la franja de cuadros: a la izquierda la llamada a pedir,
+ * a la derecha dos columnas de enlaces y los teléfonos de cada sede;
+ * abajo el nombre de la casa y la barra del copyright.
  */
 export default function Footer() {
   const { setLocation, openCart } = useActions()
   const year = new Date().getFullYear()
 
-  const scrollTo = (id) => scrollToSection(id)
-
   const orderAt = (id) => {
     setLocation(id)
-    scrollTo('menu')
+    openCart()
   }
 
+  const link = 'font-sans font-semibold uppercase text-base text-masa hover:text-forno transition-colors text-left'
+
   return (
-    <footer className="bg-forno text-crema rounded-t-[4rem] pt-16 sm:pt-20 pb-8">
-      <div className="shell">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8">
+    <footer>
+      <div className="checker" aria-hidden="true" />
+      <div className="bg-tomate text-masa">
+        <div className="px-5 pt-20 pb-16 grid lg:grid-cols-[38.5rem_1fr] gap-14">
           <div>
-            <p className="font-sans font-extrabold uppercase text-sm tracking-tight">
-              {SITE.brand.line1}<br />
-              <em className="font-serif italic font-semibold text-xl ">{SITE.brand.line2}</em>
-            </p>
-            <p className="mt-4 text-crema/50 max-w-[16rem]">{SITE.brand.claim}</p>
+            <p className="font-sans font-medium uppercase text-lg">Pide online y recoge tu pizza recién hecha en tu sede</p>
+            <button onClick={() => navigate('/carta')} className="btn-retro mt-8 border-masa bg-tomate shadow-[3px_3px_0_0_rgb(var(--c-masa))]">
+              <span className="w-[15.5rem] bg-masa border-masa text-tomate">Haz tu pedido</span>
+            </button>
           </div>
 
-          <div>
-            <p className="mono text-crema/40 mb-4">EXPLORAR</p>
-            <ul className="flex flex-col gap-2.5">
-              {NAV_LINKS.map((l) => (
-                <li key={l.id}>
-                  <button onClick={() => scrollTo(l.id)} className="text-crema/75 hover:text-horno transition-colors text-sm">
-                    {l.label}
-                  </button>
-                </li>
-              ))}
+          <div className="grid grid-cols-2 gap-x-10 gap-y-6 lg:justify-self-end lg:w-[25rem]">
+            <ul className="flex flex-col gap-5">
+              <li><button onClick={() => navigate('/carta')} className={link}>Pedidos</button></li>
+              <li><button onClick={() => navigate('/carta')} className={link}>Carta</button></li>
             </ul>
+            <ul className="flex flex-col gap-5 lg:items-end">
+              <li><button onClick={() => followLink({ id: 'historia' })} className={link}>Historia</button></li>
+              <li><button onClick={() => followLink({ id: 'sedes' })} className={link}>Contacto</button></li>
+            </ul>
+            {LOCATIONS.map((loc, i) => (
+              <div key={loc.id} className={['flex flex-col gap-1', i === 1 ? 'lg:items-end lg:text-right' : ''].join(' ')}>
+                <button onClick={() => orderAt(loc.id)} className={link}>{loc.name}</button>
+                {loc.phones?.map((p) => (
+                  <a key={p} href={`tel:+34${p.replace(/\s/g, '')}`} className="font-sans font-semibold text-base hover:text-forno">{p}</a>
+                ))}
+              </div>
+            ))}
           </div>
 
-          <div>
-            <p className="mono text-crema/40 mb-4">PEDIDOS</p>
-            <ul className="flex flex-col gap-2.5">
-              {LOCATIONS.map((loc) => (
-                <li key={loc.id}>
-                  <button onClick={() => orderAt(loc.id)} className="text-crema/75 hover:text-horno transition-colors text-sm">
-                    {loc.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <p className="mono text-crema/40 mb-4">INFORMACIÓN</p>
-            <ul className="flex flex-col gap-2.5">
-              <li><button onClick={openCart} className="text-crema/75 hover:text-horno transition-colors text-sm">Contacto</button></li>
-              <li><span className="text-crema/40 text-sm cursor-default">Privacidad</span></li>
-              <li><span className="text-crema/40 text-sm cursor-default">Aviso legal</span></li>
-            </ul>
-          </div>
+          <p className="font-display italic font-bold text-5xl leading-none">La Pizza de Nonno</p>
         </div>
 
-        <div className="mt-14 pt-6 border-t border-crema/10 flex flex-wrap items-center justify-between gap-4">
-          <div className="mono normal-case flex items-center gap-2 text-crema/50">
-            <span className="w-2 h-2 rounded-full bg-albahaca animate-pulse-dot" />
-            SISTEMA ACTIVO · PEDIDOS ONLINE · {SITE.brand.version}
-          </div>
-          <p className="mono normal-case text-crema/30">© {year} La Pizza de Nonno</p>
+        <div className="border-t border-masa h-11 px-5 flex items-center font-sans font-semibold text-sm">
+          Copyright © {year} La Pizza de Nonno
         </div>
       </div>
     </footer>

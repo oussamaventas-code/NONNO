@@ -6,24 +6,115 @@ import { PHOTO } from './images'
    componentes para poder reescribir la web sin tocar código.
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── BARRA DE AVISO (arriba del todo) ─────────────────────────
+   Sale de la oferta real de la carta (PICKUP_DEALS). */
+export const ANNOUNCE = '¡2 pizzas clásicas por 19 € para recoger en tu sede!'
+
 /* ── HERO ─────────────────────────────────────────────────────── */
 export const HERO = {
-  image: PHOTO.heroPizza,
-  alt: 'Porciones de pizza artesanal recién salidas del horno sobre madera oscura',
-  line1: 'LA PIZZA',
-  line2: 'NO SE EXPLICA.',
-  line3Pre: 'SE ',
-  line3Serif: 'MUERDE', // Cormorant Garamond italic
-  line3Post: '.',
-  sub: 'Pizza artesanal. Masa. Fuego. Ingredientes que hablan por sí solos.',
-  ctaPrimary: 'PEDIR UNA PIZZA',
-  ctaSecondary: 'VER EL MENÚ',
-  badges: ['Pizza artesanal', 'Recogida', 'Entrega'],
-  oven: {
-    title: 'NONNO / ESTADO DEL HORNO',
-    state: 'HORNO ENCENDIDO',
-    line: 'HOY / PIZZA ARTESANAL',
+  line1: 'La pizza de siempre',
+  line2: 'HECHA COMO EN CASA',
+  tag: 'SANGONERA LA VERDE · SANTO ÁNGEL',
+  sub: 'Masa de fermentación lenta, horno bien caliente e ingredientes de verdad. Elige tu sede, pide online y recógela recién hecha.',
+  cta: 'Haz tu pedido',
+  /* Columnas izquierda y derecha: vídeo corto en bucle con la foto
+     como póster (su primer fotograma). Los originales en bruto están
+     en videos-originales/, fuera de la web. */
+  photoLeft: { video: '/videos/hero-izquierda.mp4', poster: '/videos/hero-izquierda.jpg', alt: 'Pizzas saliendo del horno en La Pizza de Nonno' },
+  photoRight: { video: '/videos/hero-derecha.mp4', poster: '/videos/hero-derecha.jpg', alt: 'Porción de pizza levantándose con el queso estirándose' },
+}
+
+/* ── ILUSTRACIONES DE MARCA ────────────────────────────────────
+   Se leen de public/ilustraciones/. Si el archivo aún no existe,
+   la web muestra el logo en su lugar (nunca una imagen rota). */
+export const ILLUSTRATIONS = {
+  mascot: '/ilustraciones/nonno-mascota.png',      // hero, bajo el texto (original en ilustraciones-originales/)
+  story: '/ilustraciones/nonno-historia.png',      // sección "Nuestra historia"
+  delivery: '/ilustraciones/sticker-reparto.png',  // pegatina junto a las sedes
+}
+
+/* ── ESCAPARATE DE LA CARTA (landing) ─────────────────────────
+   Tres pestañas; cada una junta categorías de la carta y enseña sus
+   fotos en el carrusel. La carta completa vive en /carta. */
+export const SHOWCASE_TABS = [
+  {
+    id: 'pizzas',
+    label: 'PIZZAS',
+    categories: ['pizzas-clasicas', 'pizzas-especiales'],
+    text: [
+      'Aquí no hay atajos: masa de fermentación lenta, horno bien caliente y los ingredientes justos para que cada pizza sepa a lo que tiene que saber.',
+      'Las clásicas de toda la vida y las especiales de la casa, todas de 33 cm. Tú eliges la tuya; nosotros la hacemos al momento.',
+    ],
   },
+  {
+    id: 'entrantes',
+    label: 'ENTRANTES',
+    categories: ['entrantes'],
+    text: [
+      'Para abrir boca mientras sale la pizza, o para compartir en el centro de la mesa.',
+    ],
+  },
+  {
+    id: 'postres',
+    label: 'POSTRES',
+    categories: ['calzones-dulces'],
+    text: [
+      'El final dulce: calzones horneados y rellenos para los que siempre dejan hueco para el postre.',
+    ],
+  },
+]
+
+/* ── CARTA: texto que acompaña a cada categoría ─────────────── */
+export const MENU_INTRO =
+  'Tanto si eres de las clásicas como si te atreves con algo nuevo, aquí tienes toda la carta.'
+
+export const CATEGORY_BLURBS = {
+  'pizzas-clasicas': 'Las de toda la vida, las que nunca fallan. Masa fina, tomate, mozzarella y lo justo encima para que cada bocado sepa a lo que tiene que saber.',
+  'pizzas-especiales': 'Para los que quieren algo más. Combinaciones de la casa con más ingredientes y más carácter, en la misma masa de siempre.',
+  calzones: 'La pizza doblada sobre sí misma y cerrada en el horno. Todo el relleno dentro, caliente hasta el último bocado.',
+  entrantes: 'Para abrir boca mientras sale la pizza, o para compartir en el centro de la mesa.',
+  'calzones-dulces': 'El final dulce: masa horneada y rellena para los que siempre dejan hueco para el postre.',
+  bebidas: 'Frías y listas para acompañar la pizza.',
+}
+
+/* ── NUESTRA HISTORIA ──────────────────────────────────────────
+   TODO: SUSTITUIR POR LA HISTORIA REAL DE NONNO (quién lo fundó,
+   cuándo y dónde). No se inventan fechas ni nombres. */
+export const STORY = {
+  title: 'Nuestra historia',
+  lines: [
+    'La masa, el horno y las ganas de hacerlo bien',
+    'son los ingredientes que convierten a Nonno',
+    'en la pizzería de tu barrio.',
+  ],
+}
+
+/* ── VALORES: sellos que cambian el texto del recuadro ─────────── */
+export const VALUES = [
+  {
+    id: 'masa',
+    kicker: 'Una buena dosis de',
+    title: 'Masa',
+    text: 'Todo empieza en la masa. La dejamos reposar sin prisa para que salga ligera por dentro y crujiente por fuera, como tiene que ser. No hay atajos: si no ha fermentado, no entra en el horno.',
+  },
+  {
+    id: 'horno',
+    kicker: 'Mucho',
+    title: 'Horno',
+    text: 'Calor alto y contacto directo. La pizza se hace en minutos y sale con los bordes dorados y el queso en su punto. Por eso la pedimos al momento y la hacemos al momento.',
+  },
+  {
+    id: 'barrio',
+    kicker: 'Una pizca de',
+    title: 'Barrio',
+    text: 'Dos sedes, Sangonera la Verde y Santo Ángel, y la misma forma de hacer las cosas en las dos. Pizza para recoger o para que te la llevemos a casa, de las que se piden una y otra vez.',
+  },
+]
+
+/* ── PEDIDOS / SEDES ───────────────────────────────────────────── */
+export const ORDER_BAND = {
+  title: 'Haz tu pedido en nuestra web y recógelo en tu sede, ¡te esperamos!',
+  services: 'RECOGIDA & ENTREGA A DOMICILIO',
 }
 
 /* ── MÉTRICAS ──────────────────────────────────────────────────

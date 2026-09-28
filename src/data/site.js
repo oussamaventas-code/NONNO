@@ -61,9 +61,9 @@ export const SITE = {
 }
 
 /* Navegación principal (ids de sección para el scroll interno) */
+/* href → otra página; id → sección de la landing (src/lib/router.js) */
 export const NAV_LINKS = [
-  { id: 'inicio', label: 'Inicio' },
-  { id: 'menu', label: 'Menú' },
-  { id: 'sedes', label: 'Nuestras sedes' },
-  { id: 'experiencia', label: 'La experiencia' },
+  { href: '/carta', label: 'Carta' },
+  { id: 'historia', label: 'Historia' },
+  { id: 'sedes', label: 'Contacto' },
 ]

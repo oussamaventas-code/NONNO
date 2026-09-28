@@ -1,108 +1,66 @@
-import { useRef } from 'react'
-import { ShoppingBag, Menu as MenuIcon } from 'lucide-react'
-import { NAV_LINKS, SITE } from '../data/site'
-import { useActions, useCart } from '../store/StoreContext'
-import { useScrolled } from '../hooks/useScrolled'
-import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
-import { scrollToSection } from '../lib/scroll'
+import { Menu as MenuIcon } from 'lucide-react'
+import { NAV_LINKS } from '../data/site'
+import { ANNOUNCE } from '../data/content'
+import { useCart, useActions } from '../store/StoreContext'
+import { followLink, navigate } from '../lib/router'
 
 /**
- * Navbar "isla flotante": nunca ocupa todo el ancho, fixed y centrada.
- * Transparente sobre el hero; crema + blur al cruzar el umbral de scroll.
+ * Cabecera de diner: barra de aviso, enlaces a la izquierda, logo en
+ * el centro y el botón hexagonal "PIDE YA" a la derecha (abre el
+ * carrito). No es fija: se va con el scroll, como en la referencia.
  */
 export default function Navbar() {
-  const scrolled = useScrolled(72)
-  const { lines, count, subtotal } = useCart()
+  const { count } = useCart()
   const { openCart, toggleMobileNav } = useActions()
-  const rootRef = useRef(null)
-
-  useGSAP(() => {
-    revealFrom(rootRef.current, { y: -24, opacity: 0, duration: 0.9, ease: EASE.in, delay: 0.15 })
-  }, { scope: rootRef })
-
-  const scrollTo = (id) => {
-    scrollToSection(id)
-  }
 
   return (
-    <header
-      ref={rootRef}
-      className="fixed inset-x-0 top-3 sm:top-5 z-[90] flex justify-center px-3"
-    >
-      <div
-        className={[
-          'flex w-full max-w-5xl items-center justify-between gap-3 rounded-full',
-          'px-4 sm:px-5 py-2.5 transition-all duration-500 ease-magnetic',
-          scrolled
-            ? 'bg-crema/90 shadow-island backdrop-blur-xl border border-carbon/10'
-            : 'bg-transparent border border-crema/0',
-        ].join(' ')}
-      >
-        {/* Logo */}
-        <button
-          onClick={() => scrollTo('inicio')}
-          className={[
-            'flex flex-col leading-[0.95] text-left font-sans font-extrabold uppercase tracking-tight transition-colors',
-            'text-[0.7rem] sm:text-xs',
-            scrolled ? 'text-carbon' : 'text-crema',
-          ].join(' ')}
-          aria-label="Ir al inicio — La Pizza de Nonno"
-        >
-          <span>{SITE.brand.line1}</span>
-          <span className="serif text-base sm:text-lg not-italic font-normal">
-            <em className="font-serif italic font-semibold">{SITE.brand.line2}</em>
-          </span>
-        </button>
+    <header className="relative z-[90] bg-masa">
+      <p className="bg-tomate text-masa text-center font-sans font-medium uppercase text-[0.72rem] sm:text-sm h-9 leading-9 px-3 truncate">
+        {ANNOUNCE}
+      </p>
 
-        {/* Enlaces (desktop) */}
-        <nav
-          className={[
-            'hidden lg:flex items-center gap-7 font-sans text-[0.78rem] font-semibold uppercase tracking-wide transition-colors',
-            scrolled ? 'text-carbon/80' : 'text-crema/90',
-          ].join(' ')}
-          aria-label="Navegación principal"
-        >
-          {NAV_LINKS.map((link) => (
-            <button
-              key={link.id}
-              onClick={() => scrollTo(link.id)}
-              className="relative py-1 transition-colors hover:text-tomate focus-visible:text-tomate"
-            >
-              {link.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* Derecha: carrito + menú móvil */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={openCart}
-            className={[
-              'btn bg-tomate text-crema px-4 sm:px-5 py-2.5 min-h-[40px] sm:min-h-[44px] text-[0.7rem] sm:text-[0.78rem]',
-            ].join(' ')}
-            aria-label={`Pedir ahora${count > 0 ? `, ${count} producto${count > 1 ? 's' : ''} en el carrito` : ''}`}
-          >
-            <span className="btn-layer bg-horno" />
-            <span className="btn-label">
-              <ShoppingBag className="w-4 h-4" strokeWidth={2} />
-              <span className="hidden sm:inline">PEDIR AHORA</span>
-              {count > 0 && (
-                <span className="mono normal-case tracking-normal">
-                  · {count}
-                </span>
-              )}
-            </span>
-          </button>
-
+      <div className="border-b border-tomate">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center h-[4.5rem] sm:h-[5.9rem] px-4 sm:px-7">
+          {/* Izquierda: enlaces (desktop) / menú (móvil) */}
+          <nav className="hidden md:flex items-center" aria-label="Navegación principal">
+            {NAV_LINKS.map((link) => (
+              <button
+                key={link.label}
+                onClick={() => followLink(link)}
+                className="w-[8.25rem] h-[3.4rem] text-left font-sans font-semibold uppercase text-base text-tomate hover:text-forno transition-colors"
+              >
+                {link.label}
+              </button>
+            ))}
+          </nav>
           <button
             onClick={() => toggleMobileNav(true)}
-            className={[
-              'lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border transition-colors',
-              scrolled ? 'border-carbon/15 text-carbon' : 'border-crema/30 text-crema',
-            ].join(' ')}
+            className="md:hidden justify-self-start inline-flex items-center justify-center w-11 h-11 text-tomate"
             aria-label="Abrir menú de navegación"
           >
-            <MenuIcon className="w-5 h-5" strokeWidth={1.75} />
+            <MenuIcon className="w-7 h-7" strokeWidth={2} />
+          </button>
+
+          {/* Centro: logo */}
+          <button onClick={() => navigate('/')} aria-label="Ir al inicio — La Pizza de Nonno">
+            <img
+              src="/logo-nonno.png"
+              alt="La Pizza de Nonno"
+              width="72"
+              height="72"
+              className="h-14 w-14 sm:h-[4.5rem] sm:w-[4.5rem] rounded-full object-cover border border-tomate"
+            />
+          </button>
+
+          {/* Derecha: pedir */}
+          <button
+            onClick={openCart}
+            className="justify-self-end relative inline-flex items-center justify-center gap-1.5 bg-tomate text-masa font-sans font-semibold uppercase tracking-[0.03em] text-sm sm:text-base h-10 sm:h-[3.4rem] w-[6.5rem] sm:w-[7.3rem] hover:bg-forno transition-colors"
+            style={{ clipPath: 'polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%)' }}
+            aria-label={`Pide ya${count > 0 ? `, ${count} producto${count > 1 ? 's' : ''} en el carrito` : ''}`}
+          >
+            PIDE YA
+            {count > 0 && <span className="rounded-full bg-masa text-tomate px-1.5 text-xs leading-5">{count}</span>}
           </button>
         </div>
       </div>

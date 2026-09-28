@@ -15,7 +15,7 @@ const UNSPLASH = 'https://images.unsplash.com/photo-'
  * @param {number} w   ancho servido (usar el mayor que se vaya a pintar)
  * @param {number} q   calidad 1-100
  */
-export const img = (id, w = 1200, q = 72) =>
+export const img = (id, w = 1200, q = 80) =>
   `${UNSPLASH}${id}?w=${w}&q=${q}&auto=format&fit=crop`
 
 /** srcSet responsive para las imágenes grandes (hero, editorial, destacado) */

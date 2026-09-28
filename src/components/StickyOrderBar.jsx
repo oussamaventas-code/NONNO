@@ -18,7 +18,7 @@ export default function StickyOrderBar() {
       <div className="sm:hidden fixed inset-x-0 bottom-0 z-[85] px-3 pb-3 pb-safe">
         <button
           onClick={openCart}
-          className="w-full flex items-center justify-between rounded-full bg-carbon text-crema px-5 py-3.5 min-h-[52px] shadow-float"
+          className="w-full flex items-center justify-between rounded-full bg-panel text-luz px-5 py-3.5 min-h-[52px] shadow-float"
         >
           <span className="flex items-center gap-2 font-sans font-bold text-sm">
             <ShoppingBag className="w-4 h-4" strokeWidth={2} />
@@ -31,7 +31,7 @@ export default function StickyOrderBar() {
       {/* Desktop: botón flotante */}
       <button
         onClick={openCart}
-        className="hidden sm:flex fixed bottom-8 right-8 z-[85] items-center gap-3 rounded-full bg-tomate text-crema pl-5 pr-6 py-3.5 min-h-[52px] shadow-ember hover:scale-105 transition-transform duration-300 ease-magnetic"
+        className="hidden sm:flex fixed bottom-8 right-8 z-[85] items-center gap-3 rounded-full bg-tomate text-forno pl-5 pr-6 py-3.5 min-h-[52px] shadow-ember hover:scale-105 transition-transform duration-300 ease-magnetic"
       >
         <ShoppingBag className="w-4 h-4" strokeWidth={2} />
         <span className="font-sans font-bold text-sm">TU PEDIDO · {count}</span>

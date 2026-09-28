@@ -28,7 +28,7 @@ export default function FinalCta() {
   }
 
   return (
-    <section ref={rootRef} className="section bg-tomate text-crema text-center overflow-hidden">
+    <section ref={rootRef} className="section bg-gradient-to-br from-tomate via-tomate to-horno text-forno text-center overflow-hidden">
       <div className="shell">
         <h2 className="cta-in font-sans font-extrabold uppercase text-display-lg leading-[0.86]">
           {FINAL_CTA.line1}<br />{FINAL_CTA.line2}
@@ -42,14 +42,14 @@ export default function FinalCta() {
         <div className="cta-in mt-10 flex justify-center">
           <button
             onClick={scrollToMenu}
-            className="btn bg-forno text-crema px-10 sm:px-14 py-4 sm:py-5 text-base sm:text-lg min-h-[56px]"
+            className="btn bg-forno text-luz px-10 sm:px-14 py-4 sm:py-5 text-base sm:text-lg min-h-[56px]"
           >
-            <span className="btn-layer bg-carbon" />
+            <span className="btn-layer bg-panel" />
             <span className="btn-label">🍕 {FINAL_CTA.cta}</span>
           </button>
         </div>
 
-        <p className="cta-in mono normal-case mt-6 text-crema/70">{FINAL_CTA.foot}</p>
+        <p className="cta-in mono normal-case mt-6 text-forno/70">{FINAL_CTA.foot}</p>
       </div>
     </section>
   )

@@ -87,8 +87,8 @@ export default function CartDrawer() {
               <Pizza className="w-7 h-7" strokeWidth={1.5} />
             </span>
             <p className="text-carbon/60 font-serif italic text-lg">{SITE.messages.cartEmpty}</p>
-            <button onClick={scrollToMenu} className="btn bg-carbon text-crema px-6">
-              <span className="btn-layer bg-tomate" />
+            <button onClick={scrollToMenu} className="btn bg-tomate text-forno px-6">
+              <span className="btn-layer bg-horno" />
               <span className="btn-label">{SITE.messages.cartEmptyCta}</span>
             </button>
           </div>
@@ -179,7 +179,7 @@ export default function CartDrawer() {
                 Si lo recoges en el local te ahorras {price(pickupSaving)} con "Llévatelas por menos".
               </p>
             )}
-            <button onClick={openCheckout} className="btn w-full bg-tomate text-crema">
+            <button onClick={openCheckout} className="btn w-full bg-tomate text-forno">
               <span className="btn-layer bg-horno" />
               <span className="btn-label">CONTINUAR CON EL PEDIDO →</span>
             </button>

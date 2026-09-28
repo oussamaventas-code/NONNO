@@ -5,7 +5,7 @@ import { useStore, useActions } from '../store/StoreContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { gsap, useGSAP, EASE, DUR, revealFrom, guard } from '../lib/motion'
-import { scrollToSection } from '../lib/scroll'
+import { followLink } from '../lib/router'
 
 /**
  * Panel de navegación móvil a pantalla completa.
@@ -39,9 +39,9 @@ export default function MobileNav() {
 
   if (!open) return null
 
-  const scrollTo = (id) => {
+  const go = (link) => {
     toggleMobileNav(false)
-    setTimeout(() => scrollToSection(id), 260)
+    setTimeout(() => followLink(link), 260)
   }
 
   return (
@@ -50,15 +50,13 @@ export default function MobileNav() {
       role="dialog"
       aria-modal="true"
       aria-label="Menú de navegación"
-      className="fixed inset-0 z-[110] bg-forno text-crema flex flex-col"
+      className="fixed inset-0 z-[110] bg-masa text-tomate flex flex-col"
     >
       <div className="shell flex items-center justify-between pt-6 pb-4">
-        <span className="font-sans font-extrabold uppercase text-xs tracking-tight">
-          {SITE.brand.line1} <em className="font-serif italic font-semibold">{SITE.brand.line2}</em>
-        </span>
+        <img src="/logo-nonno.png" alt="La Pizza de Nonno" className="h-14 w-14 rounded-full object-cover border-[3px] border-tomate" />
         <button
           onClick={() => toggleMobileNav(false)}
-          className="inline-flex items-center justify-center w-11 h-11 rounded-full border border-crema/20"
+          className="inline-flex items-center justify-center w-11 h-11 rounded-lg border-2 border-tomate"
           aria-label="Cerrar menú"
         >
           <X className="w-5 h-5" strokeWidth={1.75} />
@@ -68,17 +66,18 @@ export default function MobileNav() {
       <nav className="shell flex-1 flex flex-col justify-center gap-2" aria-label="Secciones">
         {NAV_LINKS.map((link, i) => (
           <button
-            key={link.id}
-            onClick={() => scrollTo(link.id)}
-            className="mobile-nav-link text-left py-3 border-b border-crema/10 font-serif italic text-display-sm font-semibold text-crema/95 hover:text-horno transition-colors"
+            key={link.label}
+            onClick={() => go(link)}
+            className="mobile-nav-link text-left py-3 border-b-2 border-dashed border-tomate/30 font-display italic font-extrabold text-display-sm text-tomate hover:text-forno transition-colors"
           >
-            <span className="mono not-italic font-sans mr-3 text-crema/40 align-top">{String(i + 1).padStart(2, '0')}</span>
+            <span className="mono not-italic font-sans mr-3 text-tomate/50 align-top">{String(i + 1).padStart(2, '0')}</span>
             {link.label}
           </button>
         ))}
       </nav>
 
-      <div className="shell pb-8 mono text-crema/40">
+      <div className="checker" aria-hidden="true" />
+      <div className="shell py-6 font-sans font-bold uppercase tracking-[0.12em] text-xs text-tomate/70">
         {SITE.brand.claim}
       </div>
     </div>

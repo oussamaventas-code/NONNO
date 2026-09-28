@@ -4,53 +4,57 @@ import { priceOf } from '../data/menu'
 import ProductImage from './ProductImage'
 
 /**
- * Tarjeta de producto: foto a la izquierda, nombre, descripción,
- * precio y botón + a la derecha. Toda la carta usa la misma, para
- * que se lea rápido y sin sorpresas.
+ * Tarjeta de producto enmarcada: foto arriba, nombre, ingredientes,
+ * precio y botón +. Toda la carta usa la misma, para que se lea
+ * rápido y sin sorpresas.
  */
 export default function ProductCard({ product, onOpen }) {
   const halfPortion = product.portions?.find((p) => p.id === 'media')
 
   return (
-    <article className="product-card group grid grid-cols-[7rem_1fr] sm:grid-cols-[11rem_1fr] gap-4 sm:gap-6 items-center bg-crema rounded-card overflow-hidden shadow-island p-3 sm:p-4 h-full">
+    <article className="product-card group frame h-full">
+      <div className="frame-in flex flex-col">
       <button
         onClick={() => onOpen(product.id)}
-        className="relative aspect-square rounded-2xl overflow-hidden"
+        className="relative aspect-[4/3] overflow-hidden bg-tomate/10 border-b border-tomate"
         aria-label={`Ver ${product.name}`}
       >
         <ProductImage
           image={product.image}
           category={product.category}
           alt={product.name}
-          widths={[300, 500, 700]}
-          sizes="176px"
+          widths={[400, 600, 800, 1200]}
+          sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
           className="h-full w-full transition-transform duration-700 ease-magnetic group-hover:scale-105"
         />
-      </button>
-      <div className="pr-2 sm:pr-4">
         {product.badge && (
-          <span className="mono normal-case text-tomate">{product.badge}</span>
+          <span className="absolute top-2 left-2 rounded-md bg-tomate text-masa font-sans font-bold uppercase tracking-wider text-[0.65rem] px-2 py-1">
+            {product.badge}
+          </span>
         )}
-        <h3 className="font-sans font-bold uppercase text-base sm:text-lg text-carbon flex items-center gap-1.5 mt-0.5">
+      </button>
+      <div className="flex flex-col flex-1 px-4 pt-4 pb-4">
+        <h3 className="font-display font-extrabold text-xl text-forno flex items-center gap-1.5">
           {product.name}
-          {product.vegetarian && <Leaf className="w-3.5 h-3.5 text-albahaca flex-shrink-0" strokeWidth={2} />}
-          {product.spicy && <FlameIcon className="w-3.5 h-3.5 text-tomate flex-shrink-0" strokeWidth={2} />}
+          {product.vegetarian && <Leaf className="w-4 h-4 text-albahaca flex-shrink-0" strokeWidth={2} />}
+          {product.spicy && <FlameIcon className="w-4 h-4 text-tomate flex-shrink-0" strokeWidth={2} />}
         </h3>
-        <p className="mt-1 text-sm text-carbon/50 line-clamp-3">{product.description}</p>
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="mono text-carbon/70">
+        <p className="mt-1 text-sm text-forno/65 line-clamp-2 flex-1">{product.description}</p>
+        <div className="mt-4 flex items-end justify-between gap-3">
+          <p className="font-display font-extrabold text-2xl text-tomate leading-none">
             {price(priceOf(product))}
-            {halfPortion && <span className="block text-carbon/45">½ ración {price(halfPortion.price)}</span>}
+            {halfPortion && <span className="block mt-1 font-sans font-semibold text-xs text-forno/55">½ ración {price(halfPortion.price)}</span>}
           </p>
           <button
             onClick={() => onOpen(product.id)}
-            className="btn bg-tomate text-crema w-10 h-10 !min-h-0 !px-0 rounded-full flex-shrink-0"
+            className="btn bg-tomate w-11 h-11 !min-h-0 !px-0 flex-shrink-0"
             aria-label={`Añadir ${product.name}`}
           >
-            <span className="btn-layer bg-horno" />
-            <span className="btn-label"><Plus className="w-4 h-4" strokeWidth={2.5} /></span>
+            <span className="btn-layer bg-forno" />
+            <span className="btn-label"><Plus className="w-5 h-5" strokeWidth={2.5} /></span>
           </button>
         </div>
+      </div>
       </div>
     </article>
   )

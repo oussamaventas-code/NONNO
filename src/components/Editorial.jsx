@@ -46,7 +46,7 @@ export default function Editorial() {
   }, { scope: rootRef })
 
   return (
-    <section ref={rootRef} className="relative section bg-forno text-crema overflow-hidden">
+    <section ref={rootRef} className="relative section bg-forno text-luz overflow-hidden">
       <div className="absolute inset-0 editorial-image">
         <img
           src={img(EDITORIAL.image, 1920, 60)}

@@ -71,7 +71,7 @@ export default function BeforeAfter() {
           <div className="absolute inset-0">
             <img src={img(BEFORE_AFTER.after.image, 1200, 72)} alt={BEFORE_AFTER.after.alt} className="h-full w-full object-cover" loading="lazy" />
             <div className="absolute inset-0 bg-gradient-to-t from-forno/70 via-transparent to-transparent" />
-            <div className="absolute bottom-5 right-5 text-right text-crema">
+            <div className="absolute bottom-5 right-5 text-right text-luz">
               <span className="text-3xl">{BEFORE_AFTER.after.emoji}</span>
               <p className="font-serif italic font-semibold text-xl mt-1">{BEFORE_AFTER.after.text}</p>
             </div>
@@ -81,7 +81,7 @@ export default function BeforeAfter() {
           <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}>
             <img src={img(BEFORE_AFTER.before.image, 1200, 72)} alt={BEFORE_AFTER.before.alt} className="h-full w-full object-cover grayscale" loading="lazy" />
             <div className="absolute inset-0 bg-forno/40" />
-            <div className="absolute bottom-5 left-5 text-crema">
+            <div className="absolute bottom-5 left-5 text-luz">
               <span className="text-3xl">{BEFORE_AFTER.before.emoji}</span>
               <p className="font-serif italic font-semibold text-xl mt-1">{BEFORE_AFTER.before.text}</p>
             </div>

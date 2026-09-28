@@ -207,12 +207,12 @@ export default function Checkout() {
         {order.status === 'idle' && (
           <div className="sticky bottom-0 bg-crema/95 backdrop-blur-md px-6 sm:px-8 py-5 border-t border-carbon/8 pb-safe">
             {step < 4 ? (
-              <button onClick={handleNext} disabled={blocked} className="btn w-full bg-tomate text-crema disabled:opacity-60">
+              <button onClick={handleNext} disabled={blocked} className="btn w-full bg-tomate text-forno disabled:opacity-60">
                 <span className="btn-layer bg-horno" />
                 <span className="btn-label">CONTINUAR →</span>
               </button>
             ) : (
-              <button onClick={handleSubmit} disabled={submitting || blocked} className="btn w-full bg-tomate text-crema disabled:opacity-60">
+              <button onClick={handleSubmit} disabled={submitting || blocked} className="btn w-full bg-tomate text-forno disabled:opacity-60">
                 <span className="btn-layer bg-horno" />
                 <span className="btn-label">{submitting ? 'ENVIANDO…' : 'CONFIRMAR PEDIDO'}</span>
               </button>
@@ -242,7 +242,7 @@ function StepLocation({ locationId, onPick }) {
                 active ? 'border-tomate bg-tomate/5' : 'border-carbon/12 hover:border-carbon/30',
               ].join(' ')}
             >
-              <span className={['w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0', active ? 'bg-tomate text-crema' : 'bg-carbon/8 text-carbon/50'].join(' ')}>
+              <span className={['w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0', active ? 'bg-tomate text-forno' : 'bg-carbon/8 text-carbon/50'].join(' ')}>
                 <MapPin className="w-4 h-4" />
               </span>
               <span className="flex-1">
@@ -482,8 +482,8 @@ function OrderSuccess({ result, onClose }) {
       <p className="mt-3 text-xs text-carbon/40 max-w-xs mx-auto">
         Recuerda: el pago se realiza en el local o al recibir el pedido.
       </p>
-      <button onClick={onClose} className="btn mt-6 bg-carbon text-crema px-8">
-        <span className="btn-layer bg-tomate" />
+      <button onClick={onClose} className="btn mt-6 bg-tomate text-forno px-8">
+        <span className="btn-layer bg-horno" />
         <span className="btn-label">CERRAR</span>
       </button>
     </div>
@@ -508,7 +508,7 @@ function OrderFallback({ result, locationId, onRetry, retrying, onDone }) {
 
       <div className="mt-6 flex flex-col gap-3 max-w-xs mx-auto">
         {whatsappUrl && (
-          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn w-full bg-albahaca text-crema">
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn w-full bg-albahaca text-forno">
             <span className="btn-layer bg-carbon" />
             <span className="btn-label"><MessageCircle className="w-4 h-4" /> ENVIAR POR WHATSAPP</span>
           </a>
@@ -538,7 +538,7 @@ function OrderError({ message, onRetry }) {
         <X className="w-7 h-7" strokeWidth={1.5} />
       </span>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon">{message || 'No hemos podido actualizar tu pedido.'}</h3>
-      <button onClick={onRetry} className="btn mt-6 bg-tomate text-crema px-8">
+      <button onClick={onRetry} className="btn mt-6 bg-tomate text-forno px-8">
         <span className="btn-layer bg-horno" />
         <span className="btn-label">REVISAR DE NUEVO</span>
       </button>

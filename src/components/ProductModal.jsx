@@ -116,7 +116,7 @@ export default function ProductModal() {
       >
         <button
           onClick={closeProduct}
-          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-forno/40 backdrop-blur-sm text-crema flex items-center justify-center hover:bg-forno/60 transition-colors"
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-forno/40 backdrop-blur-sm text-luz flex items-center justify-center hover:bg-forno/60 transition-colors"
           aria-label="Cerrar"
         >
           <X className="w-5 h-5" />
@@ -288,7 +288,7 @@ export default function ProductModal() {
               </button>
             </div>
 
-            <button onClick={handleAdd} className="btn flex-1 bg-tomate text-crema px-6">
+            <button onClick={handleAdd} className="btn flex-1 bg-tomate text-forno px-6">
               <span className="btn-layer bg-horno" />
               <span className="btn-label">AÑADIR AL PEDIDO · {price(total)}</span>
             </button>

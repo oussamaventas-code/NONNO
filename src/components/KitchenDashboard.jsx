@@ -82,13 +82,13 @@ export default function KitchenDashboard() {
           ))}
         </div>
 
-        <div className="mt-10 bg-carbon rounded-card p-6 sm:p-8">
+        <div className="mt-10 bg-panel rounded-card p-6 sm:p-8">
           <div className="flex flex-col gap-5">
             {KITCHEN_RHYTHM.map((row) => (
               <div key={row.id}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="mono text-crema/60">{row.label}</span>
-                  <span className="mono text-crema/30">{Math.round(row.level * 100)}%</span>
+                  <span className="mono text-luz/60">{row.label}</span>
+                  <span className="mono text-luz/30">{Math.round(row.level * 100)}%</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-crema/10 overflow-hidden">
                   <div

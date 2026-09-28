@@ -39,7 +39,7 @@ export default function FeaturedProduct() {
   }, { scope: rootRef })
 
   return (
-    <section ref={rootRef} className="section bg-forno text-crema overflow-hidden">
+    <section ref={rootRef} className="section bg-forno text-luz overflow-hidden">
       <div className="shell grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         <div className="featured-in order-2 lg:order-1">
           <p className="mono text-horno mb-4">★ {product.badge || 'FAVORITA'}</p>
@@ -47,23 +47,23 @@ export default function FeaturedProduct() {
             LA FAVORITA<br />
             <em className="font-serif italic font-semibold text-horno ">DEL NONNO.</em>
           </h2>
-          <p className="mt-6 max-w-md text-crema/65 text-base sm:text-lg">{product.description}</p>
+          <p className="mt-6 max-w-md text-luz/65 text-base sm:text-lg">{product.description}</p>
 
           <div className="mt-6 flex flex-wrap gap-2">
             {product.ingredients.map((ing) => (
-              <span key={ing} className="mono normal-case rounded-full border border-crema/15 px-3 py-1.5 text-crema/60">
+              <span key={ing} className="mono normal-case rounded-full border border-luz/15 px-3 py-1.5 text-luz/60">
                 {ing}
               </span>
             ))}
           </div>
 
           <div className="mt-8 flex flex-wrap items-center gap-4 sm:gap-6">
-            <p className="font-serif italic font-semibold text-3xl text-crema">
+            <p className="font-serif italic font-semibold text-3xl text-luz">
               {price(priceOf(product))}
             </p>
             <button
               onClick={() => openProduct(product.id)}
-              className="btn bg-tomate text-crema px-6 w-full sm:w-auto"
+              className="btn bg-tomate text-forno px-6 w-full sm:w-auto"
             >
               <span className="btn-layer bg-horno" />
               <span className="btn-label"><Plus className="w-4 h-4" strokeWidth={2.5} /> AÑADIR AL PEDIDO</span>
