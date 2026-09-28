@@ -170,7 +170,7 @@ export const PRODUCTS = [
     { image: PHOTO.kebabPizza }),
   especial('la-jefa', 'La Jefa', [
     'Tomate', 'Mozzarella', 'Jamón cocido', 'Alcachofas', 'Aceitunas negras', 'Anchoas',
-  ], 11.9, { image: PHOTO.vegetale }),
+  ], 11.9, { image: PHOTO.laJefa }),
   especial('chato-y-cabra', 'Chato y cabra', [
     'Tomate', 'Mozzarella', 'Sobrasada de chato murciano', 'Queso de cabra', 'Miel',
   ], 11.9, { image: PHOTO.chatoYCabra }),
