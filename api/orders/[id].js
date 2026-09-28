@@ -3,6 +3,7 @@ import { requireSession, SCOPE_ALL } from '../_lib/auth.js'
 import { sanitizeOrder, validateOrder, PAYMENT_METHODS } from '../_lib/order.js'
 import { assignSlot, SLOT_ERRORS } from '../_lib/slots.js'
 import { notifyCustomer } from '../_lib/sms.js'
+import { settleOrderPoints } from '../_lib/customer.js'
 
 const SMS_KINDS = ['recibido', 'listo', 'cancelado']
 
@@ -102,6 +103,10 @@ export default async function handler(req, res) {
     }
   }
 
+  /* Club Nonno: suma los puntos al entregar y los devuelve al cancelar.
+     Nunca bloquea el cambio de estado. */
+  if (status === 'entregado' || status === 'cancelado') await settleOrderPoints(data)
+
   return res.status(200).json({ order: data })
 }
 
@@ -122,13 +127,20 @@ async function editOrder(req, res, id, scoped) {
   }
 
   const edit = req.body.edit
+  /* Los puntos que el cliente ya canjeó se mantienen al editar */
+  const redeemed = Number(current.points_redeemed) || 0
   const parsed = sanitizeOrder(
     { ...edit, ref: current.ref, location: { id: current.location_id }, channel: current.channel },
-    { staff: true },
+    { staff: true, redeem: redeemed },
   )
   parsed.order.channel = current.channel
   const problem = validateOrder(parsed)
   if (problem) return res.status(400).json({ error: problem })
+  if ((parsed.order.points_redeemed || 0) < redeemed) {
+    return res.status(409).json({
+      error: `Este pedido usó ${redeemed} puntos del Club Nonno: la comida no puede quedar por debajo del descuento. Añade algo o cancela el pedido para devolverle los puntos.`,
+    })
+  }
 
   const now = new Date().toISOString()
   const patch = {

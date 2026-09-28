@@ -1,7 +1,8 @@
-import { Menu as MenuIcon } from 'lucide-react'
+import { Menu as MenuIcon, UserRound } from 'lucide-react'
 import { NAV_LINKS } from '../data/site'
 import { ANNOUNCE } from '../data/content'
 import { useCart, useActions } from '../store/StoreContext'
+import { useAccount } from '../store/AccountContext'
 import { followLink, navigate } from '../lib/router'
 
 /**
@@ -12,6 +13,7 @@ import { followLink, navigate } from '../lib/router'
 export default function Navbar() {
   const { count } = useCart()
   const { openCart, toggleMobileNav } = useActions()
+  const { status, points, openAccount } = useAccount()
 
   return (
     <header className="relative z-[90] bg-masa">
@@ -52,16 +54,28 @@ export default function Navbar() {
             />
           </button>
 
-          {/* Derecha: pedir */}
-          <button
-            onClick={openCart}
-            className="justify-self-end relative inline-flex items-center justify-center gap-1.5 bg-tomate text-masa font-sans font-semibold uppercase tracking-[0.03em] text-sm sm:text-base h-10 sm:h-[3.4rem] w-[6.5rem] sm:w-[7.3rem] hover:bg-forno transition-colors"
-            style={{ clipPath: 'polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%)' }}
-            aria-label={`Pide ya${count > 0 ? `, ${count} producto${count > 1 ? 's' : ''} en el carrito` : ''}`}
-          >
-            PIDE YA
-            {count > 0 && <span className="rounded-full bg-masa text-tomate px-1.5 text-xs leading-5">{count}</span>}
-          </button>
+          {/* Derecha: mi cuenta + pedir */}
+          <div className="justify-self-end flex items-center gap-3 sm:gap-6">
+            {status !== 'loading' && (
+              <button
+                onClick={openAccount}
+                className="inline-flex items-center gap-1.5 font-sans font-semibold uppercase text-base text-tomate hover:text-forno transition-colors"
+                aria-label={status === 'member' ? `Mi cuenta, ${points} puntos` : 'Mi cuenta: Club Nonno'}
+              >
+                <UserRound className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2} />
+                <span className="hidden sm:inline">{status === 'member' ? `${points} pts` : 'Mi cuenta'}</span>
+              </button>
+            )}
+            <button
+              onClick={openCart}
+              className="relative inline-flex items-center justify-center gap-1.5 bg-tomate text-masa font-sans font-semibold uppercase tracking-[0.03em] text-sm sm:text-base h-10 sm:h-[3.4rem] w-[6.5rem] sm:w-[7.3rem] hover:bg-forno transition-colors"
+              style={{ clipPath: 'polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%)' }}
+              aria-label={`Pide ya${count > 0 ? `, ${count} producto${count > 1 ? 's' : ''} en el carrito` : ''}`}
+            >
+              PIDE YA
+              {count > 0 && <span className="rounded-full bg-masa text-tomate px-1.5 text-xs leading-5">{count}</span>}
+            </button>
+          </div>
         </div>
       </div>
     </header>

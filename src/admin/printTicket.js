@@ -142,16 +142,18 @@ function page(title, body) {
 <body>${body}</body></html>`
 }
 
-/** Subtotal, oferta de recogida y envío, solo si hay algo que desglosar. */
+/** Subtotal, oferta de recogida, puntos y envío, solo si hay algo que desglosar. */
 function breakdown(order) {
   const discount = Number(order.discount) || 0
   const fee = Number(order.delivery_fee) || 0
-  if (!discount && !fee) return ''
+  const points = Number(order.points_discount) || 0
+  if (!discount && !fee && !points) return ''
   const row = (label, value) => `<div class="field" style="display:flex;justify-content:space-between"><span>${label}</span><span>${value}</span></div>`
   return [
     row('Subtotal', esc(price(order.subtotal))),
     ...(order.deals || []).map((d) => `<div class="sub">Oferta ${d.count > 1 ? `${d.count}x ` : ''}${esc(d.label)} por ${esc(price(d.price))}</div>`),
     discount ? row('Dto. recogida', `-${esc(price(discount))}`) : '',
+    points ? row(`Puntos Club Nonno (${Number(order.points_redeemed) || 0})`, `-${esc(price(points))}`) : '',
     fee ? row(`Envío ${esc(order.delivery_zone || '')}`, `+${esc(price(fee))}`) : '',
   ].join('')
 }

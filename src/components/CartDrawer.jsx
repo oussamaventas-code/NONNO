@@ -12,7 +12,7 @@ import { hourOf, ovenUnits } from '../lib/kitchenSlots'
 import { useKitchenEta, minutesUntil } from '../hooks/useKitchenEta'
 import { SITE } from '../data/site'
 import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
-import { scrollToSection } from '../lib/scroll'
+import { navigate } from '../lib/router'
 
 /**
  * Carrito global. Desktop: drawer lateral derecho. Móvil: bottom sheet.
@@ -48,7 +48,7 @@ export default function CartDrawer() {
 
   const scrollToMenu = () => {
     closeCart()
-    setTimeout(() => scrollToSection('menu'), 200)
+    navigate('/carta')
   }
 
   return (

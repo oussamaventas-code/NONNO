@@ -16,6 +16,7 @@ import LocationPrompt from './components/LocationPrompt'
 import Checkout from './components/Checkout'
 import StickyOrderBar from './components/StickyOrderBar'
 import Toasts from './components/Toasts'
+import AccountDrawer from './components/AccountDrawer'
 import { usePath } from './lib/router'
 
 /**
@@ -58,6 +59,7 @@ export default function App() {
       <ProductModal />
       <LocationPrompt />
       <Checkout />
+      <AccountDrawer />
       <Toasts />
     </>
   )

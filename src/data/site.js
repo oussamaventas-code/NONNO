@@ -41,6 +41,17 @@ export const SITE = {
     /* El coste de envío va por distancia: ver `delivery` en locations.js */
   },
 
+  /* Datos fiscales para los tiques que el cliente descarga desde
+     "Mi cuenta". Con razón social y NIF el documento sale como
+     FACTURA SIMPLIFICADA (IVA desglosado); sin ellos, como
+     "Justificante de pedido".
+     TODO: RELLENAR CON LOS DATOS FISCALES REALES DE NONNO. */
+  billing: {
+    legalName: null, // p. ej. 'Nombre del titular o Sociedad S.L.'
+    nif: null,       // p. ej. 'B12345678'
+    vatRate: 0.10,   // IVA de hostelería en España
+  },
+
   /* Estados de UI centralizados: mismo idioma en toda la web */
   messages: {
     cartEmpty: 'No hay pizza aquí todavía.',

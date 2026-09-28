@@ -2,6 +2,8 @@ import { PICKUP_DEALS } from '../data/menu'
 import { DEALS_BAND } from '../data/content'
 import { price } from '../lib/format'
 import { navigate } from '../lib/router'
+import { useAccount } from '../store/AccountContext'
+import { LOYALTY } from '../data/loyalty'
 
 /**
  * "Llévatelas por menos": las ofertas reales de recogida en tiques
@@ -9,6 +11,7 @@ import { navigate } from '../lib/router'
  * cambia la oferta en la carta cambia aquí sola.
  */
 export default function DealsBand() {
+  const { status, points, openAccount } = useAccount()
   return (
     <section className="bg-tomate text-masa py-20 sm:py-24 border-y border-tomate">
       <div className="px-5 text-center">
@@ -42,6 +45,20 @@ export default function DealsBand() {
           <span className="min-w-[13.9rem] bg-masa border-masa text-tomate">Pedir para recoger</span>
         </button>
       </div>
+
+      {/* Club Nonno */}
+      {status !== 'loading' && (
+        <div className="mt-14 mx-auto max-w-2xl px-5">
+          <button onClick={openAccount} className="w-full rounded-md border border-dashed border-masa px-5 py-4 text-center hover:bg-masa/10 transition-colors">
+            <span className="block font-display italic font-bold text-2xl">{LOYALTY.name}</span>
+            <span className="block mt-1 font-sans text-masa/90">
+              {status === 'member'
+                ? `Tienes ${points} puntos. Ver mi cuenta →`
+                : `${LOYALTY.pointsPerEuro} punto por cada euro · ${LOYALTY.redeemStep} puntos = ${LOYALTY.stepValue} € de descuento. Entra con tu móvil →`}
+            </span>
+          </button>
+        </div>
+      )}
     </section>
   )
 }

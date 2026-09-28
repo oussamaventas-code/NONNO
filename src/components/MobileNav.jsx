@@ -6,6 +6,7 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { gsap, useGSAP, EASE, DUR, revealFrom, guard } from '../lib/motion'
 import { followLink } from '../lib/router'
+import { useAccount } from '../store/AccountContext'
 
 /**
  * Panel de navegación móvil a pantalla completa.
@@ -14,6 +15,7 @@ import { followLink } from '../lib/router'
 export default function MobileNav() {
   const { ui } = useStore()
   const { toggleMobileNav } = useActions()
+  const { status, points, openAccount } = useAccount()
   const open = ui.mobileNav
   const panelRef = useRef(null)
 
@@ -74,6 +76,15 @@ export default function MobileNav() {
             {link.label}
           </button>
         ))}
+        {status !== 'loading' && (
+          <button
+            onClick={() => { toggleMobileNav(false); openAccount() }}
+            className="mobile-nav-link text-left py-3 border-b-2 border-dashed border-tomate/30 font-display italic font-extrabold text-display-sm text-tomate hover:text-forno transition-colors"
+          >
+            <span className="mono not-italic font-sans mr-3 text-tomate/50 align-top">{String(NAV_LINKS.length + 1).padStart(2, '0')}</span>
+            {status === 'member' ? `Mi cuenta · ${points} pts` : 'Mi cuenta'}
+          </button>
+        )}
       </nav>
 
       <div className="checker" aria-hidden="true" />

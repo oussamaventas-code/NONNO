@@ -23,9 +23,9 @@ import { price, orderRef } from './format'
 const whereOf = (customer) => ({ coords: customer?.coords || null, tier: customer?.tier ?? null })
 
 /** Payload normalizado. Este es el contrato con cualquier backend. */
-export function buildOrderPayload({ lines, locationId, mode, customer, clientKey, ref }) {
+export function buildOrderPayload({ lines, locationId, mode, customer, clientKey, ref, redeemPoints = 0 }) {
   const location = getLocation(locationId)
-  const totals = orderTotals({ lines, mode, locationId, where: whereOf(customer) })
+  const totals = orderTotals({ lines, mode, locationId, where: whereOf(customer), pointsRedeemed: redeemPoints })
   return {
     /* La referencia no cambia entre reintentos: si el cliente acaba
        mandándolo por WhatsApp, cocina ve la misma que en el panel. */
@@ -67,6 +67,9 @@ export function buildOrderPayload({ lines, locationId, mode, customer, clientKey
     deals: totals.deals,
     deliveryZone: totals.delivery?.ok ? totals.delivery.label : null,
     deliveryFee: totals.deliveryFee,
+    /* Club Nonno: el servidor comprueba el saldo y recalcula el descuento */
+    redeemPoints: totals.pointsRedeemed,
+    pointsDiscount: totals.pointsDiscount,
     total: totals.total,
   }
 }
@@ -108,9 +111,10 @@ export function orderToText(payload) {
     '',
     ...lines,
     '',
-    payload.discount || payload.deliveryFee ? `Subtotal: ${price(payload.subtotal)}` : '',
+    payload.discount || payload.deliveryFee || payload.pointsDiscount ? `Subtotal: ${price(payload.subtotal)}` : '',
     ...payload.deals.map((d) => `Oferta ${d.count > 1 ? `${d.count}× ` : ''}${d.label} por ${price(d.price)}`),
     payload.discount ? `Descuento recogida: -${price(payload.discount)}` : '',
+    payload.pointsDiscount ? `Puntos Club Nonno (${payload.redeemPoints}): -${price(payload.pointsDiscount)}` : '',
     payload.deliveryFee ? `Envío (${payload.deliveryZone}): +${price(payload.deliveryFee)}` : '',
     `TOTAL: ${price(payload.total)}`,
     '',

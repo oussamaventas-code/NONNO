@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import { X, ChevronLeft, MapPin, Package, Truck, Check, Pizza, Phone, MessageCircle } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { X, ChevronLeft, MapPin, Package, Truck, Check, Pizza, Phone, MessageCircle, Star, Minus, Plus } from 'lucide-react'
 import { LOCATIONS } from '../data/locations'
 import { useStore, useActions, useCart, useSelectedLocation } from '../store/StoreContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
@@ -14,6 +14,8 @@ import { orderTotals, pickupDeals } from '../lib/orderTotals'
 import { hourOf, ovenUnits } from '../lib/kitchenSlots'
 import { useKitchenEta } from '../hooks/useKitchenEta'
 import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
+import { useAccount } from '../store/AccountContext'
+import { LOYALTY, pointsFor, maxRedeemable } from '../data/loyalty'
 
 const newClientKey = () =>
   (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -51,6 +53,9 @@ export default function Checkout() {
   const step = ui.checkoutStep
   const [fieldErrors, setFieldErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
+  /* Club Nonno: puntos que el cliente quiere canjear en este pedido */
+  const account = useAccount()
+  const [redeem, setRedeem] = useState(0)
 
   const panelRef = useRef(null)
   const dialogRef = useRef(null)
@@ -71,11 +76,28 @@ export default function Checkout() {
     revealFrom(bodyRef.current, { x: 16, opacity: 0, duration: 0.4, ease: 'power2.out' })
   }, { dependencies: [step], scope: panelRef })
 
+  /* Con la sesión abierta, sus datos van ya rellenos */
+  useEffect(() => {
+    if (!open || account.status !== 'member') return
+    const patch = {}
+    if (!customer.name.trim() && account.customer.name) patch.name = account.customer.name
+    if (!customer.phone.trim()) patch.phone = account.customer.phone.replace(/^\+34/, '')
+    if (Object.keys(patch).length) setCustomer(patch)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, account.status])
+
   if (!open || isEmpty) return null
 
-  const totals = orderTotals({
+  const baseTotals = orderTotals({
     lines, mode: order.mode, locationId, where: { coords: customer.coords, tier: customer.tier },
   })
+  const redeemMax = account.status === 'member' ? maxRedeemable(account.points, baseTotals.subtotal - baseTotals.discount) : 0
+  const totals = redeem > 0
+    ? orderTotals({
+      lines, mode: order.mode, locationId, where: { coords: customer.coords, tier: customer.tier },
+      pointsRedeemed: Math.min(redeem, redeemMax),
+    })
+    : baseTotals
   const pickupSaving = pickupDeals(lines).discount
   const tiers = deliveryTiers(locationId)
   const readyAt = eta?.ok ? Date.parse(eta.readyAt) : null
@@ -110,8 +132,13 @@ export default function Checkout() {
     clientKey.current ||= { key: newClientKey(), ref: orderRef() }
     const result = await submitOrder({
       lines, locationId, mode: order.mode, customer, clientKey: clientKey.current.key, ref: clientKey.current.ref,
+      redeemPoints: totals.pointsRedeemed,
     })
-    if (result.status !== 'error') clientKey.current = null
+    if (result.status !== 'error') {
+      clientKey.current = null
+      setRedeem(0)
+      if (account.status === 'member') account.refresh()
+    }
     setSubmitting(false)
     setOrderStatus(result.status === 'error' ? 'error' : 'success', {
       result,
@@ -200,7 +227,10 @@ export default function Checkout() {
           )}
 
           {order.status === 'idle' && step === 4 && (
-            <StepSummary lines={lines} totals={totals} location={location} mode={order.mode} customer={customer} readyAt={readyAt} />
+            <>
+              <ClubBox account={account} totals={totals} redeem={Math.min(redeem, redeemMax)} redeemMax={redeemMax} onRedeem={setRedeem} />
+              <StepSummary lines={lines} totals={totals} location={location} mode={order.mode} customer={customer} readyAt={readyAt} />
+            </>
           )}
         </div>
 
@@ -366,6 +396,51 @@ function StepCustomer({ customer, mode, locationId, errors, onChange }) {
   )
 }
 
+/* ── Club Nonno en el resumen ─────────────────────────────────── */
+function ClubBox({ account, totals, redeem, redeemMax, onRedeem }) {
+  const earn = pointsFor(totals.total)
+  if (account.status === 'off' || account.status === 'loading') return null
+
+  if (account.status === 'guest') {
+    return (
+      <button
+        onClick={account.openAccount}
+        className="mb-6 w-full text-left rounded-md border border-dashed border-tomate bg-tomate/5 px-4 py-3 text-sm text-tomate"
+      >
+        <span className="font-semibold">Con este pedido ganarías {earn} puntos del {LOYALTY.name}.</span>{' '}
+        <span className="underline underline-offset-4">Entra con tu móvil</span>
+      </button>
+    )
+  }
+
+  const step = LOYALTY.redeemStep
+  return (
+    <div className="mb-6 rounded-md border border-tomate bg-tomate/5 px-4 py-3">
+      <p className="flex items-center gap-2 text-sm font-semibold text-tomate">
+        <Star className="w-4 h-4 fill-tomate" strokeWidth={0} />
+        Tienes {account.points} puntos · con este pedido ganas {earn}
+      </p>
+      {redeemMax > 0 ? (
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span className="text-sm text-carbon">
+            {redeem > 0 ? `Usas ${redeem} puntos: −${price(totals.pointsDiscount)}` : `Puedes usar hasta ${redeemMax} puntos`}
+          </span>
+          <span className="flex items-center gap-2">
+            <button onClick={() => onRedeem(Math.max(0, redeem - step))} disabled={redeem <= 0} className="w-8 h-8 rounded-full border border-tomate text-tomate flex items-center justify-center disabled:opacity-30" aria-label="Usar menos puntos">
+              <Minus className="w-4 h-4" />
+            </button>
+            <button onClick={() => onRedeem(Math.min(redeemMax, redeem + step))} disabled={redeem >= redeemMax} className="w-8 h-8 rounded-full bg-tomate text-masa flex items-center justify-center disabled:opacity-30" aria-label="Usar más puntos">
+              <Plus className="w-4 h-4" />
+            </button>
+          </span>
+        </div>
+      ) : (
+        <p className="mt-1 text-xs text-carbon/60">A partir de {step} puntos puedes usarlos como descuento ({price(LOYALTY.stepValue)} cada {step}).</p>
+      )}
+    </div>
+  )
+}
+
 /* ── Paso 4: resumen ──────────────────────────────────────────── */
 function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
   const trip = mode === 'delivery' && totals.delivery?.ok ? totals.delivery : null
@@ -424,7 +499,7 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
       </div>
 
       <div className="mt-5 pt-5 border-t border-carbon/10 flex flex-col gap-2 text-sm">
-        {(totals.discount > 0 || totals.deliveryFee > 0) && (
+        {(totals.discount > 0 || totals.deliveryFee > 0 || totals.pointsDiscount > 0) && (
           <div className="flex items-center justify-between text-carbon/60">
             <span>Subtotal</span>
             <span className="mono">{price(totals.subtotal)}</span>
@@ -439,6 +514,12 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
           <div className="flex items-center justify-between font-semibold text-albahaca">
             <span>Descuento por recoger</span>
             <span className="mono">−{price(totals.discount)}</span>
+          </div>
+        )}
+        {totals.pointsDiscount > 0 && (
+          <div className="flex items-center justify-between font-semibold text-albahaca">
+            <span>Puntos {LOYALTY.name} ({totals.pointsRedeemed})</span>
+            <span className="mono">−{price(totals.pointsDiscount)}</span>
           </div>
         )}
         {totals.deliveryFee > 0 && (

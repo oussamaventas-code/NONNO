@@ -1,9 +1,10 @@
 import { getProduct, priceOf, PICKUP_DEALS } from '../data/menu.js'
 import { deliveryQuote } from './delivery.js'
+import { discountFor, maxRedeemable, normalizeRedeem } from '../data/loyalty.js'
 
 /* ═══════════════════════════════════════════════════════════════
    TOTALES DEL PEDIDO
-   Subtotal − oferta de recogida + envío = total.
+   Subtotal − oferta de recogida − puntos canjeados + envío = total.
 
    Lo usan la web (carrito y checkout) y el servidor, que lo vuelve a
    calcular al guardar el pedido: lo que ve el cliente, lo que sale en
@@ -82,20 +83,29 @@ export function pickupDeals(lines = []) {
  * @param {'pickup'|'delivery'|null} input.mode
  * @param {string} input.locationId
  * @param {{ coords?: {lat, lng}, tier?: number }} [input.where]  punto de entrega (solo entrega)
+ * @param {number} [input.pointsRedeemed]  puntos del Club Nonno que se quieren canjear
+ *   (ya limitados al saldo del cliente). Se recortan a bloques enteros
+ *   y a lo que cuesta la comida: el envío nunca se paga con puntos.
  * @returns delivery: presupuesto de envío (ver deliveryQuote) o null si es recogida
  */
-export function orderTotals({ lines = [], mode, locationId, where }) {
+export function orderTotals({ lines = [], mode, locationId, where, pointsRedeemed = 0 }) {
   const subtotalCents = lines.reduce((sum, l) => sum + cents(l.unitPrice) * l.qty, 0)
   const { discount, deals } = mode === 'pickup' ? pickupDeals(lines) : { discount: 0, deals: [] }
   const delivery = mode === 'delivery' ? deliveryQuote(locationId, where) : null
   const deliveryFee = delivery?.ok ? delivery.fee : 0
 
+  const payableCents = subtotalCents - cents(discount)
+  const points = Math.min(normalizeRedeem(pointsRedeemed), maxRedeemable(Infinity, euros(payableCents)))
+  const pointsDiscount = discountFor(points)
+
   return {
     subtotal: euros(subtotalCents),
     discount,
     deals,
+    pointsRedeemed: points,
+    pointsDiscount,
     delivery,
     deliveryFee,
-    total: euros(subtotalCents - cents(discount) + cents(deliveryFee)),
+    total: euros(payableCents - cents(pointsDiscount) + cents(deliveryFee)),
   }
 }

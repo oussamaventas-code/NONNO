@@ -91,7 +91,11 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
   const clientKey = useRef(newClientKey())
 
   const pizzas = ovenUnits(lines)
-  const totals = orderTotals({ lines, mode, locationId: locId, where: { coords: customer.coords, tier: customer.tier } })
+  const totals = orderTotals({
+    lines, mode, locationId: locId, where: { coords: customer.coords, tier: customer.tier },
+    /* Los puntos que el cliente ya canjeó se mantienen al editar */
+    pointsRedeemed: Number(order?.points_redeemed) || 0,
+  })
   const trip = mode === 'delivery' && totals.delivery?.ok ? totals.delivery : null
   const canDeliver = Boolean(location?.services.delivery)
 
@@ -388,13 +392,14 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
 
           {/* Totales y hora */}
           <div className="rounded-2xl bg-carbon/5 p-4 flex flex-col gap-1.5 text-sm">
-            {(totals.discount > 0 || totals.deliveryFee > 0) && (
+            {(totals.discount > 0 || totals.deliveryFee > 0 || totals.pointsDiscount > 0) && (
               <Row label="Subtotal" value={price(totals.subtotal)} />
             )}
             {totals.deals.map((d) => (
               <p key={d.label} className="text-albahaca text-xs">Oferta {d.count > 1 ? `${d.count}× ` : ''}{d.label} por {price(d.price)}</p>
             ))}
             {totals.discount > 0 && <Row label="Descuento recogida" value={`−${price(totals.discount)}`} tone="text-albahaca font-semibold" />}
+            {totals.pointsDiscount > 0 && <Row label={`Puntos Club Nonno (${totals.pointsRedeemed})`} value={`−${price(totals.pointsDiscount)}`} tone="text-albahaca font-semibold" />}
             {trip && <Row label={`Envío · ${trip.label}`} value={`+${price(trip.fee)}`} />}
             <div className="flex items-center justify-between pt-1">
               <span className="mono text-carbon/60">TOTAL</span>

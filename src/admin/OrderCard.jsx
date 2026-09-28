@@ -113,7 +113,7 @@ export default function OrderCard({ order, onStatus, onUpdated, busy }) {
         ))}
       </ul>
 
-      {(Number(order.discount) > 0 || Number(order.delivery_fee) > 0) && (
+      {(Number(order.discount) > 0 || Number(order.delivery_fee) > 0 || Number(order.points_discount) > 0) && (
         <div className="mt-3 flex flex-col gap-1 text-sm">
           {(order.deals || []).map((d) => (
             <span key={d.label} className="mono normal-case text-albahaca">
@@ -123,6 +123,11 @@ export default function OrderCard({ order, onStatus, onUpdated, busy }) {
           {Number(order.discount) > 0 && (
             <span className="flex justify-between text-albahaca font-semibold">
               <span>Descuento recogida</span><span className="mono">−{price(order.discount)}</span>
+            </span>
+          )}
+          {Number(order.points_discount) > 0 && (
+            <span className="flex justify-between text-albahaca font-semibold">
+              <span>Puntos Club Nonno ({order.points_redeemed})</span><span className="mono">−{price(order.points_discount)}</span>
             </span>
           )}
           {Number(order.delivery_fee) > 0 && (

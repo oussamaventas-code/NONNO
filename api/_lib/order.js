@@ -22,11 +22,14 @@ export const PAYMENT_METHODS = ['efectivo', 'tarjeta']
 
 /**
  * @param {object} body
- * @param {{ staff?: boolean }} opts  staff: pedido creado desde el panel
- *   (mostrador o teléfono). Solo el personal puede marcarlo como pagado
- *   al crearlo y el teléfono es opcional en mostrador.
+ * @param {{ staff?: boolean, customerId?: string, redeem?: number }} opts
+ *   staff: pedido creado desde el panel (mostrador o teléfono). Solo el
+ *   personal puede marcarlo como pagado al crearlo y el teléfono es
+ *   opcional en mostrador.
+ *   customerId / redeem: cliente del Club Nonno con sesión y puntos que
+ *   quiere canjear, ya limitados a su saldo por quien llama.
  */
-export function sanitizeOrder(body, { staff = false } = {}) {
+export function sanitizeOrder(body, { staff = false, customerId = null, redeem = 0 } = {}) {
   const rawItems = Array.isArray(body?.items) ? body.items.slice(0, 60) : []
   let unknownProduct = false
 
@@ -46,7 +49,7 @@ export function sanitizeOrder(body, { staff = false } = {}) {
   const mode = body?.mode === 'delivery' ? 'delivery' : 'pickup'
   const locationId = trim(body?.location?.id, 40)
   const where = whereOf(body?.customer)
-  const totals = orderTotals({ lines, mode, locationId, where })
+  const totals = orderTotals({ lines, mode, locationId, where, pointsRedeemed: redeem })
   const delivery = totals.delivery
 
   const items = lines.map((l) => ({
@@ -96,6 +99,10 @@ export function sanitizeOrder(body, { staff = false } = {}) {
       deals: totals.deals,
       delivery_fee: totals.deliveryFee,
       total: totals.total,
+      /* Solo se añaden si hay cliente o canje: así, sin las columnas del
+         club creadas en la base de datos, los pedidos siguen entrando. */
+      ...(customerId ? { customer_id: customerId } : {}),
+      ...(totals.pointsRedeemed > 0 ? { points_redeemed: totals.pointsRedeemed, points_discount: totals.pointsDiscount } : {}),
       channel: staff ? (CHANNELS.includes(body?.channel) ? body.channel : 'mostrador') : 'web',
       ...(staff && body?.paymentStatus === 'pagado'
         ? {

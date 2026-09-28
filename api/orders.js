@@ -5,6 +5,8 @@ import { sanitizeOrder, validateOrder } from './_lib/order.js'
 import { isStoreOpen } from './_lib/store.js'
 import { precheck, assignSlot, SLOT_ERRORS } from './_lib/slots.js'
 import { notifyCustomer } from './_lib/sms.js'
+import { readCustomerId, getCustomer, movePoints, isMissingTable } from './_lib/customer.js'
+import { normalizeRedeem } from '../src/data/loyalty.js'
 import { forcedSlot } from '../src/lib/kitchenSlots.js'
 import { getLocation } from '../src/data/locations.js'
 
@@ -50,7 +52,20 @@ export default async function handler(req, res) {
     if (staffChannel && !session) return res.status(401).json({ error: 'No autorizado' })
     const staff = Boolean(session)
 
-    const parsed = sanitizeOrder(req.body, { staff })
+    /* Cliente del Club Nonno con sesión (solo pedidos de la web): el
+       pedido queda a su nombre y puede canjear puntos, como mucho los
+       que tiene de verdad según la base de datos. */
+    let customer = null
+    if (!staff) {
+      try {
+        customer = await getCustomer(readCustomerId(req))
+      } catch (err) {
+        if (!isMissingTable(err)) console.error('Error leyendo el cliente:', err)
+      }
+    }
+    const redeem = customer ? Math.min(normalizeRedeem(req.body?.redeemPoints), normalizeRedeem(customer.points)) : 0
+
+    const parsed = sanitizeOrder(req.body, { staff, customerId: customer?.id, redeem })
     const problem = validateOrder(parsed)
     if (problem) return res.status(400).json({ error: problem })
     const { order } = parsed
@@ -132,6 +147,22 @@ export default async function handler(req, res) {
       return res.status(409).json({ code: 'full', error: SLOT_ERRORS[assigned.reason] || 'No hemos podido registrar el pedido.' })
     }
     const row = assigned.row
+
+    /* Canje de puntos: se descuentan ahora, con el pedido ya en firme.
+       Si el saldo no llega (lo gastó en otro pedido a la vez), el
+       pedido se retira y se avisa. */
+    if (row.points_redeemed > 0) {
+      try {
+        await movePoints(customer.id, row.id, -row.points_redeemed, 'canje', `Pedido ${row.ref}`)
+      } catch (err) {
+        await db().from('orders').delete().eq('id', row.id)
+        if (/saldo_insuficiente/.test(err?.message || '')) {
+          return res.status(409).json({ code: 'points', error: 'No tienes puntos suficientes para ese descuento. Revisa tu pedido.' })
+        }
+        console.error('Error canjeando puntos:', err)
+        return res.status(500).json({ error: 'No hemos podido registrar el pedido.' })
+      }
+    }
 
     /* Los avisos no deben tumbar el pedido si fallan, y son
        independientes entre sí: van a la vez, no uno detrás del otro
