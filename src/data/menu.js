@@ -163,7 +163,7 @@ export const PRODUCTS = [
   especial('nonno', 'Nonno', [
     'Tomate', 'Mozzarella', 'Rodajas de tomate fresco', 'Pimiento italiano',
     'Alcaparras', 'Cebolla', 'Champiñón fresco', 'Aceite de oliva',
-  ], 11.9, { image: PHOTO.speciale, badge: 'LA DE LA CASA', featured: true, vegetarian: true }),
+  ], 11.9, { image: PHOTO.nonno, badge: 'LA DE LA CASA', featured: true, vegetarian: true }),
   especial('dulce-de-cabra', 'Dulce de cabra', ['Tomate', 'Mozzarella', 'Queso de cabra', 'Mermelada de tomate'], 11.9,
     { image: PHOTO.dulceDeCabra, vegetarian: true }),
   especial('kebab', 'Kebab', ['Tomate', 'Mozzarella', 'Carne pollo kebab', 'Salsa blanca casera'], 11.9,

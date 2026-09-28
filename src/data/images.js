@@ -84,6 +84,7 @@ export const PHOTO = {
   carbonara: 'own:carbonara',
   iberica: 'own:iberica',
   laJefa: 'own:la-jefa',
+  nonno: 'own:nonno',
   barbacoa: '1734769484424-36b99dd84818',
   calzone: '1753656681797-3234c89d6d4d',
 
