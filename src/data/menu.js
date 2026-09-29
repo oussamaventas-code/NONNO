@@ -196,12 +196,12 @@ export const PRODUCTS = [
 
   /* ── CALZONES ──────────────────────────────────────────────── */
   calzone('calzone-prosciutto', 'Calzone Prosciutto', ['Tomate', 'Mozzarella', 'Jamón cocido', 'Parmesano'], 10.9,
-    { image: PHOTO.calzone }),
+    { image: PHOTO.calzoneProsciutto }),
   calzone('calzone-kebab', 'Calzone Kebab', ['Tomate', 'Mozzarella', 'Carne pollo kebab', 'Salsa blanca casera'], 11.9,
-    { image: PHOTO.calzone }),
+    { image: PHOTO.calzoneKebab }),
   calzone('calzone-serrano', 'Calzone Serrano', [
     'Tomate', 'Mozzarella', 'Berenjena', 'Jamón serrano', 'Parmesano', 'Módena',
-  ], 11.9, { image: PHOTO.calzone }),
+  ], 11.9, { image: PHOTO.calzoneSerrano }),
 
   /* ── ENTRANTES ─────────────────────────────────────────────── */
   {
