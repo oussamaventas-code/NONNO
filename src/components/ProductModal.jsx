@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Minus, Plus, Leaf, Flame as FlameIcon, Check } from 'lucide-react'
-import { getProduct, getExtra, isPizza, PIZZA_SIZE } from '../data/menu'
+import { getProduct, getExtra, isPizza, isSoldOut, PIZZA_SIZE } from '../data/menu'
 import ProductImage from './ProductImage'
 import { unitPrice } from '../lib/pricing'
 import { price } from '../lib/format'
@@ -24,6 +24,7 @@ export default function ProductModal() {
   const productId = ui.productId
   const product = productId ? getProduct(productId) : null
   const isDesktop = useIsDesktop()
+  const soldOut = Boolean(product) && isSoldOut(product.id, locationId)
 
   const panelRef = useRef(null)
   const dialogRef = useRef(null)
@@ -288,9 +289,9 @@ export default function ProductModal() {
               </button>
             </div>
 
-            <button onClick={handleAdd} className="btn flex-1 bg-tomate text-forno px-6">
+            <button onClick={handleAdd} disabled={soldOut} className="btn flex-1 bg-tomate text-forno px-6 disabled:opacity-50 disabled:pointer-events-none">
               <span className="btn-layer bg-horno" />
-              <span className="btn-label">AÑADIR AL PEDIDO · {price(total)}</span>
+              <span className="btn-label">{soldOut ? 'AGOTADO HOY EN ESTA SEDE' : `AÑADIR AL PEDIDO · ${price(total)}`}</span>
             </button>
           </div>
         </div>

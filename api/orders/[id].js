@@ -4,6 +4,7 @@ import { sanitizeOrder, validateOrder, PAYMENT_METHODS } from '../_lib/order.js'
 import { assignSlot, SLOT_ERRORS } from '../_lib/slots.js'
 import { notifyCustomer } from '../_lib/sms.js'
 import { settleOrderPoints } from '../_lib/customer.js'
+import { loadMenu } from '../_lib/menu.js'
 
 const SMS_KINDS = ['recibido', 'listo', 'cancelado']
 
@@ -129,6 +130,7 @@ async function editOrder(req, res, id, scoped) {
   const edit = req.body.edit
   /* Los puntos que el cliente ya canjeó se mantienen al editar */
   const redeemed = Number(current.points_redeemed) || 0
+  await loadMenu({ force: true })
   const parsed = sanitizeOrder(
     { ...edit, ref: current.ref, location: { id: current.location_id }, channel: current.channel },
     { staff: true, redeem: redeemed },

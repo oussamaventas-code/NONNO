@@ -3,6 +3,7 @@ import { requireSession, readSession, SCOPE_ALL } from './_lib/auth.js'
 import { notifyNewOrder } from './_lib/push.js'
 import { sanitizeOrder, validateOrder } from './_lib/order.js'
 import { isStoreOpen } from './_lib/store.js'
+import { loadMenu } from './_lib/menu.js'
 import { precheck, assignSlot, SLOT_ERRORS } from './_lib/slots.js'
 import { notifyCustomer } from './_lib/sms.js'
 import { readCustomerId, getCustomer, movePoints, isMissingTable } from './_lib/customer.js'
@@ -65,6 +66,9 @@ export default async function handler(req, res) {
     }
     const redeem = customer ? Math.min(normalizeRedeem(req.body?.redeemPoints), normalizeRedeem(customer.points)) : 0
 
+    /* Precios, ocultos y agotados al día: el total se recalcula con la carta
+       real, no con la que el navegador tenía en pantalla. */
+    await loadMenu({ force: true })
     const parsed = sanitizeOrder(req.body, { staff, customerId: customer?.id, redeem })
     const problem = validateOrder(parsed)
     if (problem) return res.status(400).json({ error: problem })

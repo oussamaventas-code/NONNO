@@ -418,13 +418,63 @@ export const PICKUP_DEALS = [
   },
 ]
 
+/* ── CARTA EDITABLE ─────────────────────────────────────────────
+   La carta base vive aquí arriba. Desde el panel se pueden corregir
+   por encima: precio, producto oculto y "agotado" por sede. Los
+   selectores de abajo devuelven siempre la carta ya corregida, así
+   que la web, el carrito y el servidor cuentan con los mismos precios.
+   Sin correcciones (base de datos sin conectar) es la carta de siempre. */
+let overrides = { prices: {}, hidden: [], soldOut: {} }
+let effective = PRODUCTS
+
+const applyPrices = (product, o) => {
+  if (!o) return product
+  const next = { ...product }
+  if (o.price != null && !product.portions) next.price = o.price
+  if (o.portionPrices && product.portions) {
+    next.portions = product.portions.map((p) => (
+      o.portionPrices[p.id] != null ? { ...p, price: o.portionPrices[p.id] } : p
+    ))
+    next.price = next.portions[0].price
+  }
+  return next
+}
+
+/** Sustituye las correcciones: { prices: {id: {price, portionPrices}}, hidden: [id], soldOut: {sede: [id]} } */
+export function setMenuOverrides(next) {
+  overrides = {
+    prices: next?.prices || {},
+    hidden: Array.isArray(next?.hidden) ? next.hidden : [],
+    soldOut: next?.soldOut || {},
+  }
+  effective = PRODUCTS.map((p) => applyPrices(p, overrides.prices[p.id]))
+}
+
+export const getMenuOverrides = () => overrides
+
+/** Producto oculto de la carta (no se vende en la web). */
+export const isHidden = (id) => overrides.hidden.includes(id)
+
+/** Producto agotado en esa sede. Sin sede elegida no se puede saber: no cuenta. */
+export const isSoldOut = (id, locationId) =>
+  Boolean(locationId && overrides.soldOut[locationId]?.includes(id))
+
+/** ¿Se puede pedir en la web ahora mismo? */
+export const isOrderable = (id, locationId) => !isHidden(id) && !isSoldOut(id, locationId)
+
+/** Carta completa con precios corregidos, incluidos los ocultos (para el panel). */
+export const allProducts = () => effective
+
+/** Lo que ve el cliente: sin los ocultos. */
+export const visibleProducts = () => effective.filter((p) => !isHidden(p.id))
+
 /* ── SELECTORES ─────────────────────────────────────────────── */
-export const getProduct = (id) => PRODUCTS.find((p) => p.id === id) || null
+export const getProduct = (id) => effective.find((p) => p.id === id) || null
 
 export const productsByCategory = (categoryId) =>
-  PRODUCTS.filter((p) => p.category === categoryId)
+  visibleProducts().filter((p) => p.category === categoryId)
 
-export const featuredProduct = () => PRODUCTS.find((p) => p.featured) || PRODUCTS[0]
+export const featuredProduct = () => visibleProducts().find((p) => p.featured) || visibleProducts()[0]
 
 /** Ración elegida (o la primera si el producto tiene raciones). */
 export const getPortion = (product, portionId) =>

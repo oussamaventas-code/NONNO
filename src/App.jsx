@@ -18,6 +18,7 @@ import StickyOrderBar from './components/StickyOrderBar'
 import Toasts from './components/Toasts'
 import AccountDrawer from './components/AccountDrawer'
 import { usePath } from './lib/router'
+import { useMenuOverrides } from './hooks/useMenuOverrides'
 
 /**
  * Dos páginas con la misma cabecera y el mismo footer:
@@ -29,6 +30,8 @@ import { usePath } from './lib/router'
  */
 export default function App() {
   const path = usePath()
+  /* Precios, ocultos y agotados que la dirección cambia desde el panel */
+  useMenuOverrides()
 
   return (
     <>

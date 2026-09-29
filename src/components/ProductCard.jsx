@@ -1,6 +1,7 @@
 import { Plus, Leaf, Flame as FlameIcon } from 'lucide-react'
 import { price } from '../lib/format'
-import { priceOf } from '../data/menu'
+import { priceOf, isSoldOut } from '../data/menu'
+import { useStore } from '../store/StoreContext'
 import ProductImage from './ProductImage'
 
 /**
@@ -9,6 +10,8 @@ import ProductImage from './ProductImage'
  * rápido y sin sorpresas.
  */
 export default function ProductCard({ product, onOpen }) {
+  const { locationId } = useStore()
+  const soldOut = isSoldOut(product.id, locationId)
   const halfPortion = product.portions?.find((p) => p.id === 'media')
 
   return (
@@ -27,6 +30,11 @@ export default function ProductCard({ product, onOpen }) {
           sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
           className="h-full w-full transition-transform duration-700 ease-magnetic group-hover:scale-105"
         />
+        {soldOut && (
+          <span className="absolute inset-0 flex items-center justify-center bg-forno/55">
+            <span className="rounded-md bg-masa text-tomate font-sans font-extrabold uppercase tracking-wider text-sm px-3 py-1.5">Agotado hoy</span>
+          </span>
+        )}
         {product.badge && (
           <span className="absolute top-2 left-2 rounded-md bg-tomate text-masa font-sans font-bold uppercase tracking-wider text-[0.65rem] px-2 py-1">
             {product.badge}
@@ -47,8 +55,9 @@ export default function ProductCard({ product, onOpen }) {
           </p>
           <button
             onClick={() => onOpen(product.id)}
-            className="btn bg-tomate w-11 h-11 !min-h-0 !px-0 flex-shrink-0"
-            aria-label={`Añadir ${product.name}`}
+            disabled={soldOut}
+            className="btn bg-tomate w-11 h-11 !min-h-0 !px-0 flex-shrink-0 disabled:opacity-40 disabled:pointer-events-none"
+            aria-label={soldOut ? `${product.name}: agotado` : `Añadir ${product.name}`}
           >
             <span className="btn-layer bg-forno" />
             <span className="btn-label"><Plus className="w-5 h-5" strokeWidth={2.5} /></span>
