@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, RefreshCw, LogOut, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro, BookOpen, Settings, Maximize, Undo2, Wallet } from 'lucide-react'
+import { Bell, BellOff, RefreshCw, LogOut, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro, BookOpen, Settings, Maximize, Undo2, Wallet, LayoutDashboard } from 'lucide-react'
 import Counter from './Counter'
 import Routes from './Routes'
 import Stock from './Stock'
 import Carta from './Carta'
 import CashClose from './CashClose'
+import TodayBoard from './TodayBoard'
 import { useMenuOverrides } from '../hooks/useMenuOverrides'
 import Billing from './Billing'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
@@ -19,6 +20,8 @@ import { LOCATIONS } from '../data/locations'
    se configura una vez (menú ⚙ → Este equipo) y solo enseña lo suyo:
    la cocina no necesita el TPV, ni el mostrador el tablero del horno. */
 const ALL_TABS = [
+  /* Solo dirección: las dos sedes de un vistazo */
+  { id: 'hoy', label: 'Hoy', Icon: LayoutDashboard },
   { id: 'cocina', label: 'Cocina', Icon: ChefHat },
   { id: 'mostrador', label: 'Mostrador', Icon: Store },
   { id: 'reparto', label: 'Reparto', Icon: Truck },
@@ -103,7 +106,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
      preferencia es del navegador, no de la sesión: si en ese mismo
      equipo entra luego una sede sin permiso de ver facturación, no
      se queda ahí abierta. */
-  const [viewPref, setView] = useState(() => readPref(PREF_VIEW, 'cocina'))
+  const [viewPref, setView] = useState(() => readPref(PREF_VIEW, esDireccion ? 'hoy' : 'cocina'))
   const [deviceMode, setDeviceMode] = useState(() => readPref(PREF_DEVICE, 'completo'))
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmClose, setConfirmClose] = useState(null)
@@ -117,7 +120,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const refreshMenu = useCallback(() => setMenuTick((n) => n + 1), [])
   void menuVersion
 
-  const { play } = useOrderAlert()
+  const { play, unlock, ready: soundReady } = useOrderAlert()
   const knownIds = useRef(new Set())
   const firstLoad = useRef(true)
   const printedKeys = useRef(new Set())
@@ -126,7 +129,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
   /* ── Carga y sondeo ──────────────────────────────────────────── */
   const load = useCallback(async () => {
     try {
-      const { orders: list } = await fetchOrders(80)
+      /* La dirección ve las dos sedes: necesita más margen */
+      const { orders: list } = await fetchOrders(esDireccion ? 160 : 80)
       setError(null)
 
       const fresh = list.filter((o) => !knownIds.current.has(o.id))
@@ -353,7 +357,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
   /* Pestañas de este equipo, y la vista efectiva (si la guardada ya no
      le toca a este equipo, se cae a la primera que sí). */
   const modeTabs = DEVICE_MODES.find((m) => m.id === deviceMode)?.tabs
-  const tabs = ALL_TABS.filter((t) => (!modeTabs || modeTabs.includes(t.id)) && (t.id !== 'facturacion' || esDireccion))
+  const tabs = ALL_TABS.filter((t) => (!modeTabs || modeTabs.includes(t.id)) && (!['facturacion', 'hoy'].includes(t.id) || esDireccion))
   const view = tabs.some((t) => t.id === viewPref) ? viewPref : tabs[0].id
   autoPrintOn.current = autoPrint && view === 'cocina'
 
@@ -400,7 +404,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
     <div className="min-h-screen bg-masa">
       {/* Cinta de sede: imposible confundir de cocina */}
       <p className={`${sede?.banda || 'bg-tomate'} ${sede?.texto || 'text-crema'} text-center font-sans font-medium uppercase text-[0.72rem] sm:text-sm h-9 leading-9 px-3 truncate`}>
-        {{ mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO', caja: 'CIERRE DE CAJA', carta: 'CARTA', facturacion: 'FACTURACIÓN' }[view] || 'COCINA'} · {sede ? sede.nombre : 'TODAS LAS SEDES'}
+        {{ hoy: 'HOY', mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO', caja: 'CIERRE DE CAJA', carta: 'CARTA', facturacion: 'FACTURACIÓN' }[view] || 'COCINA'} · {sede ? sede.nombre : 'TODAS LAS SEDES'}
       </p>
       <div className="checker" aria-hidden="true" />
 
@@ -614,13 +618,29 @@ export default function AdminPanel({ scope, onSignedOut }) {
       </header>
 
       <main className="shell py-8">
+        {/* Sin un toque, el navegador no deja sonar la alarma de pedido nuevo */}
+        {!soundReady && ['cocina', 'mostrador', 'hoy'].includes(view) && (
+          <button
+            onClick={() => { unlock(); play() }}
+            className="mb-6 w-full flex items-center justify-center gap-2 rounded-md border-2 border-tomate bg-queso px-4 py-3 font-sans font-extrabold uppercase text-sm tracking-wide text-carbon animate-pulse"
+          >
+            <Bell className="w-5 h-5 text-tomate" /> Toca aquí para activar el sonido de los pedidos nuevos
+          </button>
+        )}
         {error && (
           <p className="palert mb-6">
             {error}
           </p>
         )}
 
-        {view === 'facturacion' && esDireccion ? (
+        {view === 'hoy' && esDireccion ? (
+          <TodayBoard
+            orders={orders}
+            storeStatuses={storeStatuses}
+            onOpenSede={(id) => { setSedeVista(id); changeView('cocina') }}
+            onError={setError}
+          />
+        ) : view === 'facturacion' && esDireccion ? (
           <Billing locationId={sedeVista === 'todas' ? null : sedeVista} onError={setError} />
         ) : view === 'stock' ? (
           <Stock locationIds={locationIds} onError={setError} />

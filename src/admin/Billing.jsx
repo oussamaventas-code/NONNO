@@ -3,6 +3,7 @@ import { Euro, Package, Truck, Globe, Store, Phone, Banknote, CreditCard, Clock3
 import { price } from '../lib/format'
 import { madridDay } from '../lib/stock'
 import { fetchBilling } from './api'
+import { CANCEL_LABEL } from './CancelReasons'
 
 /* ═══════════════════════════════════════════════════════════════
    FACTURACIÓN — solo dirección
@@ -136,7 +137,70 @@ export default function Billing({ locationId, onError }) {
             )}
           </section>
 
+          {/* Cajas descuadradas del rango: lo primero que tiene que ver el jefe */}
+          {data.closings?.some((c) => Math.abs(c.diff) >= 0.01) && (
+            <section className="rounded-md border-2 border-tomate bg-tomate/10 p-4">
+              <p className="mono text-tomate mb-2">CAJAS DESCUADRADAS</p>
+              <ul className="flex flex-col gap-1 text-sm">
+                {data.closings.filter((c) => Math.abs(c.diff) >= 0.01).map((c) => (
+                  <li key={c.day + c.locationId} className="flex flex-wrap gap-x-3">
+                    <span className="font-bold text-carbon capitalize">{longDay(c.day)} · {c.name}</span>
+                    <span className="font-bold text-tomate">{c.diff > 0 ? 'Sobran' : 'Faltan'} {price(Math.abs(c.diff))}</span>
+                    {c.note && <span className="text-carbon/60">“{c.note}”</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <div className="grid gap-5 lg:grid-cols-2">
+            {/* Lo que más se vende */}
+            {data.topProducts?.length > 0 && (
+              <section className="pcard p-5 lg:row-span-2">
+                <p className="mono text-tomate mb-4">LO MÁS VENDIDO</p>
+                <ol className="flex flex-col gap-2.5">
+                  {data.topProducts.map((p, i) => (
+                    <li key={p.id} className="flex items-center gap-3">
+                      <span className="w-6 text-right font-mono font-bold text-tomate">{i + 1}</span>
+                      <span className="flex-1 min-w-0">
+                        <span className="flex items-baseline justify-between gap-2">
+                          <span className="truncate text-sm font-semibold text-carbon">{p.name}</span>
+                          <span className="mono normal-case text-carbon/60 whitespace-nowrap">{p.qty} uds · {price(p.revenue)}</span>
+                        </span>
+                        <span className="mt-1 block h-2 rounded-sm bg-tomate/10 overflow-hidden">
+                          <span className="block h-full bg-tomate" style={{ width: `${Math.max(4, (p.qty / data.topProducts[0].qty) * 100)}%` }} />
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
+            {/* Cancelaciones y por qué */}
+            {data.cancellations && (
+              <section className="pcard p-5">
+                <p className="mono text-tomate mb-3">CANCELADOS</p>
+                {data.cancellations.orders === 0 ? (
+                  <p className="text-sm text-albahaca font-semibold">Ningún pedido cancelado en este rango.</p>
+                ) : (
+                  <>
+                    <p className="text-sm text-carbon">
+                      <strong className="text-tomate text-lg">{data.cancellations.orders}</strong> pedido{data.cancellations.orders === 1 ? '' : 's'} · {price(data.cancellations.lost)} que no se han vendido
+                    </p>
+                    <ul className="mt-3 flex flex-col gap-1.5">
+                      {data.cancellations.byReason.map((r) => (
+                        <li key={r.reason} className="flex items-center justify-between text-sm">
+                          <span className="text-carbon/80">{CANCEL_LABEL[r.reason] || 'Sin motivo apuntado'}</span>
+                          <span className="font-bold text-carbon">{r.orders}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </section>
+            )}
+
             {/* Por sede: solo si se están viendo las dos */}
             {!locationId && data.byLocation.length > 0 && (
               <Breakdown title="POR SEDE" rows={data.byLocation.map((l) => ({ key: l.locationId, label: l.name, ...l }))} />

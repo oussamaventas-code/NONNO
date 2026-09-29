@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /* ═══════════════════════════════════════════════════════════════
    Aviso sonoro de pedido nuevo.
@@ -14,6 +14,8 @@ import { useCallback, useEffect, useRef } from 'react'
 
 export function useOrderAlert() {
   const ctxRef = useRef(null)
+  /* ¿Puede sonar ya? El panel avisa si no, para que nadie se quede sin alarma. */
+  const [ready, setReady] = useState(false)
 
   const unlock = useCallback(() => {
     if (!ctxRef.current) {
@@ -21,7 +23,9 @@ export function useOrderAlert() {
       if (!Ctx) return
       ctxRef.current = new Ctx()
     }
-    if (ctxRef.current.state === 'suspended') ctxRef.current.resume()
+    const ctx = ctxRef.current
+    if (ctx.state === 'suspended') ctx.resume().then(() => setReady(ctx.state === 'running')).catch(() => {})
+    else setReady(ctx.state === 'running')
   }, [])
 
   useEffect(() => {
@@ -60,5 +64,5 @@ export function useOrderAlert() {
     })
   }, [unlock])
 
-  return { play, unlock }
+  return { play, unlock, ready }
 }
