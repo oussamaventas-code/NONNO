@@ -1,7 +1,7 @@
-import { Menu as MenuIcon, UserRound } from 'lucide-react'
+import { Menu as MenuIcon, UserRound, MapPin } from 'lucide-react'
 import { NAV_LINKS } from '../data/site'
 import { ANNOUNCE } from '../data/content'
-import { useCart, useActions } from '../store/StoreContext'
+import { useCart, useActions, useSelectedLocation } from '../store/StoreContext'
 import { useAccount } from '../store/AccountContext'
 import { followLink, navigate } from '../lib/router'
 
@@ -12,7 +12,8 @@ import { followLink, navigate } from '../lib/router'
  */
 export default function Navbar() {
   const { count } = useCart()
-  const { openCart, toggleMobileNav } = useActions()
+  const { openCart, toggleMobileNav, openLocationPrompt } = useActions()
+  const { location } = useSelectedLocation()
   const { status, points, openAccount } = useAccount()
 
   return (
@@ -78,6 +79,22 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Sede elegida, siempre a la vista y a un toque de cambiarla */}
+      <button
+        onClick={openLocationPrompt}
+        className="w-full flex items-center justify-center gap-1.5 border-b border-tomate/40 bg-crema h-9 px-3 font-sans text-[0.8rem] sm:text-sm text-carbon/80 hover:bg-queso/60 transition-colors"
+      >
+        <MapPin className="w-4 h-4 text-tomate flex-shrink-0" />
+        {location ? (
+          <span className="truncate">
+            Pides en <strong className="font-bold uppercase text-tomate">{location.name}</strong>
+            <span className="ml-2 underline underline-offset-2 text-carbon/55">cambiar</span>
+          </span>
+        ) : (
+          <span className="font-bold uppercase text-tomate">Elige tu Nonno para pedir →</span>
+        )}
+      </button>
     </header>
   )
 }
