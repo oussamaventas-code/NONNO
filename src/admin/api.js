@@ -78,3 +78,12 @@ export const menuAction = (action, data) =>
 /** Ficha del cliente por teléfono: nombre, dirección y sus últimos pedidos. null si es nuevo. */
 export const fetchCustomer = (phone) =>
   request(`/api/orders?customer=${encodeURIComponent(phone)}`)
+
+/** Cierre de caja (ver api/_lib/cashHandler.js): lo esperado, el cierre del día y el histórico. */
+export const fetchCash = (locationId, day) => {
+  const qs = new URLSearchParams({ location: locationId, ...(day ? { day } : {}) })
+  return request(`/api/cash?${qs}`)
+}
+
+export const saveCash = (locationId, day, data) =>
+  request('/api/cash', { method: 'POST', body: JSON.stringify({ location: locationId, day, ...data }) })

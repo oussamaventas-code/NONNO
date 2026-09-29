@@ -35,6 +35,27 @@ export default function ChargeDialog({ order, busy, onClose, onConfirm }) {
 
           <p className="mt-4 font-serif italic font-semibold text-5xl text-tomate">{price(total)}</p>
 
+          {/* Lo habitual, en un toque: cobrar y listo */}
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onConfirm('tarjeta', printIt)}
+              disabled={busy}
+              className="btn bg-forno text-crema min-h-[64px] disabled:opacity-50"
+            >
+              <span className="btn-layer bg-tomate" />
+              <span className="btn-label flex-col !gap-1"><CreditCard className="w-6 h-6" /> TARJETA</span>
+            </button>
+            <button
+              onClick={() => onConfirm('efectivo', printIt)}
+              disabled={busy}
+              className="btn bg-albahaca text-crema min-h-[64px] disabled:opacity-50"
+            >
+              <span className="btn-layer bg-forno" />
+              <span className="btn-label flex-col !gap-1"><Banknote className="w-6 h-6" /> EFECTIVO JUSTO</span>
+            </button>
+          </div>
+          <p className="mono normal-case text-carbon/50 mt-4 text-center">¿Paga con más? Calcula el cambio:</p>
+
           <div className="mt-5 grid grid-cols-2 gap-2">
             {[
               { id: 'efectivo', label: 'Efectivo', Icon: Banknote },

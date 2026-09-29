@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, RefreshCw, LogOut, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro, BookOpen, Settings, Maximize, Undo2 } from 'lucide-react'
+import { Bell, BellOff, RefreshCw, LogOut, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro, BookOpen, Settings, Maximize, Undo2, Wallet } from 'lucide-react'
 import Counter from './Counter'
 import Routes from './Routes'
 import Stock from './Stock'
 import Carta from './Carta'
+import CashClose from './CashClose'
 import { useMenuOverrides } from '../hooks/useMenuOverrides'
 import Billing from './Billing'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
@@ -22,6 +23,7 @@ const ALL_TABS = [
   { id: 'mostrador', label: 'Mostrador', Icon: Store },
   { id: 'reparto', label: 'Reparto', Icon: Truck },
   { id: 'stock', label: 'Stock', Icon: ClipboardList },
+  { id: 'caja', label: 'Caja', Icon: Wallet },
   { id: 'carta', label: 'Carta', Icon: BookOpen },
   /* Solo dirección: es dinero, no algo que vea el mostrador de un local. */
   { id: 'facturacion', label: 'Facturación', Icon: Euro },
@@ -30,7 +32,7 @@ const ALL_TABS = [
 const DEVICE_MODES = [
   { id: 'completo', label: 'Todo', hint: 'Enseña todas las pestañas.', tabs: null },
   { id: 'cocina', label: 'Cocina', hint: 'Solo el tablero del horno y el stock.', tabs: ['cocina', 'stock'] },
-  { id: 'mostrador', label: 'Mostrador', hint: 'TPV, reparto, carta y facturación.', tabs: ['mostrador', 'reparto', 'carta', 'facturacion'] },
+  { id: 'mostrador', label: 'Mostrador', hint: 'TPV, reparto, caja, carta y facturación.', tabs: ['mostrador', 'reparto', 'caja', 'carta', 'facturacion'] },
 ]
 
 /* Cada cuánto vuelve a sonar un pedido nuevo que nadie ha marcado como visto */
@@ -363,7 +365,9 @@ export default function AdminPanel({ scope, onSignedOut }) {
   }))
 
   /* Pedidos nuevos que nadie ha visto todavía: suenan hasta que se marquen */
-  const unseen = porSede.filter((o) => o.status === 'nuevo' && !o.seen_at && Date.now() - Date.parse(o.created_at) < 3600000)
+  /* Un pedido programado para dentro de mucho no suena hasta que se acerca su hora */
+  const farOff = (o) => o.scheduled_for && o.ready_at && Date.parse(o.ready_at) - Date.now() > 45 * 60000
+  const unseen = porSede.filter((o) => o.status === 'nuevo' && !o.seen_at && !farOff(o) && Date.now() - Date.parse(o.created_at) < 3600000)
   const unseenCount = unseen.length
 
   /* La alarma se repite hasta que alguien marque el pedido como visto
@@ -396,7 +400,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
     <div className="min-h-screen bg-masa">
       {/* Cinta de sede: imposible confundir de cocina */}
       <p className={`${sede?.banda || 'bg-tomate'} ${sede?.texto || 'text-crema'} text-center font-sans font-medium uppercase text-[0.72rem] sm:text-sm h-9 leading-9 px-3 truncate`}>
-        {{ mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO', carta: 'CARTA', facturacion: 'FACTURACIÓN' }[view] || 'COCINA'} · {sede ? sede.nombre : 'TODAS LAS SEDES'}
+        {{ mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO', caja: 'CIERRE DE CAJA', carta: 'CARTA', facturacion: 'FACTURACIÓN' }[view] || 'COCINA'} · {sede ? sede.nombre : 'TODAS LAS SEDES'}
       </p>
       <div className="checker" aria-hidden="true" />
 
@@ -620,6 +624,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
           <Billing locationId={sedeVista === 'todas' ? null : sedeVista} onError={setError} />
         ) : view === 'stock' ? (
           <Stock locationIds={locationIds} onError={setError} />
+        ) : view === 'caja' ? (
+          <CashClose locationIds={locationIds} onError={setError} />
         ) : view === 'carta' ? (
           <Carta locationIds={locationIds} esDireccion={esDireccion} onError={setError} onChanged={refreshMenu} />
         ) : loading ? (

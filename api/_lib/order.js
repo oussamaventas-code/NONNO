@@ -30,6 +30,21 @@ export const PAYMENT_METHODS = ['efectivo', 'tarjeta']
  *   customerId / redeem: cliente del Club Nonno con sesión y puntos que
  *   quiere canjear, ya limitados a su saldo por quien llama.
  */
+/**
+ * Pedido "para las HH:MM" (solo personal): devuelve desde qué momento puede
+ * ocupar el horno para estar listo (o, en entrega, en la puerta) a esa hora.
+ * Solo vale una hora futura de las próximas 12; si no, se ignora.
+ */
+function scheduleOf(body, { staff, locationId, delivery }) {
+  if (!staff || !body?.scheduledFor) return null
+  const target = Date.parse(body.scheduledFor)
+  const now = Date.now()
+  if (!Number.isFinite(target) || target < now + 5 * 60000 || target > now + 12 * 3600000) return null
+  const slotMin = getLocation(locationId)?.kitchen?.slotMinutes || 15
+  const travel = delivery?.ok ? delivery.minutes : 0
+  return new Date(target - (travel + slotMin) * 60000).toISOString()
+}
+
 export function sanitizeOrder(body, { staff = false, customerId = null, redeem = 0 } = {}) {
   const rawItems = Array.isArray(body?.items) ? body.items.slice(0, 60) : []
   let unknownProduct = false
@@ -52,6 +67,7 @@ export function sanitizeOrder(body, { staff = false, customerId = null, redeem =
   const where = whereOf(body?.customer)
   const totals = orderTotals({ lines, mode, locationId, where, pointsRedeemed: redeem })
   const delivery = totals.delivery
+  const scheduledFor = scheduleOf(body, { staff, locationId, delivery })
 
   const items = lines.map((l) => ({
     /* Lo que se pidió, para poder editar el pedido desde el mostrador */
@@ -103,6 +119,9 @@ export function sanitizeOrder(body, { staff = false, customerId = null, redeem =
       /* Solo se añaden si hay cliente o canje: así, sin las columnas del
          club creadas en la base de datos, los pedidos siguen entrando. */
       ...(customerId ? { customer_id: customerId } : {}),
+      /* Igual que el club: solo si hay pedido programado, para que sin la
+         columna nueva los pedidos normales sigan entrando. */
+      ...(scheduledFor ? { scheduled_for: scheduledFor } : {}),
       ...(totals.pointsRedeemed > 0 ? { points_redeemed: totals.pointsRedeemed, points_discount: totals.pointsDiscount } : {}),
       channel: staff ? (CHANNELS.includes(body?.channel) ? body.channel : 'mostrador') : 'web',
       ...(staff && body?.paymentStatus === 'pagado'

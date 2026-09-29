@@ -100,7 +100,7 @@ export default async function handler(req, res) {
     /* Primer filtro: si ya no cabe, ni se guarda. */
     if (!offlineAt) {
       try {
-        const plan = await precheck(order.location_id, order.pizza_count)
+        const plan = await precheck(order.location_id, order.pizza_count, order.scheduled_for)
         if (!plan.ok) return res.status(409).json({ code: 'full', error: SLOT_ERRORS[plan.reason] })
       } catch (err) {
         console.error('Error leyendo la carga del horno:', err)
@@ -119,6 +119,9 @@ export default async function handler(req, res) {
       const dup = error.code === '23505' ? await findByClientKey(order.client_key) : null
       if (dup) return res.status(200).json(reply(dup, staff))
       console.error('Error guardando el pedido:', error)
+      if (error.code === '42703' && order.scheduled_for) {
+        return res.status(409).json({ error: 'Los pedidos programados aún no están activados en la base de datos (falta ejecutar supabase/fase2.sql).' })
+      }
       return res.status(500).json({ error: 'No hemos podido registrar el pedido.' })
     }
 

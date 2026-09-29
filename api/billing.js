@@ -3,6 +3,7 @@ import { requireSession, SCOPE_ALL } from './_lib/auth.js'
 import { getLocation } from '../src/data/locations.js'
 import { madridDay } from '../src/lib/stock.js'
 import { madridTime } from '../src/lib/kitchenSlots.js'
+import cashHandler from './_lib/cashHandler.js'
 
 /**
  * GET /api/billing?from=2026-09-01&to=2026-09-27[&location=sangonera]
@@ -84,6 +85,10 @@ export function aggregateBilling(rows) {
 }
 
 export default async function handler(req, res) {
+  /* /api/cash (cierre de caja) llega aquí con `?resource=cash` por una
+     reescritura de vercel.json: Vercel Hobby admite solo 12 funciones. */
+  if (req.query?.resource === 'cash') return cashHandler(req, res)
+
   if (!isConfigured()) {
     return res.status(503).json({ error: 'El sistema todavía no está conectado a la base de datos.' })
   }

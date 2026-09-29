@@ -58,12 +58,13 @@ export const ovenUnits = (items = []) =>
  * @returns {{ ok: true, readyAt: number, slots: Array<{start: string, pizzas: number}> }
  *         | { ok: false, reason: 'full' | 'after-hours' }}
  */
-export function planOrder({ nowMs, kitchen, load = new Map(), pizzas }) {
+export function planOrder({ nowMs, kitchen, load = new Map(), pizzas, notBeforeMs = 0 }) {
   const slotMs = kitchen.slotMinutes * MIN
   const open = madridTime(nowMs, kitchen.open)
   const close = madridTime(nowMs, closeOf(kitchen, nowMs))
-  /* Nunca la franja en curso: la siguiente que empiece a partir de ahora. */
-  const first = Math.max(Math.ceil(nowMs / slotMs) * slotMs, open)
+  /* Nunca la franja en curso: la siguiente que empiece a partir de ahora.
+     Un pedido programado no entra antes de su hora (`notBeforeMs`). */
+  const first = Math.max(Math.ceil(nowMs / slotMs) * slotMs, Math.ceil(notBeforeMs / slotMs) * slotMs, open)
 
   if (first + slotMs > close) return { ok: false, reason: 'after-hours' }
   if (pizzas <= 0) return { ok: true, readyAt: first + slotMs, slots: [] }
@@ -121,7 +122,10 @@ export function buildLoad(orders, kitchen) {
     .filter((o) => !Array.isArray(o.oven_slots))
     .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at) || String(a.id).localeCompare(String(b.id)))
     .forEach((o) => {
-      const plan = planOrder({ nowMs: Date.parse(o.created_at), kitchen, load, pizzas: o.pizza_count || 0 })
+      const plan = planOrder({
+        nowMs: Date.parse(o.created_at), kitchen, load, pizzas: o.pizza_count || 0,
+        notBeforeMs: o.scheduled_for ? Date.parse(o.scheduled_for) : 0,
+      })
       if (plan.ok) addToLoad(load, plan.slots)
       plans.set(o.id, plan)
     })

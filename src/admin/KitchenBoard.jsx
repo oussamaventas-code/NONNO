@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Truck, Package, Phone, MapPin, ChevronDown, Printer, Eye, Flame, AlertTriangle, Euro } from 'lucide-react'
+import { Truck, Package, Phone, MapPin, ChevronDown, Printer, Eye, Flame, AlertTriangle, Euro, CalendarClock } from 'lucide-react'
 import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
 import { printTicket } from './printTicket'
 import SmsStatus from './SmsStatus'
 import OrderCard from './OrderCard'
+import CancelReasons from './CancelReasons'
 
 /* ═══════════════════════════════════════════════════════════════
    TABLERO DE COCINA
@@ -92,20 +93,15 @@ export default function KitchenBoard({ orders, busyId, onStatus, onUpdated }) {
 
 function KitchenCard({ order, col, now, busy, onStatus, onUpdated }) {
   const [more, setMore] = useState(false)
-  const [sure, setSure] = useState(false)
-
-  /* "¿Seguro?" se apaga solo: un toque suelto no deja armado el cancelar. */
-  useEffect(() => {
-    if (!sure) return undefined
-    const timer = setTimeout(() => setSure(false), 4000)
-    return () => clearTimeout(timer)
-  }, [sure])
+  const [cancelling, setCancelling] = useState(false)
 
   const left = col.id === 'listo' ? null : minutesLeft(order, now)
   const late = left !== null && left < 0
   const soon = left !== null && left >= 0 && left <= 5
   const unseen = col.id === 'nuevo' && !order.seen_at
   const delivery = order.mode === 'delivery'
+  /* Pedido programado para dentro de mucho: aparece, pero sin urgencia ni alarma */
+  const farOff = Boolean(order.scheduled_for) && col.id === 'nuevo' && left !== null && left > 45
 
   return (
     <article
@@ -116,7 +112,12 @@ function KitchenCard({ order, col, now, busy, onStatus, onUpdated }) {
         unseen ? 'ring-4 ring-tomate/60 ring-offset-2 ring-offset-masa animate-pulse' : '',
       ].join(' ')}
     >
-      {(late || soon) && (
+      {farOff && (
+        <p className="flex items-center justify-center gap-2 rounded-t-md bg-queso py-1.5 font-sans font-extrabold uppercase text-sm tracking-wide text-carbon border-b border-tomate">
+          <CalendarClock className="w-4 h-4" /> Programado · en {left >= 90 ? `${Math.floor(left / 60)} h ${left % 60} min` : `${left} min`}
+        </p>
+      )}
+      {!farOff && (late || soon) && (
         <p className={[
           'flex items-center justify-center gap-2 rounded-t-md py-1.5 font-sans font-extrabold uppercase text-sm tracking-wide',
           late ? 'bg-tomate text-masa' : 'bg-queso text-carbon border-b border-tomate',
@@ -147,6 +148,7 @@ function KitchenCard({ order, col, now, busy, onStatus, onUpdated }) {
             {order.channel && order.channel !== 'web' && (
               <span className="pchip">{order.channel === 'telefono' ? 'Teléfono' : 'Mostrador'}</span>
             )}
+            {order.scheduled_for && !farOff && <span className="pchip"><CalendarClock className="w-3.5 h-3.5" /> Programado</span>}
             {order.edited_at && (
               <span className="pchip !border-transparent bg-horno !text-crema">Modificado {hourOf(order.edited_at)}</span>
             )}
@@ -261,16 +263,14 @@ function KitchenCard({ order, col, now, busy, onStatus, onUpdated }) {
               >
                 <Printer className="w-4 h-4" /> {order.printed_at ? 'Reimprimir comanda' : 'Imprimir comanda'}
               </button>
-              {sure ? (
-                <button
-                  onClick={() => { setSure(false); onStatus(order.id, 'cancelado') }}
+              {cancelling ? (
+                <CancelReasons
                   disabled={busy}
-                  className="ptab soft !bg-tomate !border-tomate !text-masa"
-                >
-                  ¿Seguro? Sí, cancelar
-                </button>
+                  onBack={() => setCancelling(false)}
+                  onPick={(cancelReason) => { setCancelling(false); onStatus(order.id, 'cancelado', { cancelReason }) }}
+                />
               ) : (
-                <button onClick={() => setSure(true)} className="mono normal-case px-2 text-carbon/50 hover:text-tomate">
+                <button onClick={() => setCancelling(true)} className="mono normal-case px-2 text-carbon/50 hover:text-tomate">
                   Cancelar pedido
                 </button>
               )}

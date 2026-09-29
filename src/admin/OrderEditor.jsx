@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Store, Phone, Printer, Beef, Salad, Milk, Droplets, Fish, Egg } from 'lucide-react'
-import { CATEGORIES, productsByCategory, getProduct, getExtra, priceOf, isSoldOut } from '../data/menu'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Store, Phone, Printer, Beef, Salad, Milk, Droplets, Fish, Egg, Search, Star, CalendarClock } from 'lucide-react'
+import { CATEGORIES, productsByCategory, visibleProducts, getProduct, getExtra, priceOf, isSoldOut } from '../data/menu'
+import { plain } from '../lib/plain'
 import { getLocation } from '../data/locations'
 import { buildLine, lineTotal } from '../lib/pricing'
 import { orderTotals } from '../lib/orderTotals'
-import { ovenUnits, hourOf } from '../lib/kitchenSlots'
+import { ovenUnits, hourOf, madridTime } from '../lib/kitchenSlots'
 import { price } from '../lib/format'
 import { deliveryTiers, deliveryProblem } from '../lib/delivery'
 import DeliveryPicker from '../components/DeliveryPicker'
@@ -71,7 +72,10 @@ function customerFromOrder(order) {
   }
 }
 
-export default function OrderEditor({ order, locationIds, defaultLocationId, defaultChannel = 'mostrador', onClose, onSaved }) {
+/* "HH:MM" (hora de Madrid) dentro de `minutes` minutos, redondeado al cuarto de hora */
+const laterTimeIn = (minutes) => hourOf(Math.ceil((Date.now() + minutes * 60000) / 900000) * 900000)
+
+export default function OrderEditor({ order, orders = [], locationIds, defaultLocationId, defaultChannel = 'mostrador', onClose, onSaved }) {
   const editing = Boolean(order)
   const [locId, setLocId] = useState(order?.location_id || defaultLocationId)
   const location = getLocation(locId)
@@ -83,7 +87,19 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
   const [paidNow, setPaidNow] = useState(false)
   const [method, setMethod] = useState('efectivo')
 
-  const [cat, setCat] = useState(CATEGORIES[0].id)
+  /* Lo más pedido: sale de los pedidos que el mostrador ya tiene cargados */
+  const topIds = useMemo(() => {
+    const count = new Map()
+    orders.forEach((o) => (o.items || []).forEach((i) => count.set(i.id, (count.get(i.id) || 0) + (Number(i.qty) || 1))))
+    return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id)
+      .filter((id) => getProduct(id)).slice(0, 8)
+  }, [orders])
+  const hasTop = topIds.length >= 3 && !order
+  const [cat, setCat] = useState(hasTop ? 'top' : CATEGORIES[0].id)
+  const [query, setQuery] = useState('')
+  /* Pedido para ahora o programado para una hora (solo pedidos nuevos) */
+  const [when, setWhen] = useState('now')
+  const [laterTime, setLaterTime] = useState('')
   const [openLine, setOpenLine] = useState(null)
   const [eta, setEta] = useState(null)
   const [error, setError] = useState(null)
@@ -101,7 +117,11 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
   const trip = mode === 'delivery' && totals.delivery?.ok ? totals.delivery : null
   const canDeliver = Boolean(location?.services.delivery)
 
+  /* Instante de la hora programada (hoy, hora de Madrid), o null si es para ahora */
+  const scheduledMs = !editing && when === 'later' && /^[0-9]{2}:[0-9]{2}$/.test(laterTime) ? madridTime(Date.now(), laterTime) : null
+
   useEffect(() => {
+    if (when === 'later') return undefined
     let cancelled = false
     const timer = setTimeout(() => {
       fetchSlots(locId, pizzas)
@@ -109,7 +129,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
         .catch(() => { if (!cancelled) setEta(null) })
     }, 300)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [locId, pizzas])
+  }, [locId, pizzas, when])
 
   const patchCustomer = (patch) => { setCustomer((c) => ({ ...c, ...patch })); setError(null) }
 
@@ -183,6 +203,10 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
 
   const problem = () => {
     if (!lines.length) return 'Añade al menos un producto.'
+    if (!editing && when === 'later') {
+      if (!scheduledMs) return 'Elige la hora a la que lo quieren.'
+      if (scheduledMs < Date.now() + 5 * 60000) return 'Esa hora ya ha pasado o es dentro de menos de 5 minutos. Elige una posterior o pon “Lo antes posible”.'
+    }
     if (!customer.name.trim()) return 'Falta el nombre del cliente.'
     if (channel === 'telefono' && !customer.phone.trim()) return 'En pedidos por teléfono hace falta el teléfono.'
     if (mode === 'delivery') {
@@ -205,6 +229,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
     paymentStatus: paidNow ? 'pagado' : 'pendiente',
     paymentMethod: method,
     clientKey: clientKey.current,
+    ...(scheduledMs ? { scheduledFor: new Date(scheduledMs).toISOString() } : {}),
   })
 
   const save = async () => {
@@ -266,6 +291,12 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
     onSaved(local, { isNew: true })
   }
 
+  const q = plain(query.trim())
+  const shown = q
+    ? visibleProducts().filter((p) => plain(p.name).includes(q) || (p.ingredients || []).some((i) => plain(i).includes(q)))
+    : cat === 'top' ? topIds.map(getProduct) : productsByCategory(cat)
+  const tabs = [...(hasTop ? [{ id: 'top', label: 'Más pedidos' }] : []), ...CATEGORIES]
+
   return (
     <div className="fixed inset-0 z-50 bg-masa flex flex-col" role="dialog" aria-modal="true" aria-labelledby="editor-title">
       {/* Cabecera */}
@@ -284,23 +315,40 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
       <div className="flex-1 min-h-0 grid lg:grid-cols-[1fr_26rem]">
         {/* ── Carta ─────────────────────────────────────────────── */}
         <section className="min-h-0 overflow-y-auto p-4 sm:p-6">
+          <label className="mb-3 flex items-center gap-2 rounded-md border border-tomate/50 bg-crema px-3.5 focus-within:border-tomate focus-within:shadow-island">
+            <Search className="w-5 h-5 text-tomate flex-shrink-0" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar pizza o ingrediente…"
+              aria-label="Buscar en la carta"
+              className="w-full bg-transparent py-3 text-base text-carbon outline-none placeholder:text-carbon/40"
+            />
+            {query && (
+              <button onClick={() => setQuery('')} className="text-tomate" aria-label="Borrar búsqueda"><X className="w-4 h-4" /></button>
+            )}
+          </label>
           <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-3">
-            {CATEGORIES.map((c) => (
+            {tabs.map((c) => (
               <button
                 key={c.id}
-                onClick={() => setCat(c.id)}
+                onClick={() => { setCat(c.id); setQuery('') }}
                 className={[
                   'ptab',
-                  cat === c.id ? 'is-on' : '',
+                  !q && cat === c.id ? 'is-on' : '',
                 ].join(' ')}
               >
+                {c.id === 'top' && <Star className="w-4 h-4" />}
                 {c.label}
               </button>
             ))}
           </div>
 
           <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-            {productsByCategory(cat).map((p) => {
+            {shown.length === 0 && (
+              <p className="col-span-full py-10 text-center font-serif italic font-semibold text-xl text-tomate">No hay nada con “{query}”.</p>
+            )}
+            {shown.map((p) => {
               const agotado = isSoldOut(p.id, locId)
               return (
               <button
@@ -346,8 +394,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                   key={id}
                   onClick={() => { setLocId(id); if (!getLocation(id).services.delivery) setMode('pickup') }}
                   className={[
-                    'flex-1 rounded-md border px-3 py-2 text-sm font-semibold',
-                    locId === id ? 'border-tomate bg-tomate/5 text-carbon' : 'border-tomate/50 text-carbon/60',
+                    'ptab flex-1',
+                    locId === id ? 'is-on' : '',
                   ].join(' ')}
                 >
                   {getLocation(id).name}
@@ -366,8 +414,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                   key={id}
                   onClick={() => setChannel(id)}
                   className={[
-                    'flex items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold',
-                    channel === id ? 'border-tomate bg-tomate text-masa' : 'border-tomate/50 text-tomate',
+                    'ptab',
+                    channel === id ? 'is-on' : '',
                   ].join(' ')}
                 >
                   <Icon className="w-4 h-4" /> {label}
@@ -461,8 +509,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                   key={m.id}
                   onClick={() => setMode(m.id)}
                   className={[
-                    'rounded-md border px-3 py-2.5 text-sm font-semibold',
-                    mode === m.id ? 'border-tomate bg-tomate/5 text-carbon' : 'border-tomate/50 text-carbon/60',
+                    'ptab',
+                    mode === m.id ? 'is-on' : '',
                   ].join(' ')}
                 >
                   {m.label}
@@ -473,11 +521,47 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
             {mode === 'delivery' && (
               <DeliveryPicker locationId={locId} value={customer} onChange={patchCustomer} compact />
             )}
+            {!editing && (
+              <div>
+                <p className="mono normal-case text-carbon/50 text-xs mb-1">¿Para cuándo?</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setWhen('now')}
+                    className={['ptab', when === 'now' ? 'is-on' : ''].join(' ')}
+                  >
+                    <Clock className="w-4 h-4" /> Lo antes posible
+                  </button>
+                  <button
+                    onClick={() => { setWhen('later'); if (!laterTime) setLaterTime(laterTimeIn(60)) }}
+                    className={['ptab', when === 'later' ? 'is-on' : ''].join(' ')}
+                  >
+                    <CalendarClock className="w-4 h-4" /> Para una hora
+                  </button>
+                </div>
+                {when === 'later' && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <input
+                      type="time"
+                      step="900"
+                      value={laterTime}
+                      onChange={(e) => { setLaterTime(e.target.value); setError(null) }}
+                      aria-label="Hora a la que lo quieren"
+                      className="pfield !w-auto !py-2 text-lg font-bold"
+                    />
+                    {[30, 60, 120].map((m) => (
+                      <button key={m} onClick={() => setLaterTime(laterTimeIn(m))} className="ptab soft">
+                        {m === 30 ? '30 min' : `${m / 60} h`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <Input label="Notas (opcional)" value={customer.notes} onChange={(v) => patchCustomer({ notes: v })} />
           </div>
 
           {/* Totales y hora */}
-          <div className="rounded-md bg-carbon/5 p-4 flex flex-col gap-1.5 text-sm">
+          <div className="rounded-md border border-tomate/40 bg-queso/40 p-4 flex flex-col gap-1.5 text-sm">
             {(totals.discount > 0 || totals.deliveryFee > 0 || totals.pointsDiscount > 0) && (
               <Row label="Subtotal" value={price(totals.subtotal)} />
             )}
@@ -491,7 +575,13 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
               <span className="mono text-carbon/60">TOTAL</span>
               <span className="font-serif italic font-semibold text-3xl text-carbon">{price(totals.total)}</span>
             </div>
-            {eta && (
+            {scheduledMs && (
+              <p className="mt-1 flex items-center gap-1.5 font-semibold text-tomate">
+                <CalendarClock className="w-4 h-4" />
+                {trip ? 'Llega' : 'Listo'} a las {hourOf(scheduledMs)} · {pizzas} al horno
+              </p>
+            )}
+            {!scheduledMs && eta && (
               <p className={['mt-1 flex items-center gap-1.5 font-semibold', eta.ok ? 'text-carbon' : 'text-tomate'].join(' ')}>
                 <Clock className="w-4 h-4" />
                 {eta.ok
@@ -547,7 +637,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
 
           <button
             onClick={save}
-            disabled={saving || eta?.ok === false}
+            disabled={saving || (!scheduledMs && eta?.ok === false)}
             className="btn w-full bg-tomate text-crema disabled:opacity-50"
           >
             <span className="btn-layer bg-horno" />

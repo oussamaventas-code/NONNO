@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Phone, Printer, Pencil, Euro, Truck, Package, Store, Clock, PackageCheck } from 'lucide-react'
+import { Plus, Phone, Printer, Pencil, Euro, Truck, Package, Store, Clock, PackageCheck, CalendarClock } from 'lucide-react'
 import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
 import { updateOrder } from './api'
@@ -155,6 +155,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
                           ? <><Truck className="w-3.5 h-3.5" /> {o.delivery_zone || 'Entrega'}</>
                           : <><Package className="w-3.5 h-3.5" /> Recoge</>}
                       </span>
+                      {o.scheduled_for && <span className="pchip"><CalendarClock className="w-3.5 h-3.5" /> Programado</span>}
                       {o.edited_at && <span className="pchip !border-horno !text-horno bg-horno/10">Modificado</span>}
                       {local && <span className="pchip !border-transparent bg-forno !text-masa">SIN ENVIAR · en papel</span>}
                     </div>
@@ -225,6 +226,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
       {editor && (
         <OrderEditor
           order={editor.order}
+          orders={orders}
           defaultChannel={editor.channel}
           locationIds={locationIds}
           defaultLocationId={defaultLocationId}
