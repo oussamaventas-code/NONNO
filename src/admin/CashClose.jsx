@@ -54,6 +54,9 @@ export default function CashClose({ locationIds, onError }) {
   useEffect(() => { load() }, [load])
 
   const expected = data?.expected
+  /* Efectivo que debe haber en el cajón: el fondo fijo más lo cobrado en efectivo */
+  const float = data?.float ?? 150
+  const cashDue = expected ? Math.round((expected.cash + float) * 100) / 100 : 0
   const cashN = num(cash)
   const cardN = num(card)
   const ready = cash !== '' && card !== '' && cashN !== null && cardN !== null
@@ -107,8 +110,9 @@ export default function CashClose({ locationIds, onError }) {
         <>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="pcard p-5">
-              <p className="mono text-tomate flex items-center gap-1.5"><Banknote className="w-4 h-4" /> EFECTIVO ESPERADO</p>
-              <p className="mt-1 font-serif italic font-semibold text-4xl text-carbon">{price(expected.cash)}</p>
+              <p className="mono text-tomate flex items-center gap-1.5"><Banknote className="w-4 h-4" /> DEBE HABER EN LA CAJA</p>
+              <p className="mt-1 font-serif italic font-semibold text-4xl text-carbon">{price(cashDue)}</p>
+              <p className="mono normal-case text-carbon/60 mt-1">{price(float)} de fondo + {price(expected.cash)} cobrados en efectivo</p>
             </div>
             <div className="pcard p-5">
               <p className="mono text-tomate flex items-center gap-1.5"><CreditCard className="w-4 h-4" /> TARJETA ESPERADA</p>
@@ -127,7 +131,7 @@ export default function CashClose({ locationIds, onError }) {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <p className="mono text-tomate">LO QUE HAS CONTADO</p>
               <button
-                onClick={() => { setCash(asInput(expected.cash)); setCard(asInput(expected.card)) }}
+                onClick={() => { setCash(asInput(cashDue)); setCard(asInput(expected.card)) }}
                 className="ptab soft"
               >
                 <Check className="w-4 h-4" /> Todo cuadra
@@ -136,7 +140,7 @@ export default function CashClose({ locationIds, onError }) {
 
             <div className="grid gap-4 sm:grid-cols-2">
               {[
-                { label: 'Efectivo en caja', value: cash, set: setCash, exp: expected.cash, n: cashN },
+                { label: 'Efectivo en caja (con el fondo)', value: cash, set: setCash, exp: cashDue, n: cashN },
                 { label: 'Tarjeta (datáfono)', value: card, set: setCard, exp: expected.card, n: cardN },
               ].map((f) => (
                 <label key={f.label} className="block">
@@ -154,6 +158,17 @@ export default function CashClose({ locationIds, onError }) {
                 </label>
               ))}
             </div>
+
+            {cashN !== null && cash !== '' && (
+              <p className={[
+                'rounded-md border px-4 py-3 text-sm font-semibold',
+                cashN >= float ? 'border-tomate/40 bg-queso/50 text-carbon' : 'border-tomate bg-tomate/10 text-tomate',
+              ].join(' ')}>
+                {cashN >= float
+                  ? <>Saca <strong>{price(Math.round((cashN - float) * 100) / 100)}</strong> del cajón y deja <strong>{price(float)}</strong> de fondo para mañana.</>
+                  : <>Ojo: en caja quedan menos de los {price(float)} de fondo. Faltan {price(Math.round((float - cashN) * 100) / 100)} para llegar al mínimo.</>}
+              </p>
+            )}
 
             <label className="block">
               <span className="mono normal-case text-carbon/60 text-xs">Nota (opcional): por qué sobra o falta, cambio dejado…</span>

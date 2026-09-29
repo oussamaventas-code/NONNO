@@ -23,6 +23,11 @@ const round = (n) => Math.round((Number(n) || 0) * 100) / 100
 const dayStartMs = (dateStr) => madridTime(Date.parse(`${dateStr}T12:00:00Z`), '00:00')
 const MISSING_TABLE = '42P01'
 
+/* Fondo de caja: el efectivo que siempre se queda en el cajón (150 €). Lo
+   esperado en efectivo al cerrar es el fondo MÁS las ventas cobradas en
+   efectivo, y lo que se retira es lo contado menos el fondo. */
+const CASH_FLOAT = Number(process.env.CASH_FLOAT) || 150
+
 /** Lo cobrado ese día en la sede, por forma de pago. */
 async function expectedFor(locationId, day) {
   const from = dayStartMs(day)
@@ -80,7 +85,7 @@ export default async function cashHandler(req, res) {
         closing = data.find((c) => c.day === day) || null
       }
       res.setHeader('Cache-Control', 'no-store')
-      return res.status(200).json({ location: locationId, day, expected, closing, history, tableMissing })
+      return res.status(200).json({ location: locationId, day, float: CASH_FLOAT, expected, closing, history, tableMissing })
     }
 
     if (req.method === 'POST') {
@@ -93,7 +98,7 @@ export default async function cashHandler(req, res) {
       const row = {
         location_id: locationId,
         day,
-        expected_cash: expected.cash,
+        expected_cash: round(expected.cash + CASH_FLOAT),
         expected_card: expected.card,
         counted_cash: countedCash,
         counted_card: countedCard,
