@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Store, Phone, Printer, Beef, Salad, Milk, Droplets, Fish, Egg, Search, Star, CalendarClock } from 'lucide-react'
-import { CATEGORIES, productsByCategory, visibleProducts, getProduct, getExtra, priceOf, isSoldOut } from '../data/menu'
+import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Store, Phone, Printer, Search, Star, CalendarClock } from 'lucide-react'
+import { CATEGORIES, productsByCategory, visibleProducts, getProduct, priceOf, isSoldOut } from '../data/menu'
 import { plain } from '../lib/plain'
 import { getLocation } from '../data/locations'
 import { buildLine, lineTotal } from '../lib/pricing'
@@ -10,6 +10,7 @@ import { price } from '../lib/format'
 import { deliveryTiers, deliveryProblem } from '../lib/delivery'
 import DeliveryPicker from '../components/DeliveryPicker'
 import ProductImage from '../components/ProductImage'
+import ToppingPicker from '../components/ToppingPicker'
 import { createOrder, editOrder, fetchSlots, fetchCustomer } from './api'
 import { phoneKey } from '../lib/customerLookup'
 import { enqueue, isConnectionError, newClientKey } from './offlineQueue'
@@ -652,30 +653,10 @@ export default function OrderEditor({ order, orders = [], locationIds, defaultLo
   )
 }
 
-/* Grupos de toppings, en el orden en que se piden en el mostrador */
-const TOPPING_GROUPS = [
-  { id: 'Carnes', label: 'Carnes', Icon: Beef },
-  { id: 'Verduras', label: 'Verduras', Icon: Salad },
-  { id: 'Quesos', label: 'Quesos', Icon: Milk },
-  { id: 'Salsas y toques', label: 'Salsas', Icon: Droplets },
-  { id: 'Del mar', label: 'Del mar', Icon: Fish },
-  { id: 'Otros', label: 'Otros', Icon: Egg },
-]
-
 /* Opciones de una línea: ración, quitar ingredientes, toppings, nota */
 function LineOptions({ line, onChange }) {
   const product = getProduct(line.productId)
   const toggle = (list, value) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
-
-  const extras = (product.extras || []).map(getExtra).filter(Boolean)
-  const groups = TOPPING_GROUPS
-    .map((g) => ({ ...g, items: extras.filter((e) => e.group === g.id) }))
-    .filter((g) => g.items.length)
-  const [groupId, setGroupId] = useState(groups[0]?.id)
-  const group = groups.find((g) => g.id === groupId) || groups[0]
-  /* Si todos cuestan lo mismo se dice una vez arriba y no en cada botón. */
-  const prices = new Set(extras.map((e) => e.price))
-  const uniform = prices.size === 1 ? [...prices][0] : null
 
   return (
     <div className="border-t border-tomate/25 p-3 flex flex-col gap-4">
@@ -716,63 +697,13 @@ function LineOptions({ line, onChange }) {
         </div>
       )}
 
-      {groups.length > 0 && (
-        <div>
-          <div className="flex items-baseline justify-between mb-2">
-            <p className="mono text-tomate">TOPPINGS</p>
-            {uniform != null && <p className="mono normal-case text-carbon/50">+{price(uniform)} cada uno</p>}
-          </div>
-
-          {/* Un botón por tipo, con cuántos lleva ya marcados */}
-          <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-3 xl:grid-cols-6 gap-1.5" role="tablist">
-            {groups.map((g) => {
-              const n = g.items.filter((e) => line.extraIds.includes(e.id)).length
-              const active = g.id === group.id
-              return (
-                <button
-                  key={g.id}
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setGroupId(g.id)}
-                  className={[
-                    'relative flex flex-col items-center gap-1 rounded-md border px-1 py-2 text-[0.65rem] font-semibold uppercase tracking-wide transition-colors',
-                    active ? 'border-tomate bg-tomate text-masa' : 'border-tomate/40 text-tomate hover:bg-tomate/10',
-                  ].join(' ')}
-                >
-                  <g.Icon className="w-5 h-5" strokeWidth={1.75} />
-                  {g.label}
-                  {n > 0 && (
-                    <span className={[
-                      'absolute -top-1.5 -right-1.5 min-w-[1.15rem] h-[1.15rem] px-1 rounded-full text-[0.65rem] leading-[1.15rem] text-center font-bold',
-                      active ? 'bg-masa text-tomate' : 'bg-tomate text-masa',
-                    ].join(' ')}>{n}</span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {group.items.map((extra) => {
-              const on = line.extraIds.includes(extra.id)
-              return (
-                <button
-                  key={extra.id}
-                  onClick={() => onChange({ extraIds: toggle(line.extraIds, extra.id) })}
-                  aria-pressed={on}
-                  className={[
-                    'inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors',
-                    on ? 'border-tomate bg-tomate text-masa' : 'border-tomate/40 bg-masa text-carbon hover:border-tomate',
-                  ].join(' ')}
-                >
-                  {on && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
-                  {extra.label}
-                  {uniform == null && <span className="opacity-70">+{price(extra.price)}</span>}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+      {product.extras?.length > 0 && (
+        <ToppingPicker
+          size="sm"
+          extraIds={product.extras}
+          selected={line.extraIds}
+          onToggle={(id) => onChange({ extraIds: toggle(line.extraIds, id) })}
+        />
       )}
 
       <NoteInput value={line.note} onCommit={(note) => onChange({ note })} />
