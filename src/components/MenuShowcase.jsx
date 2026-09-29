@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Star } from 'lucide-react'
-import { PRODUCTS, priceOf } from '../data/menu'
+import { visibleProducts, priceOf } from '../data/menu'
 import { price } from '../lib/format'
 import { MENU_INTRO, SHOWCASE_TABS } from '../data/content'
 import { useActions } from '../store/StoreContext'
@@ -20,7 +20,7 @@ export default function MenuShowcase() {
   const rootRef = useRef(null)
 
   const tab = SHOWCASE_TABS.find((t) => t.id === tabId)
-  const products = PRODUCTS.filter((p) => tab.categories.includes(p.category) && p.image)
+  const products = visibleProducts().filter((p) => tab.categories.includes(p.category) && p.image)
   // Se repite la lista hasta llenar la pista; luego se duplica entera
   // para que el bucle (-50%) no tenga salto.
   const base = products.length ? Array.from({ length: Math.ceil(8 / products.length) }, () => products).flat() : []

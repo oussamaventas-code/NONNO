@@ -67,3 +67,14 @@ export const savePushSubscription = (subscription, label) =>
 
 export const removePushSubscription = (endpoint) =>
   request('/api/push', { method: 'DELETE', body: JSON.stringify({ endpoint }) })
+
+export const fetchMenu = () => request('/api/menu')
+
+/** action: 'price' { productId, price | portionPrices } · 'hidden' { productId, hidden } ·
+    'soldOut' { location, productId, soldOut }. Devuelve las correcciones ya guardadas. */
+export const menuAction = (action, data) =>
+  request('/api/menu', { method: 'POST', body: JSON.stringify({ action, ...data }) })
+
+/** Ficha del cliente por teléfono: nombre, dirección y sus últimos pedidos. null si es nuevo. */
+export const fetchCustomer = (phone) =>
+  request(`/api/orders?customer=${encodeURIComponent(phone)}`)

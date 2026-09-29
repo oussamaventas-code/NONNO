@@ -3,12 +3,14 @@ import { requireSession, readSession, SCOPE_ALL } from './_lib/auth.js'
 import { notifyNewOrder } from './_lib/push.js'
 import { sanitizeOrder, validateOrder } from './_lib/order.js'
 import { isStoreOpen } from './_lib/store.js'
+import { loadMenu } from './_lib/menu.js'
 import { precheck, assignSlot, SLOT_ERRORS } from './_lib/slots.js'
 import { notifyCustomer } from './_lib/sms.js'
 import { readCustomerId, getCustomer, movePoints, isMissingTable } from './_lib/customer.js'
 import { normalizeRedeem } from '../src/data/loyalty.js'
 import { forcedSlot } from '../src/lib/kitchenSlots.js'
 import { getLocation } from '../src/data/locations.js'
+import { phonePattern, summarizeCustomer } from '../src/lib/customerLookup.js'
 
 const reply = (row, staff) => ({
   id: row.id,
@@ -65,6 +67,9 @@ export default async function handler(req, res) {
     }
     const redeem = customer ? Math.min(normalizeRedeem(req.body?.redeemPoints), normalizeRedeem(customer.points)) : 0
 
+    /* Precios, ocultos y agotados al día: el total se recalcula con la carta
+       real, no con la que el navegador tenía en pantalla. */
+    await loadMenu({ force: true })
     const parsed = sanitizeOrder(req.body, { staff, customerId: customer?.id, redeem })
     const problem = validateOrder(parsed)
     if (problem) return res.status(400).json({ error: problem })
@@ -181,6 +186,26 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const session = requireSession(req, res)
     if (!session) return
+
+    /* Ficha de un cliente por teléfono (mostrador y teléfono). Cada local
+       solo ve los pedidos de su sede, igual que el resto del panel. */
+    if (req.query?.customer !== undefined) {
+      const pattern = phonePattern(req.query.customer)
+      if (!pattern) return res.status(200).json({ customer: null })
+      let q = db()
+        .from('orders')
+        .select('ref, created_at, status, total, mode, items, location_id, address, delivery_lat, delivery_lng, delivery_verified, delivery_tier, delivery_fee, customer_name, customer_phone')
+        .ilike('customer_phone', pattern)
+        .order('created_at', { ascending: false })
+        .limit(40)
+      if (session.scope !== SCOPE_ALL) q = q.eq('location_id', session.scope)
+      const { data, error } = await q
+      if (error) {
+        console.error('Error buscando al cliente:', error)
+        return res.status(500).json({ error: 'No hemos podido buscar al cliente.' })
+      }
+      return res.status(200).json({ customer: summarizeCustomer(data, req.query.customer) })
+    }
 
     const limit = Math.min(200, Math.max(1, Number(req.query?.limit) || 60))
     const since = req.query?.since

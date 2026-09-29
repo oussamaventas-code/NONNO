@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, RefreshCw, LogOut, Pizza, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro } from 'lucide-react'
+import { Bell, BellOff, RefreshCw, LogOut, Pizza, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro, BookOpen } from 'lucide-react'
 import Counter from './Counter'
 import Routes from './Routes'
 import Stock from './Stock'
+import Carta from './Carta'
+import { useMenuOverrides } from '../hooks/useMenuOverrides'
 import Billing from './Billing'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
 import { printTicket } from './printTicket'
@@ -88,6 +90,13 @@ export default function AdminPanel({ scope, onSignedOut }) {
     return saved === 'facturacion' && !esDireccion ? 'cocina' : saved
   })
   const [autoPrint, setAutoPrint] = useState(() => readPref(PREF_AUTOPRINT, false))
+
+  /* Carta corregida (precios, ocultos, agotados): el mostrador vende con ella.
+     `menuVersion` repinta el panel cuando cambia. */
+  const menuVersion = useMenuOverrides()
+  const [, setMenuTick] = useState(0)
+  const refreshMenu = useCallback(() => setMenuTick((n) => n + 1), [])
+  void menuVersion
 
   const { play } = useOrderAlert()
   const knownIds = useRef(new Set())
@@ -390,6 +399,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
                   { id: 'mostrador', label: 'Mostrador', Icon: Store },
                   { id: 'reparto', label: 'Reparto', Icon: Truck },
                   { id: 'stock', label: 'Stock', Icon: ClipboardList },
+                  { id: 'carta', label: 'Carta', Icon: BookOpen },
                   /* Solo dirección: es dinero, no algo que vea el mostrador de un local. */
                   ...(esDireccion ? [{ id: 'facturacion', label: 'Facturación', Icon: Euro }] : []),
                 ].map(({ id, label, Icon }) => (
@@ -539,6 +549,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
           <Billing locationId={sedeVista === 'todas' ? null : sedeVista} onError={setError} />
         ) : view === 'stock' ? (
           <Stock locationIds={locationIds} onError={setError} />
+        ) : view === 'carta' ? (
+          <Carta locationIds={locationIds} esDireccion={esDireccion} onError={setError} onChanged={refreshMenu} />
         ) : loading ? (
           <p className="mono text-carbon/40 py-16 text-center">CARGANDO PEDIDOS…</p>
         ) : view === 'reparto' ? (

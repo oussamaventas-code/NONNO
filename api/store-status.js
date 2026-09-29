@@ -1,6 +1,7 @@
 import { isConfigured } from './_lib/supabase.js'
 import { requireSession, SCOPE_ALL } from './_lib/auth.js'
 import { getStoreStatuses, setStoreOpen } from './_lib/store.js'
+import menuHandler from './_lib/menuHandler.js'
 
 const LOCATION_IDS = ['sangonera', 'santo-angel']
 
@@ -8,8 +9,14 @@ const LOCATION_IDS = ['sangonera', 'santo-angel']
  * GET es público: la web necesita saber si puede dejar pedir antes
  * de que el cliente entre a checkout. PATCH es del panel: cada sede
  * solo puede abrir/cerrar la suya; la dirección puede con las dos.
+ *
+ * /api/menu (la carta editable) llega aquí con `?resource=menu` por una
+ * reescritura de vercel.json. Vive en este mismo fichero de función
+ * porque Vercel Hobby admite como máximo 12 y ya estaban las 12.
  */
 export default async function handler(req, res) {
+  if (req.query?.resource === 'menu') return menuHandler(req, res)
+
   if (!isConfigured()) {
     return res.status(200).json({
       statuses: Object.fromEntries(LOCATION_IDS.map((id) => [id, { is_open: true }])),

@@ -3,6 +3,7 @@ import { orderTotals } from '../../src/lib/orderTotals.js'
 import { getLocation } from '../../src/data/locations.js'
 import { ovenUnits } from '../../src/lib/kitchenSlots.js'
 import { deliveryProblem } from '../../src/lib/delivery.js'
+import { isOrderable } from '../../src/data/menu.js'
 
 /* ═══════════════════════════════════════════════════════════════
    Saneado y validación del pedido que llega desde el navegador.
@@ -130,6 +131,12 @@ export function validateOrder({ order, unknownProduct, delivery }) {
   const location = getLocation(order.location_id)
   if (unknownProduct) return 'Algún producto ya no está en la carta. Revisa tu pedido.'
   if (!order.items.length) return 'El pedido está vacío.'
+  /* Ocultos y agotados: solo frenan a la web. El mostrador puede vender
+     lo que tenga en la mano aunque el panel lo marque como agotado. */
+  if (order.channel === 'web') {
+    const blocked = order.items.find((i) => !isOrderable(i.id, order.location_id))
+    if (blocked) return `${blocked.name} está agotado ahora mismo en esta sede. Quítalo del pedido para continuar.`
+  }
   if (!location) return 'Falta la sede.'
   if (!order.customer_name) return 'Falta el nombre.'
   /* En mostrador el teléfono es opcional SOLO si el cliente se lo lleva

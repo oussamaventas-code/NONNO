@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Store, Phone, Printer, Beef, Salad, Milk, Droplets, Fish, Egg } from 'lucide-react'
-import { CATEGORIES, productsByCategory, getProduct, getExtra, priceOf } from '../data/menu'
+import { CATEGORIES, productsByCategory, getProduct, getExtra, priceOf, isSoldOut } from '../data/menu'
 import { getLocation } from '../data/locations'
 import { buildLine, lineTotal } from '../lib/pricing'
 import { orderTotals } from '../lib/orderTotals'
@@ -9,7 +9,8 @@ import { price } from '../lib/format'
 import { deliveryTiers, deliveryProblem } from '../lib/delivery'
 import DeliveryPicker from '../components/DeliveryPicker'
 import ProductImage from '../components/ProductImage'
-import { createOrder, editOrder, fetchSlots } from './api'
+import { createOrder, editOrder, fetchSlots, fetchCustomer } from './api'
+import { phoneKey } from '../lib/customerLookup'
 import { enqueue, isConnectionError, newClientKey } from './offlineQueue'
 import { printTicket } from './printTicket'
 
@@ -111,6 +112,48 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
   }, [locId, pizzas])
 
   const patchCustomer = (patch) => { setCustomer((c) => ({ ...c, ...patch })); setError(null) }
+
+  /* Cliente conocido: al escribir su teléfono aparece su ficha y se puede
+     repetir su último pedido. Si falla la búsqueda o no hay conexión, el
+     pedido se toma igual: esto solo ahorra tecleo. */
+  const [known, setKnown] = useState(null)
+  const [dropped, setDropped] = useState(0)
+  useEffect(() => {
+    if (editing) return undefined
+    if (phoneKey(customer.phone).length < 9) { setKnown(null); return undefined }
+    let cancelled = false
+    const timer = setTimeout(() => {
+      fetchCustomer(customer.phone)
+        .then((d) => {
+          if (cancelled) return
+          setKnown(d.customer)
+          if (d.customer?.name) setCustomer((c) => (c.name.trim() ? c : { ...c, name: d.customer.name }))
+        })
+        .catch(() => { if (!cancelled) setKnown(null) })
+    }, 450)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [customer.phone, editing])
+
+  const repeatOrder = (past) => {
+    const rebuilt = linesFromOrder(past)
+    setDropped((past.items || []).length - rebuilt.length)
+    setLines((prev) => rebuilt.reduce((acc, l) => mergeLine(acc, l), prev))
+    setError(null)
+  }
+
+  /* Su dirección de la última entrega. El tramo de precio solo se
+     reutiliza si fue en esta misma sede: las tarifas son por sede. */
+  const useKnownAddress = () => {
+    const past = known.orders.find((o) => o.mode === 'delivery' && o.address)
+    if (!past) return
+    const saved = customerFromOrder({ ...past, notes: '' })
+    setMode('delivery')
+    patchCustomer({
+      address: saved.address,
+      coords: saved.coords,
+      tier: past.location_id === locId ? saved.tier : null,
+    })
+  }
 
   const addProduct = (productId) => {
     const line = buildLine({ productId, qty: 1 })
@@ -257,11 +300,17 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
           </div>
 
           <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-            {productsByCategory(cat).map((p) => (
+            {productsByCategory(cat).map((p) => {
+              const agotado = isSoldOut(p.id, locId)
+              return (
               <button
                 key={p.id}
                 onClick={() => addProduct(p.id)}
-                className="pcard overflow-hidden text-left flex flex-col active:translate-x-px active:translate-y-px transition-transform hover:-translate-y-0.5"
+                disabled={agotado}
+                className={[
+                  'pcard overflow-hidden text-left flex flex-col transition-transform',
+                  agotado ? 'opacity-45 grayscale cursor-not-allowed' : 'active:translate-x-px active:translate-y-px hover:-translate-y-0.5',
+                ].join(' ')}
               >
                 <span className="relative block aspect-[4/3] border-b border-tomate">
                   <ProductImage
@@ -273,7 +322,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                     iconClassName="w-10 h-10"
                   />
                   <span className="absolute bottom-1.5 right-1.5 rounded-md bg-tomate px-2 py-1 font-mono text-xs font-bold leading-none text-masa">
-                    {price(priceOf(p))}
+                    {agotado ? 'AGOTADO' : price(priceOf(p))}
                   </span>
                 </span>
                 <span className="block p-2.5">
@@ -283,7 +332,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                   </span>
                 </span>
               </button>
-            ))}
+              )
+            })}
           </div>
         </section>
 
@@ -391,6 +441,16 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
               value={customer.phone}
               onChange={(v) => patchCustomer({ phone: v })}
             />
+
+            {known && !editing && (
+              <KnownCustomer
+                known={known}
+                canUseAddress={canDeliver && known.orders.some((o) => o.mode === 'delivery' && o.address)}
+                dropped={dropped}
+                onRepeat={repeatOrder}
+                onAddress={useKnownAddress}
+              />
+            )}
 
             <div className="grid grid-cols-2 gap-2">
               {[
@@ -644,6 +704,53 @@ function NoteInput({ value, onCommit }) {
       maxLength={140}
       className="pfield !py-2 text-sm"
     />
+  )
+}
+
+const shortDate = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+const itemsText = (o) => (o.items || []).map((i) => `${i.qty}× ${i.name}`).join(', ')
+
+/** Ficha del cliente que ya ha pedido: repetir un pedido de un toque. */
+function KnownCustomer({ known, canUseAddress, dropped, onRepeat, onAddress }) {
+  const [last, ...older] = known.orders
+  return (
+    <div className="rounded-md border border-tomate bg-queso/50 p-3 text-sm">
+      <p className="font-bold text-carbon">
+        {known.name || 'Cliente conocido'}
+        <span className="mono normal-case text-carbon/55 font-normal"> · {known.count} pedido{known.count === 1 ? '' : 's'}</span>
+      </p>
+      <p className="text-xs text-carbon/60 mt-0.5">
+        Último ({shortDate(last.created_at)}, {price(last.total)}): {itemsText(last)}
+      </p>
+      <div className="flex flex-wrap gap-2 mt-2">
+        <button type="button" onClick={() => onRepeat(last)} className="rounded-md bg-tomate px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-masa">
+          Repetir último pedido
+        </button>
+        {canUseAddress && (
+          <button type="button" onClick={onAddress} className="rounded-md border border-tomate/60 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-tomate">
+            Usar su dirección
+          </button>
+        )}
+      </div>
+      {older.length > 0 && (
+        <details className="mt-2">
+          <summary className="cursor-pointer text-xs text-carbon/55">Pedidos anteriores</summary>
+          <ul className="mt-1 flex flex-col gap-1">
+            {older.map((o) => (
+              <li key={o.ref} className="flex items-center gap-2 text-xs text-carbon/70">
+                <span className="flex-1">{shortDate(o.created_at)} · {price(o.total)} · {itemsText(o)}</span>
+                <button type="button" onClick={() => onRepeat(o)} className="rounded-md border border-tomate/60 px-2.5 py-1 font-semibold text-tomate">Repetir</button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      {dropped > 0 && (
+        <p className="mt-2 text-xs text-tomate">
+          {dropped === 1 ? '1 producto ya no está' : `${dropped} productos ya no están`} en la carta y no se ha añadido.
+        </p>
+      )}
+    </div>
   )
 }
 
