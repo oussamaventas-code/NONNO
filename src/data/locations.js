@@ -42,7 +42,7 @@ export const LOCATIONS = [
        por WhatsApp ya escrito a este número, o llamar.
        TODO: CONFIRMAR QUE ESTE NÚMERO TIENE WHATSAPP. */
     whatsapp: '34611981808',
-    hours: 'Jueves y domingo, de 19:30 a 22:30. Viernes y sábado, de 19:30 a 23:00.',
+    hours: 'De jueves a domingo y festivos, de 19:00 a 23:00.',
     mapsUrl: null, // TODO
     orderUrl: null, // TODO (enlace exacto de pideme.net de esta sede)
 
@@ -64,11 +64,10 @@ export const LOCATIONS = [
       routing: { maxStops: 4, groupWindowMin: 10, nearKm: 1.5, speedKmh: 25, stopMinutes: 3 },
     },
 
-    /* Horno: jueves y domingo cierra a las 22:30; viernes y sábado a
-       las 23:00 (ficha de Google del local). Qué días se abre lo
-       decide el interruptor del panel, esto solo pone el límite de
-       cada día que sí está abierto. */
-    kitchen: { open: '19:30', close: '23:00', closeByDay: { thu: '22:30', sun: '22:30' }, slotMinutes: 15, pizzasPerSlot: 15 },
+    /* Horno: de 19:00 a 23:00 (carta impresa). Qué días se abre lo
+       decide el interruptor del panel; `closeByDay` permite cerrar
+       antes un día concreto si algún día hiciera falta. */
+    kitchen: { open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
 
     deliveryNote:
       'Envío 1,50 € hasta 1 km y 3 € hasta 3 km del local. Las ofertas "Llévatelas por menos" son solo para recoger.',
@@ -89,9 +88,8 @@ export const LOCATIONS = [
     /* Ficha de Google muestra "Pedir para llevar" y "Pedir a domicilio". */
     services: { pickup: true, delivery: true },
 
-    /* Jueves a domingo, 19:30–23:00 (ficha de Google), sin excepciones
-       de cierre anticipado como en Sangonera. */
-    kitchen: { open: '19:30', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
+    /* Jueves a domingo y festivos, 19:00–23:00 (carta impresa). */
+    kitchen: { open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
 
     address: 'C. Isaac Peral 2, 30151 Santo Ángel, Murcia',
     /* Geocodificado a partir de la dirección real (calle, sin poder
@@ -102,7 +100,7 @@ export const LOCATIONS = [
     /* Plan B por WhatsApp, igual que Sangonera.
        TODO: CONFIRMAR QUE ESTE NÚMERO TIENE WHATSAPP. */
     whatsapp: '34611981825',
-    hours: 'De jueves a domingo, de 19:30 a 23:00.',
+    hours: 'De jueves a domingo y festivos, de 19:00 a 23:00.',
     mapsUrl: null, // TODO
     orderUrl: null, // TODO (enlace exacto de pideme.net de esta sede)
 

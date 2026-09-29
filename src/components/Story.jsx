@@ -46,8 +46,8 @@ export default function Story() {
             d="M0,0H1440V22c-22,0-30,14-30,30s-14,24-26,24-26-10-26-26-12-26-34-28c-40-4-58,6-96,6s-42-8-70-8-30,22-30,40-12,26-24,26-24-10-24-28-14-34-50-36c-44-2-70,8-120,8s-60-6-86-6-34,14-34,30-10,22-22,22-22-10-22-24-18-30-58-32c-48-2-66,4-104,4s-52-6-80-6-30,24-30,44-12,30-26,30-26-12-26-30-10-40-44-42c-38-2-62,6-100,6S250,20,222,20s-32,16-32,32-12,26-26,26-26-12-26-26S120,22,86,22C52,22,34,30,0,30Z"
           />
         </svg>
-        <Cloud className="absolute top-44 left-[3%] w-24 sm:w-32" />
-        <Cloud className="absolute top-60 right-[5%] w-28 sm:w-36" />
+        <Cloud className="absolute top-16 left-[3%] w-16 sm:top-44 sm:w-32" />
+        <Cloud className="absolute top-20 right-[5%] w-16 sm:top-60 sm:w-36" />
         <Cloud className="hidden sm:block absolute bottom-40 left-[14%] w-24" />
         <Cloud className="hidden sm:block absolute bottom-56 right-[15%] w-20" />
 
@@ -56,7 +56,8 @@ export default function Story() {
             · {STORY.title} ·
           </h2>
           <p className="story-in mx-auto mt-16 max-w-[68rem] font-display font-bold text-[clamp(1.4rem,2.9vw,2.625rem)] leading-none">
-            {STORY.lines.map((l) => <span key={l} className="block">{l}</span>)}
+            {/* En móvil el texto fluye como un párrafo; los saltos de línea solo desde sm */}
+            {STORY.lines.map((l) => <span key={l} className="sm:block">{l}{' '}</span>)}
           </p>
 
           <div className="story-in mt-10 flex justify-center">

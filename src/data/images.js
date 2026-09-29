@@ -87,7 +87,9 @@ export const PHOTO = {
   laJefa: 'own:la-jefa',
   nonno: 'own:nonno',
   barbacoa: 'own:barbacoa',
-  calzone: '1753656681797-3234c89d6d4d',
+  calzoneProsciutto: 'own:calzone-prosciutto',
+  calzoneKebab: 'own:calzone-kebab',
+  calzoneSerrano: 'own:calzone-serrano',
 
   // Entrantes
   panDeAjo: '1608198093002-ad4e005484ec',
