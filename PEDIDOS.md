@@ -164,6 +164,15 @@ La web lo recoge en menos de un minuto. El servidor aplica los precios nuevos al
 
 **Para activarlo** (una sola vez): en Supabase → SQL Editor → New query, pega el contenido de [`supabase/carta.sql`](supabase/carta.sql) y pulsa **Run**. Sin ese paso la pestaña avisa de que no puede guardar y la web sigue con la carta de siempre.
 
+## Crear pedidos: clientes que ya han pedido
+
+En **Mostrador** y **Teléfono**, al escribir un teléfono de 9 cifras el panel busca a ese cliente entre los pedidos de la sede (no cuenta los cancelados; da igual cómo se escriba el número: con espacios, con +34…).
+
+- Si ya ha pedido, rellena el nombre si estaba vacío y muestra su ficha: cuántos pedidos lleva y qué pidió la última vez.
+- **Repetir último pedido** añade esas líneas al pedido, con sus extras y notas y a los precios de hoy. Los productos que ya no estén en la carta no se añaden y el panel lo avisa.
+- **Usar su dirección** pone su última dirección de entrega y cambia el pedido a "Entrega".
+- Cada local solo busca entre los pedidos de su sede; la dirección, en las dos. No hace falta crear nada en la base de datos. Si falla la búsqueda o no hay conexión, el pedido se toma igual.
+
 ## Reparto (pestaña "Reparto" del panel)
 
 El panel agrupa solo los pedidos a domicilio en **salidas**: los que están listos a horas parecidas y cerca entre sí van juntos (máximo 4 paradas), en el orden de paradas más corto.

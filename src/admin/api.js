@@ -74,3 +74,7 @@ export const fetchMenu = () => request('/api/menu')
     'soldOut' { location, productId, soldOut }. Devuelve las correcciones ya guardadas. */
 export const menuAction = (action, data) =>
   request('/api/menu', { method: 'POST', body: JSON.stringify({ action, ...data }) })
+
+/** Ficha del cliente por teléfono: nombre, dirección y sus últimos pedidos. null si es nuevo. */
+export const fetchCustomer = (phone) =>
+  request(`/api/orders?customer=${encodeURIComponent(phone)}`)
