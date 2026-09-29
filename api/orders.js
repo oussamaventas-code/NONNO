@@ -11,10 +11,12 @@ import { normalizeRedeem } from '../src/data/loyalty.js'
 import { forcedSlot } from '../src/lib/kitchenSlots.js'
 import { getLocation } from '../src/data/locations.js'
 import { phonePattern, summarizeCustomer } from '../src/lib/customerLookup.js'
+import { trackToken, parseTrackToken, keyMatches } from '../src/lib/tracking.js'
 
 const reply = (row, staff) => ({
   id: row.id,
   ref: row.ref,
+  track: trackToken(row),
   status: row.status,
   total: row.total,
   readyAt: row.ready_at,
@@ -187,6 +189,10 @@ export default async function handler(req, res) {
 
   /* ── Listar pedidos (solo panel) ────────────────────────────── */
   if (req.method === 'GET') {
+    /* Seguimiento público del cliente: solo con el enlace completo
+       (referencia + clave), y solo lo que necesita ver. */
+    if (req.query?.track !== undefined) return trackOrder(req, res)
+
     const session = requireSession(req, res)
     if (!session) return
 
@@ -237,4 +243,42 @@ export default async function handler(req, res) {
 
   res.setHeader('Allow', 'GET, POST')
   return res.status(405).json({ error: 'Método no permitido' })
+}
+
+/** Primer nombre y poco más: la página de seguimiento es pública. */
+const firstName = (name) => String(name || '').trim().split(/\s+/)[0] || ''
+
+async function trackOrder(req, res) {
+  const parsed = parseTrackToken(req.query.track)
+  if (!parsed) return res.status(404).json({ error: 'No encontramos ese pedido.' })
+  const { data, error } = await db()
+    .from('orders')
+    .select('*')
+    .eq('ref', parsed.ref)
+    .maybeSingle()
+  if (error) {
+    console.error('Error leyendo el seguimiento:', error)
+    return res.status(500).json({ error: 'No hemos podido cargar tu pedido.' })
+  }
+  if (!data || !keyMatches(data.id, parsed.key)) return res.status(404).json({ error: 'No encontramos ese pedido.' })
+
+  const location = getLocation(data.location_id)
+  res.setHeader('Cache-Control', 'no-store')
+  return res.status(200).json({
+    order: {
+      ref: data.ref,
+      status: data.status,
+      mode: data.mode,
+      name: firstName(data.customer_name),
+      createdAt: data.created_at,
+      readyAt: data.ready_at,
+      etaAt: data.eta_at,
+      scheduledFor: data.scheduled_for || null,
+      dispatchedAt: data.dispatched_at || null,
+      total: data.total,
+      paid: data.payment_status === 'pagado',
+      items: (data.items || []).map((i) => ({ qty: i.qty, name: i.name, removed: i.removed || [], extras: i.extras || [] })),
+      location: location ? { id: location.id, name: location.name, address: location.address, phone: location.phones?.[0] || null } : null,
+    },
+  })
 }

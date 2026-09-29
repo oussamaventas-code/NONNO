@@ -1,9 +1,12 @@
-import { Menu as MenuIcon, UserRound, MapPin } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Menu as MenuIcon, UserRound, MapPin, Flame } from 'lucide-react'
+import { readLastOrder, LAST_ORDER_EVENT } from '../lib/lastOrder'
+import { trackPath } from '../lib/tracking'
 import { NAV_LINKS } from '../data/site'
 import { ANNOUNCE } from '../data/content'
 import { useCart, useActions, useSelectedLocation } from '../store/StoreContext'
 import { useAccount } from '../store/AccountContext'
-import { followLink, navigate } from '../lib/router'
+import { followLink, navigate, usePath } from '../lib/router'
 
 /**
  * Cabecera de diner: barra de aviso, enlaces a la izquierda, logo en
@@ -14,6 +17,16 @@ export default function Navbar() {
   const { count } = useCart()
   const { openCart, toggleMobileNav, openLocationPrompt } = useActions()
   const { location } = useSelectedLocation()
+  const path = usePath()
+
+  /* Pedido en marcha desde este navegador: acceso directo a su seguimiento */
+  const [lastOrder, setLastOrder] = useState(readLastOrder)
+  useEffect(() => {
+    const update = () => setLastOrder(readLastOrder())
+    window.addEventListener(LAST_ORDER_EVENT, update)
+    return () => window.removeEventListener(LAST_ORDER_EVENT, update)
+  }, [])
+  const showTrack = lastOrder && !path.startsWith('/p/')
   const { status, points, openAccount } = useAccount()
 
   return (
@@ -79,6 +92,15 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {showTrack && (
+        <button
+          onClick={() => navigate(trackPath(lastOrder.token))}
+          className="w-full flex items-center justify-center gap-2 bg-forno text-masa h-10 px-3 font-sans font-semibold uppercase text-[0.8rem] sm:text-sm tracking-wide hover:bg-tomate transition-colors"
+        >
+          <Flame className="w-4 h-4 text-queso" /> Tu pedido {lastOrder.ref} · <span className="underline underline-offset-2">ver cómo va</span>
+        </button>
+      )}
 
       {/* Sede elegida, siempre a la vista y a un toque de cambiarla */}
       <button

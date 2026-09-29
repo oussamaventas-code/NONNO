@@ -1,5 +1,14 @@
 import { getLocation } from '../../src/data/locations.js'
 import { hourOf } from '../../src/lib/kitchenSlots.js'
+import { trackToken, trackPath } from '../../src/lib/tracking.js'
+
+/* Enlace para seguir el pedido. Solo si SITE_URL está puesto en Vercel
+   (p. ej. https://lapizzadenonno.es): sin él, el SMS va como antes. */
+const trackLink = (order) => {
+  const base = String(process.env.SITE_URL || '').replace(/\/+$/, '')
+  const token = trackToken(order)
+  return base && token ? ` Sigue tu pedido: ${base}${trackPath(token)}` : ''
+}
 
 /* ═══════════════════════════════════════════════════════════════
    SMS AL CLIENTE — desde un móvil Android del local
@@ -47,7 +56,9 @@ export function smsText(kind, order) {
     const when = delivery
       ? (order.eta_at ? `Entrega hacia las ${hourOf(order.eta_at)}` : 'Te avisamos cuando salga')
       : (order.ready_at ? `Recogida en ${location?.name} a las ${hourOf(order.ready_at)}` : `Recogida en ${location?.name}`)
-    return plain(`La Pizza de Nonno: pedido ${order.ref} recibido. ${when}. Total ${euros(order.total)}.${tail}`)
+    const link = trackLink(order)
+    /* Con enlace se quita el teléfono de dudas: está en la página */
+    return plain(`La Pizza de Nonno: pedido ${order.ref} recibido. ${when}. Total ${euros(order.total)}.${link || tail}`)
   }
   if (kind === 'listo') {
     return plain(delivery
