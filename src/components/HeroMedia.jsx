@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 
 /**
@@ -9,7 +9,22 @@ import { useReducedMotion } from '../hooks/useReducedMotion'
 export default function HeroMedia({ video, poster, posterSrcSet, alt, priority = false }) {
   const reduced = useReducedMotion()
   const [failed, setFailed] = useState(false)
+  const ref = useRef(null)
   const cls = 'block w-full aspect-[421/540] object-cover'
+
+  /* React no escribe el atributo `muted` en el HTML, solo la propiedad,
+     y Safari en iOS decide el autoplay mirando el atributo: sin él el
+     vídeo se queda parado en el póster. Lo forzamos y pedimos play()
+     a mano; si el navegador lo bloquea (modo ahorro), queda el póster. */
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.muted = true
+    el.defaultMuted = true
+    el.setAttribute('muted', '')
+    el.setAttribute('playsinline', '')
+    el.play?.()?.catch(() => {})
+  }, [video, reduced, failed])
 
   if (!video || reduced || failed) {
     return (
@@ -26,6 +41,7 @@ export default function HeroMedia({ video, poster, posterSrcSet, alt, priority =
 
   return (
     <video
+      ref={ref}
       className={cls}
       poster={poster}
       autoPlay
