@@ -9,8 +9,9 @@
    sombras duras en vez de difuminados.
    Los colores son canales RGB (los lee Tailwind).
 
-   El panel /admin y /pantalla conserva su paleta clara de siempre
-   (clase .tema-clasico en <html>, puesta desde main.jsx).
+   El panel /admin y /pantalla usa exactamente la misma paleta y las
+   mismas fuentes que la web (ver .pframe / .ptab / .pfield más abajo,
+   el equivalente de panel de .frame).
    ═══════════════════════════════════════════════════════════════ */
 
 @layer base {
@@ -29,19 +30,6 @@
     /* Ritmo de movimiento compartido con GSAP (src/lib/motion.js) */
     --ease-magnetic: cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --ease-curtain: cubic-bezier(0.76, 0, 0.24, 1);
-  }
-
-  /* Tema clásico (crema + tomate) para el panel de cocina */
-  :root.tema-clasico {
-    --c-forno: 23 21 18;
-    --c-carbon: 36 33 30;
-    --c-masa: 242 235 221;
-    --c-crema: 250 248 242;
-    --c-panel: 36 33 30;
-    --c-luz: 250 248 242;
-    --c-tomate: 200 66 47;
-    --c-horno: 231 111 50;
-    --c-albahaca: 70 92 58;
   }
 
   html {
@@ -83,11 +71,6 @@
   em.font-serif {
     text-transform: none;
   }
-  /* El panel de cocina conserva su serif editorial */
-  .tema-clasico .font-serif {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-variation-settings: normal;
-  }
   .serif {
     @apply font-serif italic font-semibold;
     letter-spacing: -0.01em;
@@ -125,14 +108,14 @@
     transform: translate(1px, 1px);
   }
   /* Botón de acción retro: filete crema por dentro y sombra dura */
-  :root:not(.tema-clasico) .btn.bg-tomate,
-  :root:not(.tema-clasico) .btn.bg-albahaca {
+  .btn.bg-tomate,
+  .btn.bg-albahaca {
     color: rgb(var(--c-masa));
   }
-  :root:not(.tema-clasico) .btn.bg-tomate { box-shadow: inset 0 0 0 2px rgb(var(--c-masa) / 0.9), 0 0 0 2px rgb(var(--c-tomate)), 3px 3px 0 2px rgb(var(--c-forno)); }
-  :root:not(.tema-clasico) .btn.bg-albahaca { box-shadow: inset 0 0 0 2px rgb(var(--c-masa) / 0.9), 0 0 0 2px rgb(var(--c-albahaca)), 3px 3px 0 2px rgb(var(--c-forno)); }
-  :root:not(.tema-clasico) .btn.bg-panel,
-  :root:not(.tema-clasico) .btn.bg-forno { box-shadow: inset 0 0 0 2px rgb(var(--c-masa) / 0.9), 0 0 0 2px rgb(var(--c-forno)), 3px 3px 0 2px rgb(var(--c-tomate)); }
+  .btn.bg-tomate { box-shadow: inset 0 0 0 2px rgb(var(--c-masa) / 0.9), 0 0 0 2px rgb(var(--c-tomate)), 3px 3px 0 2px rgb(var(--c-forno)); }
+  .btn.bg-albahaca { box-shadow: inset 0 0 0 2px rgb(var(--c-masa) / 0.9), 0 0 0 2px rgb(var(--c-albahaca)), 3px 3px 0 2px rgb(var(--c-forno)); }
+  .btn.bg-panel,
+  .btn.bg-forno { box-shadow: inset 0 0 0 2px rgb(var(--c-masa) / 0.9), 0 0 0 2px rgb(var(--c-forno)), 3px 3px 0 2px rgb(var(--c-tomate)); }
   .btn > .btn-layer {
     @apply absolute inset-0 translate-y-full transition-transform duration-500 ease-magnetic;
   }
@@ -175,6 +158,68 @@
   .btn-retro:hover > span { @apply bg-forno border-forno; }
   .btn-retro:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 0 rgb(var(--c-tomate)); }
   .btn-retro:disabled { @apply opacity-50 cursor-not-allowed; }
+
+
+  /* ── PANEL (/admin, /pantalla) ─────────────────────────────────
+     Mismo lenguaje que la web: papel crema, filetes rojos, marco de
+     doble línea con sombra dura, etiquetas en mayúsculas. */
+
+  /* Tarjeta del panel: doble filete + sombra dura. --frame cambia el
+     color (estado del pedido) sin tocar nada más. */
+  .pframe {
+    --frame: var(--c-tomate);
+    @apply relative rounded-lg border p-[6px] bg-crema;
+    border-color: rgb(var(--frame));
+    box-shadow: 3px 3px 0 0 rgb(var(--frame));
+  }
+  .pframe-in {
+    @apply relative h-full rounded-md border;
+    border-color: rgb(var(--frame));
+  }
+  .pframe.pf-horno { --frame: var(--c-horno); }
+  .pframe.pf-verde { --frame: var(--c-albahaca); }
+  .pframe.pf-navy { --frame: var(--c-forno); }
+  .pframe.pf-muted { --frame: var(--c-forno); opacity: 0.55; box-shadow: none; }
+
+  /* Tarjeta simple para listas densas: un filete + sombra dura */
+  .pcard {
+    @apply relative rounded-lg border border-tomate bg-crema;
+    box-shadow: 3px 3px 0 0 rgb(var(--c-tomate));
+  }
+
+  /* Etiqueta (estado, canal, modo): rectángulo con filete, como los sellos de la web */
+  .pchip {
+    @apply inline-flex items-center gap-1 rounded-md border border-tomate/50 px-2 py-[3px]
+           font-sans font-semibold uppercase text-[0.68rem] tracking-[0.08em] leading-none text-carbon/75;
+  }
+
+  /* Pestaña / filtro: texto rojo en mayúsculas; el activo se rellena */
+  .ptab {
+    @apply inline-flex items-center justify-center gap-1.5 flex-shrink-0 rounded-md border border-tomate/60
+           px-3.5 min-h-[40px] font-sans font-semibold uppercase text-[0.75rem] tracking-[0.06em] text-tomate
+           transition-colors;
+  }
+  .ptab:hover { @apply border-tomate bg-tomate/10; }
+  .ptab[aria-selected='true'], .ptab[aria-pressed='true'], .ptab.is-on {
+    @apply border-tomate bg-tomate text-masa;
+  }
+
+  /* Filtros secundarios: más bajos, y el activo va en azul noche para no competir con las pestañas */
+  .ptab.soft { @apply min-h-[36px] px-3 text-[0.7rem] border-forno/40 text-forno; }
+  .ptab.soft:hover { @apply border-forno bg-forno/5; }
+  .ptab.soft.is-on { @apply bg-forno border-forno text-masa; }
+
+  /* Campo de formulario */
+  .pfield {
+    @apply w-full rounded-md border border-tomate/50 bg-masa px-3.5 py-2.5 text-carbon outline-none
+           transition-colors placeholder:text-carbon/35;
+  }
+  .pfield:focus { @apply border-tomate; box-shadow: 2px 2px 0 0 rgb(var(--c-tomate)); }
+
+  /* Aviso de error del panel */
+  .palert {
+    @apply rounded-md border border-tomate bg-tomate/10 px-4 py-3 text-sm font-semibold text-tomate;
+  }
 
   /* Tique troquelado: muescas semicirculares a media altura */
   .ticket-cut {

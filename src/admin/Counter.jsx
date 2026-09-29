@@ -25,8 +25,8 @@ const STATUS = {
   nuevo: { label: 'Nuevo', tone: 'bg-tomate text-crema' },
   horno: { label: 'En el horno', tone: 'bg-horno text-crema' },
   listo: { label: 'Listo', tone: 'bg-albahaca text-crema' },
-  entregado: { label: 'Entregado', tone: 'bg-carbon/10 text-carbon/60' },
-  cancelado: { label: 'Cancelado', tone: 'bg-carbon/10 text-carbon/50' },
+  entregado: { label: 'Entregado', tone: 'bg-forno/15 text-carbon/70' },
+  cancelado: { label: 'Cancelado', tone: 'bg-forno/10 text-carbon/60' },
 }
 
 const CHANNEL = {
@@ -116,8 +116,8 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
             key={f.id}
             onClick={() => setFilter(f.id)}
             className={[
-              'flex-shrink-0 rounded-full px-4 py-2 min-h-[40px] font-sans font-bold uppercase text-[0.7rem] tracking-wide border transition-colors',
-              filter === f.id ? 'bg-carbon text-crema border-carbon' : 'text-carbon/60 border-carbon/15 hover:border-carbon/40',
+              'ptab soft',
+              filter === f.id ? 'is-on' : '',
             ].join(' ')}
           >
             {f.label}
@@ -126,7 +126,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
       </div>
 
       {visible.length === 0 ? (
-        <p className="py-16 text-center font-serif italic text-lg text-carbon/55">
+        <p className="py-16 text-center font-serif italic font-semibold text-lg text-tomate">
           {filter === 'cobrar' ? 'Nada pendiente de cobro.' : 'No hay pedidos aquí.'}
         </p>
       ) : (
@@ -141,22 +141,22 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
             const editable = !local && isActive(o) && (o.items || []).every((i) => i.id)
             const busy = busyId === o.id
             return (
-              <li key={o.id} className="rounded-card border border-carbon/10 bg-crema p-4 sm:p-5">
+              <li key={o.id} className="pcard p-4 sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono font-bold text-lg text-carbon">{o.ref}</span>
-                      <span className={`mono normal-case rounded-full px-2.5 py-1 ${st.tone}`}>{st.label}</span>
-                      <span className="mono normal-case flex items-center gap-1 rounded-full border border-carbon/15 px-2.5 py-1 text-carbon/70">
+                      <span className={`pchip !border-transparent ${st.tone}`}>{st.label}</span>
+                      <span className="pchip">
                         {ch.Icon && <ch.Icon className="w-3.5 h-3.5" />} {ch.label}
                       </span>
-                      <span className="mono normal-case flex items-center gap-1 rounded-full border border-carbon/15 px-2.5 py-1 text-carbon/70">
+                      <span className="pchip">
                         {o.mode === 'delivery'
                           ? <><Truck className="w-3.5 h-3.5" /> {o.delivery_zone || 'Entrega'}</>
                           : <><Package className="w-3.5 h-3.5" /> Recoge</>}
                       </span>
-                      {o.edited_at && <span className="mono normal-case rounded-full bg-horno/15 px-2.5 py-1 text-horno">Modificado</span>}
-                      {local && <span className="mono normal-case rounded-full bg-carbon px-2.5 py-1 text-crema font-bold">SIN ENVIAR · en papel</span>}
+                      {o.edited_at && <span className="pchip !border-horno !text-horno bg-horno/10">Modificado</span>}
+                      {local && <span className="pchip !border-transparent bg-forno !text-masa">SIN ENVIAR · en papel</span>}
                     </div>
                     <p className="mt-2 font-semibold text-carbon">
                       {o.customer_name}{o.customer_phone ? ` · ${o.customer_phone}` : ''}
@@ -176,7 +176,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
                   </div>
 
                   <div className="text-right">
-                    <p className="font-serif italic font-semibold text-3xl text-carbon">{price(o.total)}</p>
+                    <p className="font-serif italic font-semibold text-3xl text-tomate">{price(o.total)}</p>
                     <p className={['mono normal-case mt-1', paid ? 'text-albahaca' : 'text-tomate'].join(' ')}>
                       {paid ? `Pagado · ${o.payment_method || 'efectivo'}` : 'Falta por pagar'}
                     </p>
@@ -197,13 +197,13 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
                     </button>
                   )}
                   {editable && (
-                    <button onClick={() => setEditor({ order: o })} disabled={busy} className="btn border border-carbon/20 bg-transparent text-carbon px-5">
-                      <span className="btn-layer bg-carbon/5" />
+                    <button onClick={() => setEditor({ order: o })} disabled={busy} className="btn border border-tomate bg-transparent text-tomate px-5">
+                      <span className="btn-layer bg-tomate/10" />
                       <span className="btn-label"><Pencil className="w-4 h-4" /> EDITAR</span>
                     </button>
                   )}
-                  <button onClick={() => printReceipt(o)} className="btn border border-carbon/20 bg-transparent text-carbon px-5">
-                    <span className="btn-layer bg-carbon/5" />
+                  <button onClick={() => printReceipt(o)} className="btn border border-tomate bg-transparent text-tomate px-5">
+                    <span className="btn-layer bg-tomate/10" />
                     <span className="btn-label"><Printer className="w-4 h-4" /> TICKET</span>
                   </button>
                   {!local && paid && (

@@ -22,7 +22,7 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
   const [busy, setBusy] = useState(null)
 
   if (!locId) {
-    return <p className="py-16 text-center font-serif italic text-lg text-carbon/55">Esta sede no hace reparto a domicilio.</p>
+    return <p className="py-16 text-center font-serif italic font-semibold text-lg text-tomate">Esta sede no hace reparto a domicilio.</p>
   }
 
   const { origin, routing: cfg } = getLocation(locId).delivery
@@ -83,12 +83,12 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
   return (
     <div className="flex flex-col gap-8">
       <section>
-        <h2 className="font-sans font-extrabold uppercase text-xl text-carbon">Por salir</h2>
+        <h2 className="font-sans font-extrabold uppercase text-xl text-tomate">Por salir</h2>
         <p className="mono normal-case text-carbon/55 mt-1">
           Agrupados por hora y cercanía, máximo {cfg.maxStops} paradas por salida. El orden de paradas es el más corto.
         </p>
         {trips.length === 0 ? (
-          <p className="mt-6 font-serif italic text-lg text-carbon/55">No hay repartos pendientes.</p>
+          <p className="mt-6 font-serif italic font-semibold text-lg text-tomate">No hay repartos pendientes.</p>
         ) : (
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             {trips.map((trip, n) => {
@@ -104,12 +104,12 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
                     : `Sale hacia las ${hourOf(trip.departAt)} · dirección sin ubicar`}
                 >
                   <div className="flex flex-wrap gap-2">
-                    <a href={mapsRouteUrl(origin, trip.stops)} target="_blank" rel="noopener noreferrer" className="btn border border-carbon/20 bg-transparent text-carbon px-4">
-                      <span className="btn-layer bg-carbon/5" />
+                    <a href={mapsRouteUrl(origin, trip.stops)} target="_blank" rel="noopener noreferrer" className="btn border border-tomate bg-transparent text-tomate px-4">
+                      <span className="btn-layer bg-tomate/10" />
                       <span className="btn-label"><MapIcon className="w-4 h-4" /> GOOGLE MAPS</span>
                     </a>
-                    <button onClick={() => printSheet(trip)} className="btn border border-carbon/20 bg-transparent text-carbon px-4">
-                      <span className="btn-layer bg-carbon/5" />
+                    <button onClick={() => printSheet(trip)} className="btn border border-tomate bg-transparent text-tomate px-4">
+                      <span className="btn-layer bg-tomate/10" />
                       <span className="btn-label"><Printer className="w-4 h-4" /> HOJA DE RUTA</span>
                     </button>
                     <button
@@ -133,11 +133,11 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
       </section>
 
       <section>
-        <h2 className="font-sans font-extrabold uppercase text-xl text-carbon flex items-center gap-2">
+        <h2 className="font-sans font-extrabold uppercase text-xl text-tomate flex items-center gap-2">
           <Truck className="w-5 h-5 text-horno" /> En reparto
         </h2>
         {onRoad.length === 0 ? (
-          <p className="mt-3 font-serif italic text-lg text-carbon/55">Nadie en la calle ahora mismo.</p>
+          <p className="mt-3 font-serif italic font-semibold text-lg text-tomate">Nadie en la calle ahora mismo.</p>
         ) : (
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             {onRoad.map((route) => (
@@ -159,8 +159,8 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
                 )}
               >
                 <div className="flex flex-wrap gap-2">
-                  <a href={mapsRouteUrl(origin, route.stops)} target="_blank" rel="noopener noreferrer" className="btn border border-carbon/20 bg-transparent text-carbon px-4">
-                    <span className="btn-layer bg-carbon/5" />
+                  <a href={mapsRouteUrl(origin, route.stops)} target="_blank" rel="noopener noreferrer" className="btn border border-tomate bg-transparent text-tomate px-4">
+                    <span className="btn-layer bg-tomate/10" />
                     <span className="btn-label"><MapIcon className="w-4 h-4" /> GOOGLE MAPS</span>
                   </a>
                   <button onClick={() => undo(route)} disabled={busy === route.routeId} className="mono normal-case flex items-center gap-1.5 px-3 text-carbon/45 hover:text-tomate">
@@ -178,13 +178,13 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
 
 function TripCard({ title, trip, header, stopActions, children }) {
   return (
-    <article className="rounded-card border border-carbon/10 bg-crema p-5">
+    <article className="pcard p-5">
       <p className="mono text-tomate">{title.toUpperCase()}</p>
       <p className="mt-1 font-sans font-bold text-carbon">{header}</p>
       <ol className="mt-4 flex flex-col gap-3">
         {trip.stops.map((s, i) => (
           <li key={s.id} className="flex gap-3">
-            <span className="w-7 h-7 flex-shrink-0 rounded-full bg-carbon text-crema flex items-center justify-center text-sm font-bold">{i + 1}</span>
+            <span className="w-7 h-7 flex-shrink-0 rounded-full bg-tomate text-masa flex items-center justify-center text-sm font-bold">{i + 1}</span>
             <div className="flex-1 min-w-0 text-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-mono font-bold text-carbon">{s.ref} · <span className="font-sans">{s.customer_name}</span></span>
@@ -218,7 +218,7 @@ function TripCard({ title, trip, header, stopActions, children }) {
 
 function SmallButton({ onClick, disabled, icon: Icon, children }) {
   return (
-    <button onClick={onClick} disabled={disabled} className="flex items-center gap-1.5 rounded-full bg-carbon text-crema px-3 py-1.5 text-xs font-semibold disabled:opacity-50">
+    <button onClick={onClick} disabled={disabled} className="flex items-center gap-1.5 rounded-md bg-forno text-masa px-3 py-1.5 text-xs font-semibold uppercase tracking-wide disabled:opacity-50">
       <Icon className="w-3.5 h-3.5" /> {children}
     </button>
   )

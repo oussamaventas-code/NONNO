@@ -85,68 +85,78 @@ export default function Admin({ sedeEnRuta = null, base = '/admin', title = 'PAN
   }
 
   return (
-    <div className="min-h-screen bg-forno flex flex-col">
-      {sede && (
-        <div className={`${COLOR[sede.id] || 'bg-tomate'} text-crema py-2 text-center`}>
-          <p className="mono normal-case tracking-[0.2em] font-bold">
-            COCINA · {sede.name.toUpperCase()}
-          </p>
-        </div>
-      )}
+    <div className="min-h-screen bg-masa flex flex-col">
+      {/* Cinta de aviso, igual que la de la web; en el enlace de una sede
+          lleva el color de esa cocina para no confundirse. */}
+      <p className={`${sede ? (COLOR[sede.id] || 'bg-tomate') : 'bg-tomate'} text-masa text-center font-sans font-medium uppercase text-[0.72rem] sm:text-sm h-9 leading-9 px-3 truncate`}>
+        {sede ? `COCINA · ${sede.name}` : title}
+      </p>
+      <div className="checker" aria-hidden="true" />
 
       <div className="flex-1 flex items-center justify-center p-5">
         <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <p className="font-sans font-extrabold uppercase text-sm tracking-tight text-crema">
+          <div className="text-center mb-7">
+            <img
+              src="/logo-nonno.png"
+              alt="La Pizza de Nonno"
+              width="88"
+              height="88"
+              className="mx-auto h-[5.5rem] w-[5.5rem] rounded-full object-cover border border-tomate"
+            />
+            <p className="mt-4 font-sans font-extrabold uppercase text-base tracking-tight text-tomate">
               LA PIZZA DE <em className="font-serif italic font-semibold">NONNO</em>
             </p>
-            <p className="mono text-crema/40 mt-1">
+            <p className="mono text-tomate mt-1">
               {sede ? `${title} · ${sede.name.toUpperCase()}` : title}
             </p>
           </div>
 
-          <form onSubmit={submit} className="bg-crema rounded-block p-7">
-            <span className="inline-flex w-11 h-11 rounded-full bg-carbon/5 items-center justify-center text-carbon/50 mb-5">
-              <Lock className="w-5 h-5" />
-            </span>
+          <form onSubmit={submit} className="pframe">
+            <div className="pframe-in p-6">
+              <span className="inline-flex w-11 h-11 rounded-full border border-tomate items-center justify-center text-tomate mb-5">
+                <Lock className="w-5 h-5" />
+              </span>
 
-            <label htmlFor="admin-password" className="mono text-carbon/50 mb-2 block">
-              CONTRASEÑA{sede ? ` DE ${sede.name.toUpperCase()}` : ''}
-            </label>
-            <input
-              id="admin-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              autoFocus
-              className="w-full rounded-2xl border border-carbon/12 bg-white/60 px-4 py-3 text-carbon outline-none focus:border-tomate transition-colors"
-            />
+              <label htmlFor="admin-password" className="mono text-tomate mb-2 block">
+                CONTRASEÑA{sede ? ` DE ${sede.name.toUpperCase()}` : ''}
+              </label>
+              <input
+                id="admin-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                autoFocus
+                className="pfield"
+              />
 
-            {!configured && (
-              <p className="mt-3 text-xs text-tomate">
-                El panel todavía no tiene contraseña configurada en el servidor.
-              </p>
-            )}
-            {error && <p className="mt-3 text-sm text-tomate">{error}</p>}
+              {!configured && (
+                <p className="mt-3 text-xs text-tomate">
+                  El panel todavía no tiene contraseña configurada en el servidor.
+                </p>
+              )}
+              {error && <p className="mt-3 text-sm font-semibold text-tomate">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={sending || !password}
-              className="btn w-full bg-tomate text-crema mt-5 disabled:opacity-50"
-            >
-              <span className="btn-layer bg-horno" />
-              <span className="btn-label">{sending ? 'ENTRANDO…' : 'ENTRAR'}</span>
-            </button>
+              <button
+                type="submit"
+                disabled={sending || !password}
+                className="btn w-full bg-tomate text-crema mt-5 disabled:opacity-50"
+              >
+                <span className="btn-layer bg-forno" />
+                <span className="btn-label">{sending ? 'ENTRANDO…' : 'ENTRAR'}</span>
+              </button>
+            </div>
           </form>
 
           {sedeEnRuta && !sede && (
-            <p className="mono normal-case text-crema/40 text-center mt-5">
+            <p className="mono normal-case text-carbon/50 text-center mt-5">
               Esa sede no existe. Entra con tu contraseña igualmente.
             </p>
           )}
         </div>
       </div>
+
+      <div className="checker" aria-hidden="true" />
     </div>
   )
 }

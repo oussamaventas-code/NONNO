@@ -225,14 +225,14 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
   return (
     <div className="fixed inset-0 z-50 bg-masa flex flex-col" role="dialog" aria-modal="true" aria-labelledby="editor-title">
       {/* Cabecera */}
-      <div className="flex items-center justify-between gap-3 border-b border-carbon/10 bg-crema px-4 sm:px-6 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-tomate bg-masa px-4 sm:px-6 py-3">
         <div>
-          <h2 id="editor-title" className="font-sans font-extrabold uppercase text-lg text-carbon">
+          <h2 id="editor-title" className="font-sans font-extrabold uppercase text-lg text-tomate">
             {editing ? `Editar ${order.ref}` : 'Nuevo pedido'}
           </h2>
           <p className="mono normal-case text-carbon/50">{location?.name}</p>
         </div>
-        <button onClick={onClose} className="w-11 h-11 rounded-full flex items-center justify-center text-carbon/60 hover:bg-carbon/5" aria-label="Cerrar sin guardar">
+        <button onClick={onClose} className="w-11 h-11 rounded-md border border-tomate/50 flex items-center justify-center text-tomate hover:bg-tomate/10" aria-label="Cerrar sin guardar">
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -246,8 +246,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                 key={c.id}
                 onClick={() => setCat(c.id)}
                 className={[
-                  'flex-shrink-0 rounded-full px-4 py-2 min-h-[44px] font-sans font-bold uppercase text-[0.72rem] border transition-colors',
-                  cat === c.id ? 'bg-carbon text-crema border-carbon' : 'text-carbon/60 border-carbon/15 hover:border-carbon/40',
+                  'ptab',
+                  cat === c.id ? 'is-on' : '',
                 ].join(' ')}
               >
                 {c.label}
@@ -260,7 +260,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
               <button
                 key={p.id}
                 onClick={() => addProduct(p.id)}
-                className="rounded-2xl border border-carbon/12 bg-crema p-3 text-left min-h-[4.5rem] hover:border-tomate active:scale-[0.98] transition-all"
+                className="pcard p-3 text-left min-h-[4.5rem] hover:bg-tomate/5 active:translate-x-px active:translate-y-px transition-colors"
               >
                 <span className="block font-sans font-bold text-sm text-carbon leading-tight">{p.name}</span>
                 <span className="block mono normal-case text-carbon/55 mt-1">{price(priceOf(p))}</span>
@@ -270,7 +270,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
         </section>
 
         {/* ── Ticket ────────────────────────────────────────────── */}
-        <aside className="min-h-0 overflow-y-auto border-t lg:border-t-0 lg:border-l border-carbon/10 bg-crema p-4 sm:p-5 flex flex-col gap-5">
+        <aside className="min-h-0 overflow-y-auto border-t lg:border-t-0 lg:border-l border-tomate/25 bg-crema p-4 sm:p-5 flex flex-col gap-5">
           {!editing && locationIds.length > 1 && (
             <div className="flex gap-2">
               {locationIds.map((id) => (
@@ -278,8 +278,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                   key={id}
                   onClick={() => { setLocId(id); if (!getLocation(id).services.delivery) setMode('pickup') }}
                   className={[
-                    'flex-1 rounded-xl border px-3 py-2 text-sm font-semibold',
-                    locId === id ? 'border-tomate bg-tomate/5 text-carbon' : 'border-carbon/12 text-carbon/60',
+                    'flex-1 rounded-md border px-3 py-2 text-sm font-semibold',
+                    locId === id ? 'border-tomate bg-tomate/5 text-carbon' : 'border-tomate/50 text-carbon/60',
                   ].join(' ')}
                 >
                   {getLocation(id).name}
@@ -298,8 +298,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                   key={id}
                   onClick={() => setChannel(id)}
                   className={[
-                    'flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold',
-                    channel === id ? 'border-carbon bg-carbon text-crema' : 'border-carbon/12 text-carbon/60',
+                    'flex items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold',
+                    channel === id ? 'border-tomate bg-tomate text-masa' : 'border-tomate/50 text-tomate',
                   ].join(' ')}
                 >
                   <Icon className="w-4 h-4" /> {label}
@@ -310,15 +310,15 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
 
           {/* Líneas */}
           <div>
-            <p className="mono text-carbon/50 mb-2">PEDIDO</p>
+            <p className="mono text-tomate mb-2">PEDIDO</p>
             {lines.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-carbon/15 px-4 py-6 text-center text-sm text-carbon/45">
+              <p className="rounded-md border border-dashed border-tomate/50 px-4 py-6 text-center text-sm text-carbon/45">
                 Toca productos de la carta para añadirlos.
               </p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {lines.map((l) => (
-                  <li key={l.id} className="rounded-2xl border border-carbon/10 bg-white/60">
+                  <li key={l.id} className="rounded-md border border-tomate/25 bg-masa">
                     <div className="flex items-start gap-2 p-3">
                       <div className="flex-1 min-w-0">
                         <p className="font-sans font-bold text-sm text-carbon">{l.name}</p>
@@ -331,19 +331,19 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                       </div>
                       <span className="mono text-carbon/70 whitespace-nowrap">{price(lineTotal(l))}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-2 border-t border-carbon/8 px-2 py-1.5">
+                    <div className="flex items-center justify-between gap-2 border-t border-tomate/25 px-2 py-1.5">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => setQty(l.id, l.qty - 1)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-carbon/5" aria-label="Quitar una">
+                        <button onClick={() => setQty(l.id, l.qty - 1)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-tomate/10" aria-label="Quitar una">
                           {l.qty === 1 ? <Trash2 className="w-4 h-4 text-tomate" /> : <Minus className="w-4 h-4" />}
                         </button>
                         <span className="w-6 text-center font-bold text-carbon">{l.qty}</span>
-                        <button onClick={() => setQty(l.id, l.qty + 1)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-carbon/5" aria-label="Añadir una">
+                        <button onClick={() => setQty(l.id, l.qty + 1)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-tomate/10" aria-label="Añadir una">
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
                       <button
                         onClick={() => setOpenLine(openLine === l.id ? null : l.id)}
-                        className="mono normal-case flex items-center gap-1.5 rounded-full px-3 py-1.5 text-carbon/70 hover:bg-carbon/5"
+                        className="mono normal-case flex items-center gap-1.5 rounded-md px-3 py-1.5 text-carbon/70 hover:bg-tomate/10"
                       >
                         <SlidersHorizontal className="w-3.5 h-3.5" /> {openLine === l.id ? 'Cerrar' : 'Ajustar'}
                       </button>
@@ -357,7 +357,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
 
           {/* Cliente */}
           <div className="flex flex-col gap-3">
-            <p className="mono text-carbon/50">CLIENTE</p>
+            <p className="mono text-tomate">CLIENTE</p>
             <Input label="Nombre" value={customer.name} onChange={(v) => patchCustomer({ name: v })} />
             <Input
               label={channel === 'mostrador' && mode === 'pickup' ? 'Teléfono (opcional)' : 'Teléfono'}
@@ -375,8 +375,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                   key={m.id}
                   onClick={() => setMode(m.id)}
                   className={[
-                    'rounded-xl border px-3 py-2.5 text-sm font-semibold',
-                    mode === m.id ? 'border-tomate bg-tomate/5 text-carbon' : 'border-carbon/12 text-carbon/60',
+                    'rounded-md border px-3 py-2.5 text-sm font-semibold',
+                    mode === m.id ? 'border-tomate bg-tomate/5 text-carbon' : 'border-tomate/50 text-carbon/60',
                   ].join(' ')}
                 >
                   {m.label}
@@ -391,7 +391,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
           </div>
 
           {/* Totales y hora */}
-          <div className="rounded-2xl bg-carbon/5 p-4 flex flex-col gap-1.5 text-sm">
+          <div className="rounded-md bg-carbon/5 p-4 flex flex-col gap-1.5 text-sm">
             {(totals.discount > 0 || totals.deliveryFee > 0 || totals.pointsDiscount > 0) && (
               <Row label="Subtotal" value={price(totals.subtotal)} />
             )}
@@ -430,8 +430,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                       key={m}
                       onClick={() => setMethod(m)}
                       className={[
-                        'rounded-xl border px-3 py-2 text-sm font-semibold capitalize',
-                        method === m ? 'border-carbon bg-carbon text-crema' : 'border-carbon/12 text-carbon/60',
+                        'rounded-md border px-3 py-2 text-sm font-semibold capitalize',
+                        method === m ? 'border-tomate bg-tomate text-masa' : 'border-tomate/50 text-tomate',
                       ].join(' ')}
                     >
                       {m}
@@ -443,11 +443,11 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
           )}
 
           {error && (
-            <p className="rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">{error}</p>
+            <p className="rounded-md border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">{error}</p>
           )}
 
           {offline && (
-            <div className="rounded-2xl border-2 border-horno bg-horno/10 p-4">
+            <div className="rounded-md border-2 border-horno bg-horno/10 p-4">
               <p className="text-sm font-semibold text-carbon">Plan B: trabajar sin conexión</p>
               <p className="mt-1 text-sm text-carbon/70">
                 Se imprime la comanda para cocina y el pedido se guarda en este equipo. Se enviará solo al sistema en cuanto vuelva la conexión.
@@ -481,12 +481,12 @@ function LineOptions({ line, onChange }) {
   const product = getProduct(line.productId)
   const toggle = (list, value) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
   const chip = (active, tone) => [
-    'rounded-full border px-3 py-1.5 text-xs transition-colors',
-    active ? tone : 'border-carbon/12 text-carbon/60',
+    'rounded-md border px-3 py-1.5 text-xs transition-colors',
+    active ? tone : 'border-tomate/50 text-carbon/60',
   ].join(' ')
 
   return (
-    <div className="border-t border-carbon/8 p-3 flex flex-col gap-3">
+    <div className="border-t border-tomate/25 p-3 flex flex-col gap-3">
       {product.portions?.length > 1 && (
         <div className="flex gap-2">
           {product.portions.map((p) => (
@@ -547,7 +547,7 @@ function NoteInput({ value, onCommit }) {
       onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
       placeholder='Nota para cocina: "bien hecha", "cortada"…'
       maxLength={140}
-      className="w-full rounded-xl border border-carbon/12 bg-white/70 px-3 py-2 text-sm outline-none focus:border-tomate"
+      className="pfield !py-2 text-sm"
     />
   )
 }
@@ -560,7 +560,7 @@ function Input({ label, value, onChange, type = 'text' }) {
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-xl border border-carbon/12 bg-white/70 px-3 py-2.5 text-sm text-carbon outline-none focus:border-tomate"
+        className="mt-1 pfield !py-2 text-sm"
       />
     </label>
   )

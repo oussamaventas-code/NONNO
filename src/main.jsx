@@ -19,11 +19,6 @@ const ruta = window.location.pathname.replace(/\/+$/, '')
 const seccion = ['/admin', '/pantalla'].find((b) => ruta === b || ruta.startsWith(`${b}/`))
 const sedeEnRuta = seccion && ruta.startsWith(`${seccion}/`) ? ruta.slice(seccion.length + 1) : null
 
-/* El panel de cocina conserva la paleta clara de siempre (crema + tomate):
-   se lee mejor con el horno y el papel de los tickets. El neón es solo
-   para la web pública. */
-if (seccion) document.documentElement.classList.add('tema-clasico')
-
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     {seccion ? (

@@ -326,17 +326,14 @@ export default function AdminPanel({ scope, onSignedOut }) {
   return (
     <div className="min-h-screen bg-masa">
       {/* Cinta de sede: imposible confundir de cocina */}
-      {sede && (
-        <div className={`${sede.banda} ${sede.texto} py-2 text-center`}>
-          <p className="mono normal-case tracking-[0.2em] font-bold">
-            {{ mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO', facturacion: 'FACTURACIÓN' }[view] || 'COCINA'} · {sede.nombre.toUpperCase()}
-          </p>
-        </div>
-      )}
+      <p className={`${sede?.banda || 'bg-tomate'} ${sede?.texto || 'text-crema'} text-center font-sans font-medium uppercase text-[0.72rem] sm:text-sm h-9 leading-9 px-3 truncate`}>
+        {{ mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO', facturacion: 'FACTURACIÓN' }[view] || 'COCINA'} · {sede ? sede.nombre : 'TODAS LAS SEDES'}
+      </p>
+      <div className="checker" aria-hidden="true" />
 
       {/* Plan B visible: nadie trabaja creyendo que el panel está al día */}
       {offlineSince && (
-        <div className="bg-carbon text-crema px-4 py-3 text-center" role="alert">
+        <div className="bg-forno text-masa px-4 py-3 text-center" role="alert">
           <p className="font-sans font-bold text-sm">
             SIN CONEXIÓN CON EL SERVIDOR desde las {new Date(offlineSince).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
           </p>
@@ -347,7 +344,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
         </div>
       )}
       {queue.length > 0 && (
-        <div className="bg-horno text-crema px-4 py-2 text-sm">
+        <div className="bg-queso text-carbon border-y border-tomate px-4 py-2 text-sm">
           <p className="font-semibold text-center">
             {queue.filter((e) => !e.error).length > 0 && `${queue.filter((e) => !e.error).length} pedido(s) del mostrador esperando a enviarse. `}
           </p>
@@ -365,20 +362,29 @@ export default function AdminPanel({ scope, onSignedOut }) {
         </div>
       )}
 
-      <header className="sticky top-0 z-30 bg-crema/95 backdrop-blur-md border-b border-carbon/10">
+      <header className="sticky top-0 z-30 bg-masa border-b border-tomate">
         <div className="shell py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <p className="font-sans font-extrabold uppercase text-sm tracking-tight text-carbon">
-                LA PIZZA DE <em className="font-serif italic font-semibold">NONNO</em>
-              </p>
-              <p className="mono text-carbon/45 mt-0.5">
-                {sede ? sede.nombre.toUpperCase() : 'TODAS LAS SEDES'}
-              </p>
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo-nonno.png"
+                alt=""
+                width="56"
+                height="56"
+                className="h-12 w-12 rounded-full object-cover border border-tomate"
+              />
+              <div>
+                <p className="font-sans font-extrabold uppercase text-base tracking-tight text-tomate leading-none">
+                  LA PIZZA DE <em className="font-serif italic font-semibold">NONNO</em>
+                </p>
+                <p className="mono text-carbon/55 mt-1.5">
+                  {sede ? sede.nombre.toUpperCase() : 'TODAS LAS SEDES'}
+                </p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex flex-wrap rounded-3xl border border-carbon/15 p-1" role="tablist" aria-label="Vista del panel">
+              <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Vista del panel">
                 {[
                   { id: 'cocina', label: 'Cocina', Icon: ChefHat },
                   { id: 'mostrador', label: 'Mostrador', Icon: Store },
@@ -392,10 +398,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
                     role="tab"
                     aria-selected={view === id}
                     onClick={() => changeView(id)}
-                    className={[
-                      'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors',
-                      view === id ? 'bg-carbon text-crema' : 'text-carbon/60',
-                    ].join(' ')}
+                    className="ptab"
                   >
                     <Icon className="w-4 h-4" /> {label}
                   </button>
@@ -408,8 +411,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
                   aria-pressed={autoPrint}
                   title="Imprime la comanda de cada pedido nuevo o modificado en la impresora de este equipo"
                   className={[
-                    'mono normal-case flex items-center gap-1.5 rounded-full px-3 py-2 border transition-colors',
-                    autoPrint ? 'bg-albahaca text-crema border-albahaca' : 'border-carbon/15 text-carbon/70',
+                    'ptab soft',
+                    autoPrint ? '!bg-albahaca !border-albahaca !text-masa' : '',
                   ].join(' ')}
                 >
                   <Printer className="w-3.5 h-3.5" /> {autoPrint ? 'Comandas automáticas' : 'Comandas manuales'}
@@ -418,7 +421,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
 
               <button
                 onClick={load}
-                className="mono normal-case flex items-center gap-1.5 rounded-full border border-carbon/15 px-3 py-2 text-carbon/70 hover:border-carbon/40 transition-colors"
+                className="ptab"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Actualizar
               </button>
@@ -426,20 +429,20 @@ export default function AdminPanel({ scope, onSignedOut }) {
               {pushState !== 'activo' && pushState !== 'no-disponible' && (
                 <button
                   onClick={enablePush}
-                  className="mono normal-case flex items-center gap-1.5 rounded-full bg-carbon px-3 py-2 text-crema"
+                  className="ptab !bg-forno !border-forno !text-masa"
                 >
                   <BellOff className="w-3.5 h-3.5" /> Activar avisos
                 </button>
               )}
               {pushState === 'activo' && (
-                <span className="mono normal-case flex items-center gap-1.5 rounded-full border border-albahaca/40 px-3 py-2 text-albahaca">
+                <span className="ptab !border-albahaca !text-albahaca pointer-events-none">
                   <Bell className="w-3.5 h-3.5" /> Avisos activos
                 </span>
               )}
 
               <button
                 onClick={handleLogout}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-carbon/50 hover:bg-carbon/5 transition-colors"
+                className="w-10 h-10 rounded-md border border-tomate/50 flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors"
                 aria-label="Salir"
               >
                 <LogOut className="w-4 h-4" />
@@ -472,8 +475,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
                   onClick={() => toggleStore(locId, !abierta)}
                   disabled={busy}
                   className={[
-                    'mono normal-case flex items-center gap-1.5 rounded-full px-3 py-2 border transition-colors disabled:opacity-50',
-                    abierta ? 'bg-albahaca text-crema border-albahaca' : 'bg-tomate/10 text-tomate border-tomate/30',
+                    'ptab disabled:opacity-50',
+                    abierta ? '!bg-albahaca !border-albahaca !text-masa' : 'bg-tomate/10',
                   ].join(' ')}
                 >
                   <Power className="w-3.5 h-3.5" />
@@ -486,7 +489,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
 
           {/* Cambiar de sede solo lo puede hacer la dirección */}
           {esDireccion && (
-            <div className="mt-4 hide-scrollbar flex gap-2 overflow-x-auto border-b border-carbon/10 pb-3">
+            <div className="mt-4 hide-scrollbar flex gap-2 overflow-x-auto border-b border-tomate/25 pb-3">
               {[{ id: 'todas', label: 'TODAS LAS SEDES' },
                 ...LOCATIONS.map((l) => ({ id: l.id, label: l.name.toUpperCase() }))
               ].map((s) => (
@@ -494,10 +497,10 @@ export default function AdminPanel({ scope, onSignedOut }) {
                   key={s.id}
                   onClick={() => setSedeVista(s.id)}
                   className={[
-                    'flex-shrink-0 rounded-full px-4 py-2 min-h-[40px] font-sans font-bold uppercase text-[0.7rem] tracking-wide border transition-colors',
+                    'ptab soft',
                     sedeVista === s.id
-                      ? 'bg-tomate text-crema border-tomate'
-                      : 'bg-transparent text-carbon/60 border-carbon/15 hover:border-carbon/40',
+                      ? 'is-on'
+                      : '',
                   ].join(' ')}
                 >
                   {s.label}
@@ -512,10 +515,10 @@ export default function AdminPanel({ scope, onSignedOut }) {
                 key={f.id}
                 onClick={() => setFilter(f.id)}
                 className={[
-                  'flex-shrink-0 rounded-full px-4 py-2 min-h-[40px] font-sans font-bold uppercase text-[0.7rem] tracking-wide border transition-colors',
+                  'ptab soft',
                   filter === f.id
-                    ? 'bg-carbon text-crema border-carbon'
-                    : 'bg-transparent text-carbon/60 border-carbon/15 hover:border-carbon/40',
+                    ? 'is-on'
+                    : '',
                 ].join(' ')}
               >
                 {f.label}
@@ -527,7 +530,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
 
       <main className="shell py-8">
         {error && (
-          <p className="mb-6 rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">
+          <p className="palert mb-6">
             {error}
           </p>
         )}
@@ -553,10 +556,10 @@ export default function AdminPanel({ scope, onSignedOut }) {
           />
         ) : visible.length === 0 ? (
           <div className="py-20 text-center">
-            <span className="inline-flex w-16 h-16 rounded-full bg-carbon/5 items-center justify-center text-carbon/25 mb-4">
+            <span className="inline-flex w-16 h-16 rounded-full border border-tomate/50 items-center justify-center text-tomate/60 mb-4">
               <Pizza className="w-7 h-7" strokeWidth={1.5} />
             </span>
-            <p className="font-serif italic text-lg text-carbon/60">
+            <p className="font-serif italic font-semibold text-xl text-tomate">
               {filter === 'activos' ? 'Ningún pedido pendiente ahora mismo.' : 'Nada por aquí.'}
             </p>
             <p className="mono text-carbon/35 mt-2">EL PANEL SE ACTUALIZA SOLO</p>

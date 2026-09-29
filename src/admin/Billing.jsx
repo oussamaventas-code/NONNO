@@ -59,8 +59,8 @@ export default function Billing({ locationId, onError }) {
             key={id}
             onClick={() => setPreset(id)}
             className={[
-              'rounded-full px-4 py-2 min-h-[40px] font-sans font-bold uppercase text-[0.7rem] tracking-wide border transition-colors',
-              preset === id ? 'bg-carbon text-crema border-carbon' : 'text-carbon/60 border-carbon/15 hover:border-carbon/40',
+              'ptab soft',
+              preset === id ? 'is-on' : '',
             ].join(' ')}
           >
             {p.label}
@@ -69,8 +69,8 @@ export default function Billing({ locationId, onError }) {
         <button
           onClick={() => setPreset('custom')}
           className={[
-            'rounded-full px-4 py-2 min-h-[40px] font-sans font-bold uppercase text-[0.7rem] tracking-wide border transition-colors',
-            preset === 'custom' ? 'bg-carbon text-crema border-carbon' : 'text-carbon/60 border-carbon/15 hover:border-carbon/40',
+            'ptab soft',
+            preset === 'custom' ? 'is-on' : '',
           ].join(' ')}
         >
           PERSONALIZADO
@@ -82,7 +82,7 @@ export default function Billing({ locationId, onError }) {
               value={custom.from}
               max={custom.to}
               onChange={(e) => setCustom((c) => ({ ...c, from: e.target.value }))}
-              className="rounded-xl border border-carbon/15 bg-white/70 px-3 py-2 text-sm text-carbon outline-none focus:border-tomate"
+              className="pfield !w-auto !py-2 text-sm"
             />
             <span className="text-carbon/40">—</span>
             <input
@@ -91,7 +91,7 @@ export default function Billing({ locationId, onError }) {
               min={custom.from}
               max={today}
               onChange={(e) => setCustom((c) => ({ ...c, to: e.target.value }))}
-              className="rounded-xl border border-carbon/15 bg-white/70 px-3 py-2 text-sm text-carbon outline-none focus:border-tomate"
+              className="pfield !w-auto !py-2 text-sm"
             />
           </div>
         )}
@@ -116,8 +116,8 @@ export default function Billing({ locationId, onError }) {
           </div>
 
           {/* Por día */}
-          <section className="rounded-card border border-carbon/10 bg-crema p-5">
-            <p className="mono text-carbon/50 mb-4">POR DÍA</p>
+          <section className="pcard p-5">
+            <p className="mono text-tomate mb-4">POR DÍA</p>
             {data.byDay.length === 0 ? (
               <p className="text-carbon/45 text-sm py-4">Sin pedidos en este rango.</p>
             ) : (
@@ -125,8 +125,8 @@ export default function Billing({ locationId, onError }) {
                 {data.byDay.map((d) => (
                   <div key={d.day} className="flex items-center gap-3">
                     <span className="mono normal-case text-carbon/55 w-24 flex-shrink-0 capitalize">{longDay(d.day)}</span>
-                    <div className="flex-1 h-6 rounded-full bg-carbon/5 overflow-hidden">
-                      <div className="h-full rounded-full bg-tomate/70" style={{ width: `${Math.max(3, (d.revenue / maxDay) * 100)}%` }} />
+                    <div className="flex-1 h-6 rounded-md border border-tomate/40 bg-tomate/5 overflow-hidden">
+                      <div className="h-full bg-tomate" style={{ width: `${Math.max(3, (d.revenue / maxDay) * 100)}%` }} />
                     </div>
                     <span className="font-sans font-bold text-carbon w-24 text-right">{price(d.revenue)}</span>
                     <span className="mono normal-case text-carbon/40 w-16 text-right">{d.orders} ped.</span>
@@ -176,8 +176,8 @@ export default function Billing({ locationId, onError }) {
 
 function Stat({ label, value, tone, big, small }) {
   return (
-    <div className="rounded-card border border-carbon/10 bg-crema p-4">
-      <p className="mono text-carbon/45 text-[0.65rem]">{label}</p>
+    <div className="pcard p-4">
+      <p className="mono text-tomate text-[0.65rem]">{label}</p>
       <p className={[big ? 'text-2xl' : small ? 'text-sm' : 'text-xl', 'font-serif italic font-semibold mt-1', tone].join(' ')}>
         {value}
       </p>
@@ -188,8 +188,8 @@ function Stat({ label, value, tone, big, small }) {
 function Breakdown({ title, rows, footnote }) {
   const total = rows.reduce((sum, r) => sum + r.revenue, 0) || 1
   return (
-    <section className="rounded-card border border-carbon/10 bg-crema p-5">
-      <p className="mono text-carbon/50 mb-4 flex items-center gap-1.5">
+    <section className="pcard p-5">
+      <p className="mono text-tomate mb-4 flex items-center gap-1.5">
         <Euro className="w-3.5 h-3.5" /> {title}
       </p>
       <div className="flex flex-col gap-3">
