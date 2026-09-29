@@ -10,7 +10,7 @@ import { useMenuOverrides } from '../hooks/useMenuOverrides'
 import Billing from './Billing'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
 import { printTicket } from './printTicket'
-import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus } from './api'
+import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus, testSms } from './api'
 import { useOrderAlert } from './useOrderAlert'
 import KitchenBoard from './KitchenBoard'
 import { price } from '../lib/format'
@@ -111,6 +111,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmClose, setConfirmClose] = useState(null)
   const [undo, setUndo] = useState(null)
+  const [testPhone, setTestPhone] = useState('')
+  const [testResult, setTestResult] = useState(null)
   const [autoPrint, setAutoPrint] = useState(() => readPref(PREF_AUTOPRINT, false))
 
   /* Carta corregida (precios, ocultos, agotados): el mostrador vende con ella.
@@ -601,6 +603,39 @@ export default function AdminPanel({ scope, onSignedOut }) {
                       <BellOff className="w-4 h-4" /> Activar avisos del navegador
                     </button>
                   )}
+                  {/* SMS de prueba: para comprobar al abrir que los avisos salen */}
+                  <div className="rounded-md border border-tomate/40 p-2.5">
+                    <p className="mono normal-case text-carbon/60 mb-1.5">Probar los SMS a clientes</p>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        value={testPhone}
+                        onChange={(e) => { setTestPhone(e.target.value); setTestResult(null) }}
+                        placeholder="Tu móvil"
+                        aria-label="Móvil para el SMS de prueba"
+                        className="pfield !py-2 text-sm"
+                      />
+                      <button
+                        onClick={async () => {
+                          setTestResult({ sending: true })
+                          try { setTestResult(await testSms(testPhone)) } catch (err) { setTestResult({ ok: false, error: err.message }) }
+                        }}
+                        disabled={!testPhone.trim() || testResult?.sending}
+                        className="ptab soft disabled:opacity-50"
+                      >
+                        Enviar
+                      </button>
+                    </div>
+                    {testResult && !testResult.sending && (
+                      <p className={['mt-1.5 text-xs font-semibold', testResult.ok ? 'text-albahaca' : 'text-tomate'].join(' ')}>
+                        {testResult.ok
+                          ? `Enviado por ${testResult.provider === 'twilio' ? 'Twilio' : 'el Android del local'}. Mira el móvil.`
+                          : testResult.error || (testResult.skipped === 'no-es-movil' ? 'Ese número no es un móvil.' : 'No ha salido.')}
+                      </p>
+                    )}
+                    {testResult?.sending && <p className="mt-1.5 text-xs text-carbon/60">Enviando…</p>}
+                  </div>
                   <button onClick={toggleFullscreen} className="ptab w-full justify-start">
                     <Maximize className="w-4 h-4" /> Pantalla completa
                   </button>

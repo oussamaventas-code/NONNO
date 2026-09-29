@@ -1,6 +1,7 @@
 import { db, isConfigured } from './_lib/supabase.js'
 import { requireSession } from './_lib/auth.js'
 import { pushConfigured } from './_lib/push.js'
+import { sendSms, smsProvider, mobileNumber } from './_lib/sms.js'
 
 /**
  * Suscripción del panel a las notificaciones.
@@ -21,6 +22,16 @@ export default async function handler(req, res) {
   }
   const session = requireSession(req, res)
   if (!session) return
+
+  /* SMS de prueba desde el panel (menú ⚙): comprueba que la vía de envío
+     funciona sin tener que hacer un pedido falso. */
+  if (req.method === 'POST' && req.body?.action === 'test-sms') {
+    const provider = smsProvider()
+    if (!provider) return res.status(200).json({ ok: false, error: 'No hay ninguna vía de SMS configurada en Vercel (ni Twilio ni el Android).' })
+    if (!mobileNumber(req.body.phone)) return res.status(400).json({ ok: false, error: 'Escribe un móvil español (6XX o 7XX).' })
+    const result = await sendSms(req.body.phone, 'La Pizza de Nonno: SMS de prueba. Si lo lees, los avisos a clientes funcionan.')
+    return res.status(200).json({ ...result, provider })
+  }
 
   if (req.method === 'POST') {
     const { subscription, label } = req.body || {}
