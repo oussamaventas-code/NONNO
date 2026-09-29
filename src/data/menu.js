@@ -124,7 +124,7 @@ const calzone = (...args) => pizza('calzones', ...args)
 
 export const PRODUCTS = [
   /* ── PIZZAS CLÁSICAS ───────────────────────────────────────── */
-  clasica('margarita', 'Margarita', ['Tomate', 'Mozzarella'], 9.5,
+  clasica('margarita', 'Margarita', ['Tomate', 'Mozzarella', 'Albahaca'], 9.5,
     { image: PHOTO.margherita, vegetarian: true }),
   clasica('prosciutto', 'Prosciutto', ['Tomate', 'Mozzarella', 'Jamón cocido'], 10.5,
     { image: PHOTO.prosciutto }),
@@ -140,7 +140,7 @@ export const PRODUCTS = [
     name: 'A tu gusto',
     description: 'Tomate y mozzarella, más los toppings que elijas (+1 € cada uno).',
     ingredients: ['Tomate', 'Mozzarella'],
-    image: PHOTO.slicePull,
+    image: PHOTO.aTuGusto,
     price: 9.5,
     extras: TOPPINGS,
     badge: 'TÚ ELIGES',
@@ -163,14 +163,14 @@ export const PRODUCTS = [
   especial('nonno', 'Nonno', [
     'Tomate', 'Mozzarella', 'Rodajas de tomate fresco', 'Pimiento italiano',
     'Alcaparras', 'Cebolla', 'Champiñón fresco', 'Aceite de oliva',
-  ], 11.9, { image: PHOTO.speciale, badge: 'LA DE LA CASA', featured: true, vegetarian: true }),
+  ], 11.9, { image: PHOTO.nonno, badge: 'LA DE LA CASA', featured: true, vegetarian: true }),
   especial('dulce-de-cabra', 'Dulce de cabra', ['Tomate', 'Mozzarella', 'Queso de cabra', 'Mermelada de tomate'], 11.9,
     { image: PHOTO.dulceDeCabra, vegetarian: true }),
   especial('kebab', 'Kebab', ['Tomate', 'Mozzarella', 'Carne pollo kebab', 'Salsa blanca casera'], 11.9,
     { image: PHOTO.kebabPizza }),
   especial('la-jefa', 'La Jefa', [
     'Tomate', 'Mozzarella', 'Jamón cocido', 'Alcachofas', 'Aceitunas negras', 'Anchoas',
-  ], 11.9, { image: PHOTO.vegetale }),
+  ], 11.9, { image: PHOTO.laJefa }),
   especial('chato-y-cabra', 'Chato y cabra', [
     'Tomate', 'Mozzarella', 'Sobrasada de chato murciano', 'Queso de cabra', 'Miel',
   ], 11.9, { image: PHOTO.chatoYCabra }),
@@ -179,15 +179,15 @@ export const PRODUCTS = [
   ], 12.9, { image: PHOTO.mexicana, spicy: true }),
   especial('iberica', 'Ibérica', [
     'Tomate', 'Mozzarella', 'Tomate fresco', 'Jamón serrano', 'Queso parmesano', 'Módena',
-  ], 12.9, { image: PHOTO.bufala }),
+  ], 12.9, { image: PHOTO.iberica }),
   especial('carbonara', 'Carbonara tradicional', [
     'Mozzarella', 'Guanciale', 'Cebolla', 'Champiñón fresco', 'Pimienta',
-  ], 12.9, { image: PHOTO.bianca }),
+  ], 12.9, { image: PHOTO.carbonara }),
   especial('carnivora', 'Carnívora', [
     'Tomate', 'Mozzarella', 'Jamón cocido', 'Bacon', 'Carne de ternera', 'Pollo', 'Pepperoni',
-  ], 12.9, { image: PHOTO.rustica }),
+  ], 12.9, { image: PHOTO.carnivora }),
   especial('trufada', 'Trufada', ['Tomate', 'Mozzarella', 'Nueces', 'Champiñón fresco', 'Salsa de trufa'], 12.9,
-    { image: PHOTO.tartufo, vegetarian: true }),
+    { image: PHOTO.trufada, vegetarian: true }),
   especial('marinera', 'Marinera', ['Tomate', 'Mozzarella', 'Gambas', 'Calamares', 'Salsa verde casera'], 12.9,
     { image: PHOTO.marinera }),
   especial('barbacoa', 'Barbacoa', [

@@ -16,11 +16,26 @@ const UNSPLASH = 'https://images.unsplash.com/photo-'
  * @param {number} q   calidad 1-100
  */
 export const img = (id, w = 1200, q = 80) =>
-  `${UNSPLASH}${id}?w=${w}&q=${q}&auto=format&fit=crop`
+  isOwn(id)
+    ? ownSrc(id, w)
+    : `${UNSPLASH}${id}?w=${w}&q=${q}&auto=format&fit=crop`
 
 /** srcSet responsive para las imágenes grandes (hero, editorial, destacado) */
 export const srcSet = (id, widths = [640, 960, 1400, 1920]) =>
-  widths.map((w) => `${img(id, w)} ${w}w`).join(', ')
+  isOwn(id)
+    ? OWN_WIDTHS.map((w) => `${ownSrc(id, w)} ${w}w`).join(', ')
+    : widths.map((w) => `${img(id, w)} ${w}w`).join(', ')
+
+/* ── Fotografía propia ───────────────────────────────────────────
+   Los ids 'own:nombre' apuntan a /public/fotos/pizzas/nombre-{ancho}.webp,
+   exportadas en OWN_WIDTHS. Se sirve la menor que cubra el ancho pedido. */
+const OWN = 'own:'
+const OWN_WIDTHS = [600, 1200]
+const isOwn = (id) => typeof id === 'string' && id.startsWith(OWN)
+const ownSrc = (id, w) => {
+  const width = OWN_WIDTHS.find((x) => x >= w) || OWN_WIDTHS[OWN_WIDTHS.length - 1]
+  return `/fotos/pizzas/${id.slice(OWN.length)}-${width}.webp`
+}
 
 /* ── IDs verificados ─────────────────────────────────────────── */
 export const PHOTO = {
@@ -42,29 +57,36 @@ export const PHOTO = {
   venueSantoAngel: '1590534247854-e97d5e3feef6',
 
   // Pizzas
-  margherita: '1595854341625-f33ee10dbf94',
-  diavola: '1534308983496-4fabb1a015ee',
-  prosciutto: '1600628421055-4d30de868b8f',
-  formaggi: '1548369937-47519962c11a',
+  margherita: 'own:margarita',
+  diavola: 'own:pepperoni',
+  prosciutto: 'own:prosciutto',
+  formaggi: 'own:todo-al-queso',
   vegetale: '1593560708920-61dd98c46a4e',
   speciale: '1574071318508-1cdbab80d002',
-  funghi: '1613564834361-9436948817d1',
+  funghi: 'own:fungi',
   bufala: '1565299624946-b28f40a0ae38',
   bianca: '1571997478779-2adcbbe9ab2f',
   tartufo: '1552539618-7eec9b4d1796',
   rustica: '1594007654729-407eedc4be65',
-  hawaiana: '1597715469889-dd75fe4a1765',
-  salami: '1628840042765-356cda07504e',
-  braulia: '1692737580563-7ba2d896f0f6', // jamón y champiñón
-  atunazo: '1632641730239-fd127af7d679',
-  bacon: '1782402481918-3f558edff05e',
-  guiris: '1627819873302-998f1bdaa562', // huevo y champiñón
-  dulceDeCabra: '1627461985459-51600559fffe',
-  kebabPizza: '1644648965270-55f11e0d7709',
-  chatoYCabra: '1584782930656-e2bc1e803fc7',
-  mexicana: '1657799831232-e9548089a643',
-  marinera: '1763049078203-a13163b549d9',
-  barbacoa: '1734769484424-36b99dd84818',
+  hawaiana: 'own:hawaiana',
+  salami: 'own:salami',
+  braulia: 'own:braulia',
+  atunazo: 'own:atunazo',
+  bacon: 'own:bacon',
+  guiris: 'own:guiris',
+  aTuGusto: 'own:a-tu-gusto',
+  dulceDeCabra: 'own:dulce-de-cabra',
+  kebabPizza: 'own:kebab',
+  chatoYCabra: 'own:chato-y-cabra',
+  mexicana: 'own:mexicana',
+  marinera: 'own:marinera',
+  trufada: 'own:trufada',
+  carnivora: 'own:carnivora',
+  carbonara: 'own:carbonara',
+  iberica: 'own:iberica',
+  laJefa: 'own:la-jefa',
+  nonno: 'own:nonno',
+  barbacoa: 'own:barbacoa',
   calzone: '1753656681797-3234c89d6d4d',
 
   // Entrantes
