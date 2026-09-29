@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Store, Phone, Printer } from 'lucide-react'
+import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Store, Phone, Printer, Beef, Salad, Milk, Droplets, Fish, Egg } from 'lucide-react'
 import { CATEGORIES, productsByCategory, getProduct, getExtra, priceOf } from '../data/menu'
 import { getLocation } from '../data/locations'
 import { buildLine, lineTotal } from '../lib/pricing'
@@ -8,6 +8,7 @@ import { ovenUnits, hourOf } from '../lib/kitchenSlots'
 import { price } from '../lib/format'
 import { deliveryTiers, deliveryProblem } from '../lib/delivery'
 import DeliveryPicker from '../components/DeliveryPicker'
+import ProductImage from '../components/ProductImage'
 import { createOrder, editOrder, fetchSlots } from './api'
 import { enqueue, isConnectionError, newClientKey } from './offlineQueue'
 import { printTicket } from './printTicket'
@@ -255,15 +256,32 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
             ))}
           </div>
 
-          <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
             {productsByCategory(cat).map((p) => (
               <button
                 key={p.id}
                 onClick={() => addProduct(p.id)}
-                className="pcard p-3 text-left min-h-[4.5rem] hover:bg-tomate/5 active:translate-x-px active:translate-y-px transition-colors"
+                className="pcard overflow-hidden text-left flex flex-col active:translate-x-px active:translate-y-px transition-transform hover:-translate-y-0.5"
               >
-                <span className="block font-sans font-bold text-sm text-carbon leading-tight">{p.name}</span>
-                <span className="block mono normal-case text-carbon/55 mt-1">{price(priceOf(p))}</span>
+                <span className="relative block aspect-[4/3] border-b border-tomate">
+                  <ProductImage
+                    image={p.image}
+                    category={p.category}
+                    alt=""
+                    width={400}
+                    className="absolute inset-0 w-full h-full !bg-queso/50"
+                    iconClassName="w-10 h-10"
+                  />
+                  <span className="absolute bottom-1.5 right-1.5 rounded-md bg-tomate px-2 py-1 font-mono text-xs font-bold leading-none text-masa">
+                    {price(priceOf(p))}
+                  </span>
+                </span>
+                <span className="block p-2.5">
+                  <span className="block font-sans font-extrabold uppercase text-sm text-tomate leading-tight">{p.name}</span>
+                  <span className="mt-1 block text-xs leading-snug text-carbon/70 line-clamp-2">
+                    {p.ingredients?.length ? p.ingredients.join(' · ') : p.description}
+                  </span>
+                </span>
               </button>
             ))}
           </div>
@@ -319,7 +337,15 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
               <ul className="flex flex-col gap-2">
                 {lines.map((l) => (
                   <li key={l.id} className="rounded-md border border-tomate/25 bg-masa">
-                    <div className="flex items-start gap-2 p-3">
+                    <div className="flex items-start gap-2.5 p-3">
+                      <ProductImage
+                        image={getProduct(l.productId)?.image}
+                        category={getProduct(l.productId)?.category}
+                        alt=""
+                        width={120}
+                        className="w-12 h-12 flex-shrink-0 rounded-md border border-tomate/40 !bg-queso/50"
+                        iconClassName="w-5 h-5"
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="font-sans font-bold text-sm text-carbon">{l.name}</p>
                         {l.sizeLabel && getProduct(l.productId)?.portions && (
@@ -476,21 +502,41 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
   )
 }
 
+/* Grupos de toppings, en el orden en que se piden en el mostrador */
+const TOPPING_GROUPS = [
+  { id: 'Carnes', label: 'Carnes', Icon: Beef },
+  { id: 'Verduras', label: 'Verduras', Icon: Salad },
+  { id: 'Quesos', label: 'Quesos', Icon: Milk },
+  { id: 'Salsas y toques', label: 'Salsas', Icon: Droplets },
+  { id: 'Del mar', label: 'Del mar', Icon: Fish },
+  { id: 'Otros', label: 'Otros', Icon: Egg },
+]
+
 /* Opciones de una línea: ración, quitar ingredientes, toppings, nota */
 function LineOptions({ line, onChange }) {
   const product = getProduct(line.productId)
   const toggle = (list, value) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
-  const chip = (active, tone) => [
-    'rounded-md border px-3 py-1.5 text-xs transition-colors',
-    active ? tone : 'border-tomate/50 text-carbon/60',
-  ].join(' ')
+
+  const extras = (product.extras || []).map(getExtra).filter(Boolean)
+  const groups = TOPPING_GROUPS
+    .map((g) => ({ ...g, items: extras.filter((e) => e.group === g.id) }))
+    .filter((g) => g.items.length)
+  const [groupId, setGroupId] = useState(groups[0]?.id)
+  const group = groups.find((g) => g.id === groupId) || groups[0]
+  /* Si todos cuestan lo mismo se dice una vez arriba y no en cada botón. */
+  const prices = new Set(extras.map((e) => e.price))
+  const uniform = prices.size === 1 ? [...prices][0] : null
 
   return (
-    <div className="border-t border-tomate/25 p-3 flex flex-col gap-3">
+    <div className="border-t border-tomate/25 p-3 flex flex-col gap-4">
       {product.portions?.length > 1 && (
         <div className="flex gap-2">
           {product.portions.map((p) => (
-            <button key={p.id} onClick={() => onChange({ portionId: p.id })} className={chip(line.portionId === p.id, 'border-tomate bg-tomate/10 text-carbon font-semibold')}>
+            <button
+              key={p.id}
+              onClick={() => onChange({ portionId: p.id })}
+              className={['ptab soft flex-1', line.portionId === p.id ? 'is-on' : ''].join(' ')}
+            >
               {p.label} · {price(p.price)}
             </button>
           ))}
@@ -499,12 +545,19 @@ function LineOptions({ line, onChange }) {
 
       {product.ingredients?.length > 0 && (
         <div>
-          <p className="text-[0.7rem] font-bold uppercase text-carbon/45 mb-1.5">Quitar (toca para quitar)</p>
+          <p className="mono text-tomate mb-2">QUITAR</p>
           <div className="flex flex-wrap gap-1.5">
             {product.ingredients.map((ing) => {
               const off = line.removed.includes(ing)
               return (
-                <button key={ing} onClick={() => onChange({ removed: toggle(line.removed, ing) })} className={chip(off, 'border-tomate bg-tomate/10 text-tomate font-bold line-through')}>
+                <button
+                  key={ing}
+                  onClick={() => onChange({ removed: toggle(line.removed, ing) })}
+                  className={[
+                    'rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors',
+                    off ? 'border-tomate bg-tomate/10 text-tomate line-through' : 'border-tomate/40 text-carbon/75',
+                  ].join(' ')}
+                >
                   {ing}
                 </button>
               )
@@ -513,16 +566,58 @@ function LineOptions({ line, onChange }) {
         </div>
       )}
 
-      {product.extras?.length > 0 && (
+      {groups.length > 0 && (
         <div>
-          <p className="text-[0.7rem] font-bold uppercase text-carbon/45 mb-1.5">Toppings</p>
-          <div className="flex flex-wrap gap-1.5">
-            {product.extras.map((id) => {
-              const extra = getExtra(id)
-              const on = line.extraIds.includes(id)
+          <div className="flex items-baseline justify-between mb-2">
+            <p className="mono text-tomate">TOPPINGS</p>
+            {uniform != null && <p className="mono normal-case text-carbon/50">+{price(uniform)} cada uno</p>}
+          </div>
+
+          {/* Un botón por tipo, con cuántos lleva ya marcados */}
+          <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-3 xl:grid-cols-6 gap-1.5" role="tablist">
+            {groups.map((g) => {
+              const n = g.items.filter((e) => line.extraIds.includes(e.id)).length
+              const active = g.id === group.id
               return (
-                <button key={id} onClick={() => onChange({ extraIds: toggle(line.extraIds, id) })} className={chip(on, 'border-albahaca bg-albahaca/10 text-albahaca font-semibold')}>
-                  {extra.label} +{price(extra.price)}
+                <button
+                  key={g.id}
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setGroupId(g.id)}
+                  className={[
+                    'relative flex flex-col items-center gap-1 rounded-md border px-1 py-2 text-[0.65rem] font-semibold uppercase tracking-wide transition-colors',
+                    active ? 'border-tomate bg-tomate text-masa' : 'border-tomate/40 text-tomate hover:bg-tomate/10',
+                  ].join(' ')}
+                >
+                  <g.Icon className="w-5 h-5" strokeWidth={1.75} />
+                  {g.label}
+                  {n > 0 && (
+                    <span className={[
+                      'absolute -top-1.5 -right-1.5 min-w-[1.15rem] h-[1.15rem] px-1 rounded-full text-[0.65rem] leading-[1.15rem] text-center font-bold',
+                      active ? 'bg-masa text-tomate' : 'bg-tomate text-masa',
+                    ].join(' ')}>{n}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {group.items.map((extra) => {
+              const on = line.extraIds.includes(extra.id)
+              return (
+                <button
+                  key={extra.id}
+                  onClick={() => onChange({ extraIds: toggle(line.extraIds, extra.id) })}
+                  aria-pressed={on}
+                  className={[
+                    'inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors',
+                    on ? 'border-tomate bg-tomate text-masa' : 'border-tomate/40 bg-masa text-carbon hover:border-tomate',
+                  ].join(' ')}
+                >
+                  {on && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+                  {extra.label}
+                  {uniform == null && <span className="opacity-70">+{price(extra.price)}</span>}
                 </button>
               )
             })}
