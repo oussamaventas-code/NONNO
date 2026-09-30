@@ -53,7 +53,11 @@ export default function Menu() {
               return (
                 <button
                   key={cat.id}
-                  onClick={() => setActive(cat.id)}
+                  onClick={(e) => {
+                    setActive(cat.id)
+                    /* La pestaña elegida se centra: nunca queda medio cortada */
+                    e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' })
+                  }}
                   aria-pressed={on}
                   className={[
                     'flex-shrink-0 inline-flex items-center gap-1.5 py-2 font-sans font-bold uppercase tracking-[0.12em] text-[0.8rem] transition-colors border-b-2',

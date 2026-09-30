@@ -26,7 +26,7 @@ export default function Footer() {
           <div>
             <p className="font-sans font-medium uppercase text-lg">Pide online y recoge tu pizza recién hecha en tu sede</p>
             <button onClick={() => navigate('/carta')} className="btn-retro mt-8 border-masa bg-tomate shadow-[3px_3px_0_0_rgb(var(--c-masa))]">
-              <span className="w-[15.5rem] bg-masa border-masa text-tomate">Haz tu pedido</span>
+              <span className="w-[15.5rem] bg-papel border-papel text-tomate">Haz tu pedido</span>
             </button>
           </div>
 

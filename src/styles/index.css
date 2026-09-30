@@ -371,3 +371,16 @@
 .tema-negro .hover\:text-tomate:hover { color: rgb(var(--c-tomate)); }
 .tema-negro .bg-tomate,
 .tema-negro .btn-retro > span { background-color: rgb(226 62 87); }
+
+/* Pantallas táctiles: sin efectos de "hover" que se quedan pegados tras tocar */
+@media (hover: none) {
+  .btn:hover { transform: none; }
+  .btn:hover > .btn-layer { transform: translateY(100%); }
+  .btn-retro:hover { transform: none; }
+  .btn-retro:hover > span { background-color: rgb(var(--c-tomate)); border-color: rgb(var(--c-tomate)); }
+  .tema-negro .btn-retro:hover > span { background-color: rgb(226 62 87); border-color: rgb(var(--c-tomate)); }
+}
+
+/* Botón retro invertido (crema con letra roja), p. ej. en el footer rojo */
+.tema-negro .btn-retro > span.bg-papel,
+.tema-negro .btn-retro:hover > span.bg-papel { background-color: rgb(var(--c-papel)); border-color: rgb(var(--c-papel)); color: rgb(226 62 87); }
