@@ -370,6 +370,9 @@
 .tema-negro .serif.text-tomate { color: rgb(var(--c-neon)); }
 .tema-negro .hover\:text-forno:hover,
 .tema-negro .hover\:text-tomate:hover { color: rgb(var(--c-neon)); }
+/* Panel: pestañas sin marcar y avisos llevan el color en su propia clase */
+.tema-negro .ptab:not(.soft):not([aria-selected='true']):not([aria-pressed='true']):not(.is-on),
+.tema-negro .palert { color: rgb(var(--c-neon)); }
 .tema-negro .bg-tomate,
 .tema-negro .btn-retro > span { background-color: rgb(226 62 87); }
 
