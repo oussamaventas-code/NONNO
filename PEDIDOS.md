@@ -205,7 +205,7 @@ Para que quien espera vea cómo va su pedido: **En preparación** y **¡Listo! R
 **Seguridad (una sola vez):** en Supabase → SQL Editor, pega [`supabase/seguridad.sql`](supabase/seguridad.sql) y pulsa **Run**. Activa el límite de intentos del login, de los códigos del Club, de los SMS y de los pedidos de la web. Además, en Vercel crea `ADMIN_SESSION_SECRET` con una cadena larga y aleatoria (30+ caracteres). Para **cerrar todas las sesiones abiertas** (por ejemplo si se pierde un ordenador), cambia ese valor y vuelve a desplegar.
 3. Pulsa **Pantalla completa y sonido** una vez: activa el aviso sonoro cuando un pedido pasa a listo.
 
-Los pedidos pasan a "¡Listo!" cuando cocina pulsa **MARCAR LISTO** en el panel, y desaparecen al marcarlos **ENTREGADO**. Si se corta internet, la TV sigue enseñando lo último que sabía y se pone al día sola al volver.
+Los pedidos pasan a "¡Listo!" cuando cocina pulsa **LISTO** en el panel, y desaparecen al marcarlos **ENTREGADO**. Si se corta internet, la TV sigue enseñando lo último que sabía y se pone al día sola al volver.
 
 ---
 

@@ -14,7 +14,7 @@ import { LOYALTY } from '../data/loyalty'
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 
-const STATUS = { nuevo: 'Recibido', horno: 'En el horno', listo: 'Listo', entregado: 'Entregado', cancelado: 'Cancelado' }
+const STATUS = { nuevo: 'En preparación', horno: 'En preparación', listo: 'Listo', entregado: 'Entregado', cancelado: 'Cancelado' }
 
 function html(order) {
   const { legalName, nif, vatRate } = SITE.billing || {}

@@ -18,7 +18,7 @@ function stepsFor(order) {
   const delivery = order.mode === 'delivery'
   return [
     { id: 'recibido', label: 'Recibido', Icon: ClipboardCheck },
-    { id: 'horno', label: 'En el horno', Icon: Flame },
+    { id: 'preparando', label: 'En preparación', Icon: Flame },
     delivery
       ? { id: 'camino', label: 'En camino', Icon: Truck }
       : { id: 'listo', label: 'Listo', Icon: PackageCheck },
@@ -30,7 +30,8 @@ function stepsFor(order) {
 function currentStep(order) {
   if (order.status === 'entregado') return 3
   if (order.status === 'listo') return order.mode === 'delivery' && !order.dispatchedAt ? 1 : 2
-  if (order.status === 'horno') return 1
+  /* Entra ya en preparación, salvo los programados para más tarde */
+  if (order.status === 'horno' || (order.status === 'nuevo' && !order.scheduledFor)) return 1
   return 0
 }
 
@@ -45,11 +46,11 @@ function headline(order) {
       return order.dispatchedAt
         ? { title: '¡Va de camino!', sub: order.etaAt ? `Llega hacia las ${hourOf(order.etaAt)}.` : 'Llega en unos minutos.' }
         : { title: 'Listo, saliendo del horno', sub: 'El repartidor sale enseguida.' }
-    case 'horno': return { title: 'Está en el horno', sub: delivery ? 'En cuanto salga, va para tu casa.' : 'Te avisamos por SMS cuando esté listo.' }
+    case 'horno': return { title: 'Lo estamos preparando', sub: delivery ? 'En cuanto salga, va para tu casa.' : 'Te avisamos por SMS cuando esté listo.' }
     default:
       return order.scheduledFor
         ? { title: 'Pedido programado', sub: 'Lo tenemos apuntado y empezamos a hacerlo a su hora.' }
-        : { title: 'Pedido recibido', sub: 'La cocina ya lo tiene. En nada entra al horno.' }
+        : { title: 'Lo estamos preparando', sub: delivery ? 'En cuanto salga del horno, va para tu casa.' : 'Te avisamos por SMS cuando esté listo.' }
   }
 }
 

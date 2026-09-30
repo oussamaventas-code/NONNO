@@ -98,10 +98,9 @@ export default function TodayBoard({ orders, storeStatuses, onOpenSede, onError 
                 )}
 
                 {/* Cocina ahora */}
-                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div className="mt-4 grid grid-cols-2 gap-2 text-center">
                   {[
-                    { label: 'Nuevos', n: count('nuevo') },
-                    { label: 'En horno', n: count('horno') },
+                    { label: 'En preparación', n: count('nuevo') + count('horno') },
                     { label: 'Listos', n: count('listo') },
                   ].map((k) => (
                     <div key={k.label} className="rounded-md border border-tomate/30 bg-masa py-2">
@@ -117,7 +116,7 @@ export default function TodayBoard({ orders, storeStatuses, onOpenSede, onError 
                   ) : (
                     <p className="flex items-center gap-1.5 font-semibold text-albahaca"><CheckCircle2 className="w-4 h-4" /> Todo a su hora</p>
                   )}
-                  {next && <p className="text-carbon/70">Próximo al horno: <strong>{next.ref}</strong> a las {hourOf(next.ready_at)}</p>}
+                  {next && <p className="text-carbon/70">Próximo en salir: <strong>{next.ref}</strong> a las {hourOf(next.ready_at)}</p>}
                   <p className="flex items-center gap-1.5 text-carbon/70">
                     <Wallet className="w-4 h-4 text-tomate" />
                     {box?.closing

@@ -5,8 +5,9 @@ import { hourOf } from '../lib/kitchenSlots'
 import SmsStatus from './SmsStatus'
 
 const FLOW = [
-  { id: 'nuevo', label: 'NUEVO', next: 'horno', action: 'AL HORNO' },
-  { id: 'horno', label: 'EN EL HORNO', next: 'listo', action: 'MARCAR LISTO' },
+  /* Un pedido entra ya en preparación ("horno" queda de pedidos antiguos) */
+  { id: 'nuevo', label: 'EN PREPARACIÓN', next: 'listo', action: 'LISTO' },
+  { id: 'horno', label: 'EN PREPARACIÓN', next: 'listo', action: 'LISTO' },
   { id: 'listo', label: 'LISTO', next: 'entregado', action: 'ENTREGADO' },
   { id: 'entregado', label: 'ENTREGADO', next: null, action: null },
   { id: 'cancelado', label: 'CANCELADO', next: null, action: null },
@@ -15,7 +16,7 @@ const FLOW = [
 /* Color del marco según el estado del pedido */
 const TONE = {
   nuevo: '',
-  horno: 'pf-horno',
+  horno: '',
   listo: 'pf-verde',
   entregado: 'pf-muted',
   cancelado: 'pf-muted !opacity-40',
@@ -23,7 +24,7 @@ const TONE = {
 
 const BADGE = {
   nuevo: 'bg-tomate text-crema',
-  horno: 'bg-horno text-crema',
+  horno: 'bg-tomate text-crema',
   listo: 'bg-albahaca text-crema',
   entregado: 'bg-forno/15 text-carbon/70',
   cancelado: 'bg-forno/10 text-carbon/60',

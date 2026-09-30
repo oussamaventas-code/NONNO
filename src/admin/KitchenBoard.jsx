@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Truck, Package, Phone, MapPin, ChevronDown, Printer, Eye, Flame, AlertTriangle, Euro, CalendarClock } from 'lucide-react'
+import { Truck, Package, Phone, MapPin, ChevronDown, Printer, BellRing, Clock, AlertTriangle, Euro, CalendarClock } from 'lucide-react'
 import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
 import { printTicket } from './printTicket'
@@ -9,23 +9,29 @@ import CancelReasons from './CancelReasons'
 
 /* ═══════════════════════════════════════════════════════════════
    TABLERO DE COCINA
-   Tres columnas, una por fase: NUEVOS → EN EL HORNO → LISTOS.
-   Cada pedido avanza con UN botón grande. Lo urgente sube arriba y
-   cambia de color: amarillo cuando quedan pocos minutos, rojo cuando
-   ya se ha pasado su hora. Un pedido nuevo parpadea (y suena) hasta
-   que alguien lo marca como visto.
+   Dos franjas: EN PREPARACIÓN → LISTOS. Un pedido entra ya en
+   preparación (en la base sigue siendo "nuevo"; "horno" de pedidos
+   antiguos cuenta igual) y avanza con UN botón grande: LISTO y luego
+   ENTREGADO. Lo urgente sube arriba y cambia de color: amarillo
+   cuando quedan pocos minutos, rojo cuando ya se ha pasado su hora.
+   Un pedido nuevo parpadea (y suena) hasta que se toca la tarjeta.
+   En el móvil las franjas son dos pestañas; en pantalla grande, dos
+   columnas lado a lado.
    ═══════════════════════════════════════════════════════════════ */
 
 const COLUMNS = [
-  { id: 'nuevo', title: 'NUEVOS', empty: 'Ningún pedido nuevo', next: 'horno', action: 'AL HORNO', btn: 'bg-tomate', frame: '' },
-  { id: 'horno', title: 'EN EL HORNO', empty: 'Horno libre', next: 'listo', action: 'MARCAR LISTO', btn: 'bg-albahaca', frame: 'pf-horno' },
-  { id: 'listo', title: 'LISTOS', empty: 'Nada esperando', next: 'entregado', action: 'ENTREGADO', btn: 'bg-forno', frame: 'pf-verde' },
+  { id: 'prep', statuses: ['nuevo', 'horno'], title: 'EN PREPARACIÓN', empty: 'Nada en cocina', next: 'listo', action: 'LISTO', btn: 'bg-albahaca', frame: '' },
+  { id: 'listo', statuses: ['listo'], title: 'LISTOS', empty: 'Nada esperando', next: 'entregado', action: 'ENTREGADO', btn: 'bg-tomate', frame: 'pf-verde' },
 ]
+const colOf = (order) => COLUMNS.find((c) => c.statuses.includes(order.status))
 
 /** Minutos que faltan para la hora del pedido (negativo = retrasado). */
 const minutesLeft = (order, now) => (order.ready_at ? Math.round((Date.parse(order.ready_at) - now) / 60000) : null)
 
-const byUrgency = (a, b) => Date.parse(a.ready_at || a.created_at) - Date.parse(b.ready_at || b.created_at)
+/* Arriba lo que suena (nuevo sin tocar) y luego lo que antes tiene que salir */
+const unseenOf = (o) => o.status === 'nuevo' && !o.seen_at
+const byUrgency = (a, b) =>
+  (unseenOf(b) - unseenOf(a)) || Date.parse(a.ready_at || a.created_at) - Date.parse(b.ready_at || b.created_at)
 
 export default function KitchenBoard({ orders, busyId, onStatus, onUpdated }) {
   /* El reloj del tablero: sin él, el semáforo se quedaría congelado
@@ -36,19 +42,42 @@ export default function KitchenBoard({ orders, busyId, onStatus, onUpdated }) {
     return () => clearInterval(timer)
   }, [])
 
-  const active = orders.filter((o) => COLUMNS.some((c) => c.id === o.status))
+  /* Móvil: qué franja se ve. En pantalla grande se ven las dos. */
+  const [tab, setTab] = useState('prep')
+
+  const active = orders.filter(colOf)
   const finished = orders.filter((o) => ['entregado', 'cancelado'].includes(o.status))
   const todayStr = new Date().toDateString()
   const finishedToday = finished.filter((o) => new Date(o.created_at).toDateString() === todayStr)
 
   return (
     <div>
-      <div className="grid gap-5 lg:grid-cols-3 items-start">
+      {/* Móvil: las dos franjas como pestañas grandes con su cuenta */}
+      <div className="lg:hidden grid grid-cols-2 gap-2 mb-5" role="tablist" aria-label="Pedidos">
         {COLUMNS.map((col) => {
-          const list = active.filter((o) => o.status === col.id).sort(byUrgency)
+          const n = active.filter((o) => colOf(o) === col).length
+          const nuevos = col.id === 'prep' && active.some(unseenOf)
           return (
-            <section key={col.id} aria-label={col.title}>
-              <h2 className="flex items-center justify-between border-b-2 border-tomate pb-2 mb-4">
+            <button
+              key={col.id}
+              role="tab"
+              aria-selected={tab === col.id}
+              onClick={() => setTab(col.id)}
+              className={['ptab !min-h-[3.5rem] !text-sm !px-2 flex-col !gap-0.5 leading-tight', nuevos && tab !== col.id ? 'animate-pulse' : ''].join(' ')}
+            >
+              <span className="font-mono font-extrabold text-2xl leading-none">{n}</span>
+              {col.title}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2 items-start">
+        {COLUMNS.map((col) => {
+          const list = active.filter((o) => colOf(o) === col).sort(byUrgency)
+          return (
+            <section key={col.id} aria-label={col.title} className={tab === col.id ? '' : 'hidden lg:block'}>
+              <h2 className="hidden lg:flex items-center justify-between border-b-2 border-tomate pb-2 mb-4">
                 <span className="font-sans font-extrabold uppercase text-lg tracking-wide text-tomate">{col.title}</span>
                 <span className="font-mono font-bold text-lg text-masa bg-tomate rounded-md min-w-[2rem] text-center px-2 leading-8">{list.length}</span>
               </h2>
@@ -96,28 +125,36 @@ function KitchenCard({ order, col, now, busy, onStatus, onUpdated }) {
   const [cancelling, setCancelling] = useState(false)
 
   const left = col.id === 'listo' ? null : minutesLeft(order, now)
+  const silence = () => onStatus(order.id, null, { seen: true })
   const late = left !== null && left < 0
   const soon = left !== null && left >= 0 && left <= 5
-  const unseen = col.id === 'nuevo' && !order.seen_at
+  const unseen = unseenOf(order)
   const delivery = order.mode === 'delivery'
   /* Pedido programado para dentro de mucho: aparece, pero sin urgencia ni alarma */
-  const farOff = Boolean(order.scheduled_for) && col.id === 'nuevo' && left !== null && left > 45
+  const farOff = Boolean(order.scheduled_for) && col.id === 'prep' && left !== null && left > 45
 
   return (
     <article
+      /* Pedido nuevo: tocar la tarjeta (fuera de los botones) para la alarma */
+      onClick={unseen && !busy ? (e) => { if (!e.target.closest('button, a')) silence() } : undefined}
       className={[
         'pframe',
         col.frame,
         late ? '!bg-tomate/10' : '',
-        unseen ? 'ring-4 ring-tomate/60 ring-offset-2 ring-offset-masa animate-pulse' : '',
+        unseen ? 'ring-4 ring-tomate/60 ring-offset-2 ring-offset-masa cursor-pointer' : '',
       ].join(' ')}
     >
-      {farOff && (
+      {unseen && (
+        <p className="flex items-center justify-center gap-2 rounded-t-md bg-tomate py-2 font-sans font-extrabold uppercase text-sm tracking-wide text-masa animate-pulse">
+          <BellRing className="w-4 h-4" /> Nuevo · toca para silenciar
+        </p>
+      )}
+      {!unseen && farOff && (
         <p className="flex items-center justify-center gap-2 rounded-t-md bg-queso py-1.5 font-sans font-extrabold uppercase text-sm tracking-wide text-carbon border-b border-tomate">
           <CalendarClock className="w-4 h-4" /> Programado · en {left >= 90 ? `${Math.floor(left / 60)} h ${left % 60} min` : `${left} min`}
         </p>
       )}
-      {!farOff && (late || soon) && (
+      {!unseen && !farOff && (late || soon) && (
         <p className={[
           'flex items-center justify-center gap-2 rounded-t-md py-1.5 font-sans font-extrabold uppercase text-sm tracking-wide',
           late ? 'bg-tomate text-masa' : 'neon-amarillo bg-[rgb(255_228_60_/_0.12)] border-b border-[rgb(255_228_60)]',
@@ -134,7 +171,7 @@ function KitchenCard({ order, col, now, busy, onStatus, onUpdated }) {
             <p className="font-mono font-extrabold text-2xl text-carbon leading-none">{order.ref}</p>
             {order.ready_at && (
               <p className="mt-2 flex items-center gap-1.5 font-sans font-extrabold uppercase text-xl text-tomate leading-none">
-                <Flame className="w-5 h-5" /> Horno {hourOf(order.ready_at)}
+                <Clock className="w-5 h-5" /> Para las {hourOf(order.ready_at)}
               </p>
             )}
             {delivery && order.eta_at && (
@@ -191,19 +228,10 @@ function KitchenCard({ order, col, now, busy, onStatus, onUpdated }) {
 
         {/* Acción principal */}
         <div className="mt-4 flex flex-col gap-2">
-          {unseen && (
-            <button
-              onClick={() => onStatus(order.id, null, { seen: true })}
-              disabled={busy}
-              className="btn w-full border border-tomate bg-queso text-carbon min-h-[52px] animate-pulse disabled:opacity-50"
-            >
-              <span className="btn-label"><Eye className="w-5 h-5" /> VISTO (PARA LA ALARMA)</span>
-            </button>
-          )}
           <button
             onClick={() => onStatus(order.id, col.next, order.seen_at ? {} : { seen: true })}
             disabled={busy}
-            className={`btn w-full ${col.btn} text-crema min-h-[60px] text-base disabled:opacity-50`}
+            className={`btn w-full ${col.btn} text-crema min-h-[64px] !text-lg disabled:opacity-50`}
           >
             <span className="btn-layer bg-forno" />
             <span className="btn-label">{col.action}</span>

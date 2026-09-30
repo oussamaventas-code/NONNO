@@ -7,7 +7,7 @@ import { LOYALTY, discountFor } from '../data/loyalty'
 import { price } from '../lib/format'
 import { openReceipt } from '../lib/receipt'
 
-const STATUS = { nuevo: 'Recibido', horno: 'En el horno', listo: 'Listo', entregado: 'Entregado', cancelado: 'Cancelado' }
+const STATUS = { nuevo: 'En preparación', horno: 'En preparación', listo: 'Listo', entregado: 'Entregado', cancelado: 'Cancelado' }
 const REASON = { pedido: 'Pedido', canje: 'Canje', devolucion: 'Devolución', anulacion: 'Anulación', ajuste: 'Ajuste' }
 const day = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Madrid' })
 
