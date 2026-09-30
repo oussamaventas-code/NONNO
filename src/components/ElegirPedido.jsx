@@ -3,6 +3,7 @@ import { LOCATIONS, availableModes } from '../data/locations'
 import { useStore, useActions } from '../store/StoreContext'
 import { useStoreStatus } from '../hooks/useStoreStatus'
 import { navigate } from '../lib/router'
+import { img, srcSet } from '../data/images'
 
 /**
  * PANTALLA 2 — ELECCIÓN DEL PEDIDO. Una sola decisión: en qué sede y
@@ -33,6 +34,17 @@ export default function ElegirPedido() {
             return (
               <div key={loc.id} className="frame">
                 <div className="frame-in p-4 sm:p-5">
+                  {/* Solo las sedes con foto propia del local */}
+                  {loc.image?.startsWith('own:') && (
+                    <img
+                      src={img(loc.image, 600)}
+                      srcSet={srcSet(loc.image)}
+                      sizes="(min-width: 672px) 640px, 90vw"
+                      alt={`Local de ${loc.name}`}
+                      loading="lazy"
+                      className="mb-4 h-40 sm:h-52 w-full rounded-md object-cover object-[50%_10%] border border-tomate/40"
+                    />
+                  )}
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="font-sans font-extrabold uppercase text-xl text-tomate leading-tight">{loc.name}</h2>
                     <span className={[

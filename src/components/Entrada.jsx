@@ -1,6 +1,7 @@
 import { SITE } from '../data/site'
 import { HERO } from '../data/content'
 import { navigate } from '../lib/router'
+import { PHOTO, img, srcSet } from '../data/images'
 
 /**
  * PANTALLA 1 — ENTRADA. Solo dice qué es Nonno y lleva a pedir.
@@ -8,7 +9,17 @@ import { navigate } from '../lib/router'
  */
 export default function Entrada() {
   return (
-    <section className="bg-masa min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-center text-center px-5 py-10">
+    <section className="relative isolate overflow-hidden bg-masa min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-center text-center px-5 py-10">
+      {/* Fachada del local de fondo, oscurecida para que el texto se lea */}
+      <img
+        src={img(PHOTO.venueSangonera, 1200)}
+        srcSet={srcSet(PHOTO.venueSangonera)}
+        sizes="100vw"
+        alt=""
+        fetchPriority="high"
+        className="absolute inset-0 -z-20 h-full w-full object-cover object-[50%_15%]"
+      />
+      <div className="absolute inset-0 -z-10 bg-masa/70" aria-hidden="true" />
       <img
         src="/logo-nonno.png"
         alt="La Pizza de Nonno"
