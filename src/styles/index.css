@@ -567,3 +567,20 @@
   color: rgb(82 230 150);
   text-shadow: 0 0 6px rgb(82 230 150 / 0.8), 0 0 16px rgb(82 230 150 / 0.4);
 }
+
+/* Amarillo queso: sobre negro la letra es crema, así que el fondo pasa
+   a un amarillo translúcido con filete (si no, crema sobre amarillo) */
+.tema-negro .bg-queso { background-color: rgb(255 228 60 / 0.14); box-shadow: inset 0 0 0 1px rgb(255 228 60 / 0.6); }
+.tema-negro .bg-queso\/60,
+.tema-negro .bg-queso\/50 { background-color: rgb(255 228 60 / 0.1); }
+.tema-negro .hover\:bg-queso:hover,
+.tema-negro .hover\:bg-queso\/60:hover,
+.tema-negro .hover\:bg-queso\/50:hover { background-color: rgb(255 228 60 / 0.12); }
+
+/* Web más limpia (a petición del cliente): un solo tubo por tarjeta,
+   sin el filete interior y con menos resplandor. El panel conserva el
+   suyo (.pframe). */
+.tema-negro .frame,
+.tema-negro .frame.neon { padding: 0; box-shadow: 0 0 6px rgb(var(--tubo) / 0.6), 0 0 14px rgb(var(--tubo) / 0.2); }
+.tema-negro .frame-in,
+.tema-negro .frame.neon > .frame-in { border: 0; box-shadow: none; }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, RefreshCw, LogOut, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro, BookOpen, Settings, Maximize, Undo2, Wallet, LayoutDashboard } from 'lucide-react'
+import { Bell, BellOff, RefreshCw, LogOut, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro, BookOpen, Settings, Maximize, Undo2, Wallet, LayoutDashboard, Percent, MoreHorizontal, X } from 'lucide-react'
 import Counter from './Counter'
 import Routes from './Routes'
 import Stock from './Stock'
@@ -8,6 +8,7 @@ import CashClose from './CashClose'
 import TodayBoard from './TodayBoard'
 import { useMenuOverrides } from '../hooks/useMenuOverrides'
 import Billing from './Billing'
+import Discounts from './Discounts'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
 import { printTicket } from './printTicket'
 import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus, testSms } from './api'
@@ -30,12 +31,19 @@ const ALL_TABS = [
   { id: 'carta', label: 'Carta', Icon: BookOpen },
   /* Solo dirección: es dinero, no algo que vea el mostrador de un local. */
   { id: 'facturacion', label: 'Facturación', Icon: Euro },
+  /* Solo dirección: rebajan precios en todas las sedes. */
+  { id: 'descuentos', label: 'Descuentos', Icon: Percent },
 ]
+
+/* Móvil: las que van siempre en la barra de abajo (si este equipo las
+   tiene). El resto se abre desde «Más». */
+const MOBILE_FIRST = ['hoy', 'cocina', 'mostrador', 'descuentos']
+const MOBILE_SLOTS = 4
 
 const DEVICE_MODES = [
   { id: 'completo', label: 'Todo', hint: 'Enseña todas las pestañas.', tabs: null },
   { id: 'cocina', label: 'Cocina', hint: 'Solo el tablero del horno y el stock.', tabs: ['cocina', 'stock'] },
-  { id: 'mostrador', label: 'Mostrador', hint: 'TPV, reparto, caja, carta y facturación.', tabs: ['mostrador', 'reparto', 'caja', 'carta', 'facturacion'] },
+  { id: 'mostrador', label: 'Mostrador', hint: 'TPV, reparto, caja, carta y facturación.', tabs: ['mostrador', 'reparto', 'caja', 'carta', 'facturacion', 'descuentos'] },
 ]
 
 /* Cada cuánto vuelve a sonar un pedido nuevo que nadie ha marcado como visto */
@@ -109,6 +117,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const [viewPref, setView] = useState(() => readPref(PREF_VIEW, esDireccion ? 'hoy' : 'cocina'))
   const [deviceMode, setDeviceMode] = useState(() => readPref(PREF_DEVICE, 'completo'))
   const [menuOpen, setMenuOpen] = useState(false)
+  /* Móvil: hoja «Más» con el resto de secciones */
+  const [moreOpen, setMoreOpen] = useState(false)
   const [confirmClose, setConfirmClose] = useState(null)
   const [undo, setUndo] = useState(null)
   const [testPhone, setTestPhone] = useState('')
@@ -359,9 +369,17 @@ export default function AdminPanel({ scope, onSignedOut }) {
   /* Pestañas de este equipo, y la vista efectiva (si la guardada ya no
      le toca a este equipo, se cae a la primera que sí). */
   const modeTabs = DEVICE_MODES.find((m) => m.id === deviceMode)?.tabs
-  const tabs = ALL_TABS.filter((t) => (!modeTabs || modeTabs.includes(t.id)) && (!['facturacion', 'hoy'].includes(t.id) || esDireccion))
+  const tabs = ALL_TABS.filter((t) => (!modeTabs || modeTabs.includes(t.id)) && (!['facturacion', 'hoy', 'descuentos'].includes(t.id) || esDireccion))
   const view = tabs.some((t) => t.id === viewPref) ? viewPref : tabs[0].id
   autoPrintOn.current = autoPrint && view === 'cocina'
+
+  /* Móvil: barra de abajo (4 secciones fijas y «Más» con el resto) */
+  const needsMore = tabs.length > MOBILE_SLOTS + 1
+  const bottomTabs = needsMore
+    ? [...tabs.filter((t) => MOBILE_FIRST.includes(t.id)), ...tabs.filter((t) => !MOBILE_FIRST.includes(t.id))].slice(0, MOBILE_SLOTS)
+    : tabs
+  const moreTabs = tabs.filter((t) => !bottomTabs.includes(t))
+  const viewTab = tabs.find((t) => t.id === view)
 
   /* Estado de la tienda de cada sede que este panel gestiona */
   const storeList = (esDireccion ? LOCATIONS.map((l) => l.id) : [scope]).map((id) => ({
@@ -403,12 +421,14 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const pendientes = porSede.filter((o) => o.status === 'nuevo').length
 
   return (
-    <div className="min-h-screen bg-masa">
+    <div className="min-h-screen bg-masa overflow-x-clip pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:pb-0">
+      {/* Móvil: la cinta de sede se queda en una raya de su color */}
+      <div className={`md:hidden h-1.5 ${sede?.banda || 'bg-tomate'}`} aria-hidden="true" />
       {/* Cinta de sede: imposible confundir de cocina */}
-      <p className={`${sede?.banda || 'bg-tomate'} ${sede?.texto || 'text-crema'} text-center font-sans font-medium uppercase text-[0.72rem] sm:text-sm h-9 leading-9 px-3 truncate`}>
-        {{ hoy: 'HOY', mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO', caja: 'CIERRE DE CAJA', carta: 'CARTA', facturacion: 'FACTURACIÓN' }[view] || 'COCINA'} · {sede ? sede.nombre : 'TODAS LAS SEDES'}
+      <p className={`hidden md:block ${sede?.banda || 'bg-tomate'} ${sede?.texto || 'text-crema'} text-center font-sans font-medium uppercase text-[0.72rem] sm:text-sm h-9 leading-9 px-3 truncate`}>
+        {{ hoy: 'HOY', mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO', caja: 'CIERRE DE CAJA', carta: 'CARTA', facturacion: 'FACTURACIÓN', descuentos: 'DESCUENTOS' }[view] || 'COCINA'} · {sede ? sede.nombre : 'TODAS LAS SEDES'}
       </p>
-      <div className="checker" aria-hidden="true" />
+      <div className="checker hidden md:block" aria-hidden="true" />
 
       {/* Plan B visible: nadie trabaja creyendo que el panel está al día */}
       {offlineSince && (
@@ -442,7 +462,56 @@ export default function AdminPanel({ scope, onSignedOut }) {
       )}
 
       <header className="sticky top-0 z-30 bg-masa border-b border-tomate">
-        <div className="shell py-3">
+        {/* ── Móvil: una sola línea. Sección, sede, tienda y ajustes ── */}
+        <div className="md:hidden">
+          <div className="flex items-center gap-3 px-4 h-14">
+            <img src="/logo-nonno.png" alt="" width="36" height="36" className="h-9 w-9 flex-shrink-0 rounded-full object-cover border border-tomate" />
+            <div className="min-w-0 flex-1">
+              <p className="font-sans font-extrabold uppercase text-lg leading-none text-carbon truncate">{viewTab?.label || 'Cocina'}</p>
+              <p className="mt-1 mono normal-case text-carbon/55 truncate">
+                {sede ? sede.nombre : sedeVista === 'todas' ? 'Todas las sedes' : LOCATIONS.find((l) => l.id === sedeVista)?.name}
+              </p>
+            </div>
+            {/* Tienda abierta o cerrada: se cambia en ajustes */}
+            <button
+              onClick={() => setMenuOpen(true)}
+              className={[
+                'flex-shrink-0 flex items-center gap-1.5 rounded-full border px-3 h-9 text-xs font-extrabold uppercase tracking-wide',
+                storeList.every((x) => x.abierta) ? 'border-albahaca text-albahaca' : storeList.some((x) => x.abierta) ? 'border-horno text-horno' : 'border-tomate text-tomate',
+              ].join(' ')}
+              aria-label="Abrir o cerrar la tienda"
+            >
+              <span className={['w-2 h-2 rounded-full', storeList.some((x) => x.abierta) ? 'bg-albahaca' : 'bg-tomate'].join(' ')} />
+              {storeList.length > 1
+                ? `${storeList.filter((x) => x.abierta).length}/${storeList.length} abiertas`
+                : storeList[0]?.abierta ? 'Abierta' : 'Cerrada'}
+            </button>
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-expanded={menuOpen}
+              aria-label="Ajustes del panel"
+              className="flex-shrink-0 w-10 h-10 rounded-md border border-tomate/60 flex items-center justify-center text-tomate"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+          {/* Dirección: qué sede mirar, en tres botones que caben siempre */}
+          {esDireccion && view !== 'descuentos' && (
+            <div className="grid grid-cols-3 gap-1.5 px-4 pb-3">
+              {[{ id: 'todas', label: 'Todas' }, ...LOCATIONS.map((l) => ({ id: l.id, label: l.name.replace(' la Verde', '') }))].map((x) => (
+                <button
+                  key={x.id}
+                  onClick={() => setSedeVista(x.id)}
+                  className={['ptab soft !min-h-[38px] !px-1 !text-[0.68rem] truncate', sedeVista === x.id ? 'is-on' : ''].join(' ')}
+                >
+                  {x.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="shell py-3 hidden md:block">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
               <img
@@ -654,7 +723,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
         )}
       </header>
 
-      <main className="shell py-8">
+      <main className="shell py-4 md:py-8">
         {/* Sin un toque, el navegador no deja sonar la alarma de pedido nuevo */}
         {!soundReady && ['cocina', 'mostrador', 'hoy'].includes(view) && (
           <button
@@ -670,7 +739,9 @@ export default function AdminPanel({ scope, onSignedOut }) {
           </p>
         )}
 
-        {view === 'hoy' && esDireccion ? (
+        {view === 'descuentos' && esDireccion ? (
+          <Discounts onError={setError} onChanged={refreshMenu} />
+        ) : view === 'hoy' && esDireccion ? (
           <TodayBoard
             orders={orders}
             storeStatuses={storeStatuses}
@@ -712,7 +783,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
 
       {/* Deshacer: unos segundos para corregir un toque equivocado */}
       {undo && (
-        <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 w-[min(28rem,calc(100vw-1.5rem))]" role="status">
+        <div className="fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom))] md:bottom-5 left-1/2 z-50 -translate-x-1/2 w-[min(28rem,calc(100vw-1.5rem))]" role="status">
           <div className="pframe !bg-forno shadow-ember">
             <div className="pframe-in !border-masa/40 flex items-center justify-between gap-3 px-4 py-3 text-masa">
               <p className="text-sm font-semibold">
@@ -722,6 +793,73 @@ export default function AdminPanel({ scope, onSignedOut }) {
               <button onClick={undoLast} className="ptab soft !bg-masa !border-masa !text-tomate">
                 <Undo2 className="w-4 h-4" /> DESHACER
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Móvil: barra de secciones abajo, al alcance del pulgar ── */}
+      {tabs.length > 1 && (
+        <nav
+          className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-masa/95 backdrop-blur border-t border-tomate/60 pb-[env(safe-area-inset-bottom)]"
+          aria-label="Secciones del panel"
+        >
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${bottomTabs.length + (moreTabs.length ? 1 : 0)}, minmax(0, 1fr))` }}>
+            {bottomTabs.map(({ id, label, Icon }) => {
+              const on = view === id
+              const badge = id === 'cocina' ? (unseenCount || pendientes) : 0
+              return (
+                <button
+                  key={id}
+                  onClick={() => { changeView(id); setMoreOpen(false) }}
+                  aria-current={on ? 'page' : undefined}
+                  className={['relative flex flex-col items-center justify-center gap-1 h-16 min-w-0 px-1', on ? 'text-[rgb(72_190_255)]' : 'text-carbon/60'].join(' ')}
+                >
+                  {on && <span className="absolute top-0 inset-x-3 h-0.5 rounded-full bg-[rgb(72_190_255)] shadow-[0_0_8px_rgb(72_190_255)]" aria-hidden="true" />}
+                  <Icon className="w-6 h-6" strokeWidth={on ? 2.4 : 2} />
+                  <span className="text-[0.66rem] font-bold uppercase tracking-wide truncate max-w-full">{label}</span>
+                  {badge > 0 && (
+                    <span className={['absolute top-1.5 left-1/2 ml-2 min-w-[1.25rem] h-5 rounded-full px-1 text-[0.7rem] font-extrabold leading-5 text-masa', unseenCount ? 'bg-tomate animate-pulse' : 'bg-albahaca'].join(' ')}>
+                      {badge}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+            {moreTabs.length > 0 && (
+              <button
+                onClick={() => setMoreOpen((o) => !o)}
+                aria-expanded={moreOpen}
+                className={['relative flex flex-col items-center justify-center gap-1 h-16 min-w-0', moreOpen || moreTabs.some((t) => t.id === view) ? 'text-[rgb(72_190_255)]' : 'text-carbon/60'].join(' ')}
+              >
+                <MoreHorizontal className="w-6 h-6" />
+                <span className="text-[0.66rem] font-bold uppercase tracking-wide">Más</span>
+              </button>
+            )}
+          </div>
+        </nav>
+      )}
+
+      {/* Hoja «Más»: el resto de secciones en cuadros grandes */}
+      {moreOpen && (
+        <div className="md:hidden fixed inset-0 z-30" role="dialog" aria-label="Más secciones">
+          <button className="absolute inset-0 bg-black/60" aria-label="Cerrar" onClick={() => setMoreOpen(false)} />
+          <div className="absolute inset-x-0 bottom-0 rounded-t-2xl bg-crema border-t-2 border-tomate px-4 pt-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
+            <div className="flex items-center justify-between mb-3">
+              <p className="mono text-tomate">MÁS SECCIONES</p>
+              <button onClick={() => setMoreOpen(false)} className="w-10 h-10 flex items-center justify-center text-carbon/60" aria-label="Cerrar"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="grid grid-cols-3 gap-2.5">
+              {moreTabs.map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => { changeView(id); setMoreOpen(false) }}
+                  aria-pressed={view === id}
+                  className="ptab !min-h-[5.5rem] flex-col !gap-2 !text-[0.72rem]"
+                >
+                  <Icon className="w-7 h-7" /> {label}
+                </button>
+              ))}
             </div>
           </div>
         </div>

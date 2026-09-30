@@ -73,6 +73,11 @@ export const removePushSubscription = (endpoint) =>
   request('/api/push', { method: 'DELETE', body: JSON.stringify({ endpoint }) })
 
 export const fetchMenu = () => request('/api/menu')
+export const fetchDiscounts = () => request('/api/menu?discounts=all')
+export const saveDiscount = (discount) =>
+  request('/api/menu', { method: 'POST', body: JSON.stringify({ action: 'discountSave', discount }) })
+export const deleteDiscount = (id) =>
+  request('/api/menu', { method: 'POST', body: JSON.stringify({ action: 'discountDelete', id }) })
 
 /** action: 'price' { productId, price | portionPrices } · 'hidden' { productId, hidden } ·
     'soldOut' { location, productId, soldOut }. Devuelve las correcciones ya guardadas. */

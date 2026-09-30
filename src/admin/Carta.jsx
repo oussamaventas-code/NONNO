@@ -137,6 +137,9 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
                     <p className="mono normal-case text-carbon/50">
                       {hidden ? 'Oculto en la web' : missing.length ? `Descartada: sin ${missing.join(', ')}` : soldOut ? 'Agotado hoy' : 'Disponible'}
                     </p>
+                    {p.discount && (
+                      <p className="mono normal-case text-horno">{p.discount.label} ({p.discount.name}): se vende a {price(p.price)}</p>
+                    )}
                   </div>
 
                   <PriceFields product={p} editable={esDireccion} busy={busy === `price:${p.id}`}
@@ -227,18 +230,21 @@ function Ingredientes({ locId, query, busy, onToggle }) {
   )
 }
 
-/** Precio (o precios por ración). Se guarda al salir del campo o con Intro. */
+/** Precio (o precios por ración). Se guarda al salir del campo o con Intro.
+    Siempre el precio de carta, sin el descuento que tenga en vigor. */
+const cartaPrice = (p) => p.priceBefore ?? p.price
+
 function PriceFields({ product, editable, busy, onSave }) {
   const portions = product.portions
   const fields = portions
-    ? portions.map((p) => ({ id: p.id, label: p.label, value: p.price }))
-    : [{ id: null, label: null, value: product.price }]
+    ? portions.map((p) => ({ id: p.id, label: p.label, value: cartaPrice(p) }))
+    : [{ id: null, label: null, value: cartaPrice(product) }]
 
   const commit = (field, raw, current) => {
     const text = raw.trim()
     if (text === asInput(current)) return
     if (portions) {
-      const next = Object.fromEntries(portions.map((p) => [p.id, p.id === field.id ? text : asInput(p.price)]))
+      const next = Object.fromEntries(portions.map((p) => [p.id, p.id === field.id ? text : asInput(cartaPrice(p))]))
       onSave({ portionPrices: next })
     } else {
       onSave({ price: text })

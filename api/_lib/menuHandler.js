@@ -2,7 +2,9 @@ import { db, isConfigured } from './supabase.js'
 import { requireSession, SCOPE_ALL } from './auth.js'
 import { readMenuOverrides, loadMenu } from './menu.js'
 import { getLocation } from '../../src/data/locations.js'
-import { PRODUCTS, ingredientCatalog } from '../../src/data/menu.js'
+import { PRODUCTS, CATEGORIES, ingredientCatalog } from '../../src/data/menu.js'
+import { isMissingTable } from './customer.js'
+import { discountFromRow, DISCOUNT_KINDS, DISCOUNT_TARGETS } from '../../src/lib/discounts.js'
 
 /* ═══════════════════════════════════════════════════════════════
    Carta editable.
@@ -13,11 +15,57 @@ import { PRODUCTS, ingredientCatalog } from '../../src/data/menu.js'
         { action: 'hidden',  productId, hidden }                    solo dirección
         { action: 'soldOut', location, productId, soldOut }         cada sede la suya
         { action: 'ingredientOut', location, ingredient, soldOut }  cada sede el suyo
+        { action: 'discountSave', discount }                       solo dirección
+        { action: 'discountDelete', id }                           solo dirección
+   GET  /api/menu?discounts=all  (panel, dirección) → { discounts } todos, también los apagados
    ═══════════════════════════════════════════════════════════════ */
 
 const trim = (v, max) => String(v ?? '').trim().slice(0, max)
 const KNOWN = new Set(PRODUCTS.map((p) => p.id))
 const KNOWN_INGREDIENTS = new Set(ingredientCatalog().map((i) => i.key))
+const KNOWN_CATEGORIES = new Set(CATEGORIES.map((c) => c.id))
+
+const NO_TABLE = 'Falta crear la tabla de descuentos: ejecuta supabase/descuentos.sql en Supabase (mira PEDIDOS.md).'
+
+/** Fecha opcional: null si viene vacía, undefined si no es válida. */
+function parseDate(v) {
+  if (v === null || v === undefined || v === '') return null
+  const t = Date.parse(v)
+  return Number.isFinite(t) ? new Date(t).toISOString() : undefined
+}
+
+/** Descuento que llega del panel → fila lista para guardar, o { error }. */
+function discountRow(body) {
+  const name = trim(body?.name, 60)
+  if (!name) return { error: 'Ponle un nombre al descuento.' }
+  const kind = DISCOUNT_KINDS.includes(body?.kind) ? body.kind : null
+  if (!kind) return { error: 'Elige si es en % o en €.' }
+  const value = Number(String(body?.value ?? '').replace(',', '.'))
+  if (!Number.isFinite(value) || value <= 0) return { error: 'El descuento tiene que ser mayor que 0.' }
+  if (kind === 'percent' && value > 90) return { error: 'Como mucho un 90 %.' }
+  if (kind === 'amount' && value > 100) return { error: 'Como mucho 100 €.' }
+  const target = DISCOUNT_TARGETS.includes(body?.target) ? body.target : null
+  if (!target) return { error: 'Elige a qué se aplica.' }
+  const known = target === 'categories' ? KNOWN_CATEGORIES : KNOWN
+  const ids = target === 'all' ? [] : [...new Set((Array.isArray(body?.targetIds) ? body.targetIds : []).map((x) => trim(x, 60)))].filter((x) => known.has(x))
+  if (target !== 'all' && !ids.length) return { error: target === 'categories' ? 'Elige al menos una categoría.' : 'Elige al menos un producto.' }
+  const startsAt = parseDate(body?.startsAt)
+  const endsAt = parseDate(body?.endsAt)
+  if (startsAt === undefined || endsAt === undefined) return { error: 'Fecha no válida.' }
+  if (startsAt && endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) return { error: 'La fecha de fin tiene que ser después de la de inicio.' }
+  return {
+    row: {
+      name, kind, value: Math.round(value * 100) / 100, target, target_ids: ids,
+      starts_at: startsAt, ends_at: endsAt, active: body?.active !== false, updated_at: new Date().toISOString(),
+    },
+  }
+}
+
+const listDiscounts = async () => {
+  const { data, error } = await db().from('discounts').select('*').order('created_at', { ascending: false })
+  if (error) throw error
+  return { discounts: data.map(discountFromRow) }
+}
 
 /** Precio válido (0–999,99) o null si viene vacío. undefined = no válido. */
 function parsePrice(v) {
@@ -34,6 +82,18 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (req.method === 'GET' && req.query?.discounts === 'all') {
+      const session = requireSession(req, res)
+      if (!session) return
+      if (session.scope !== SCOPE_ALL) return res.status(403).json({ error: 'Solo la dirección gestiona los descuentos.' })
+      try {
+        return res.status(200).json(await listDiscounts())
+      } catch (err) {
+        if (isMissingTable(err)) return res.status(200).json({ discounts: [], missingTable: true })
+        throw err
+      }
+    }
+
     if (req.method === 'GET') {
       res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=30')
       return res.status(200).json(await readMenuOverrides())
@@ -43,6 +103,28 @@ export default async function handler(req, res) {
       const session = requireSession(req, res)
       if (!session) return
       const { action } = req.body || {}
+
+      /* Descuentos: rebajan precios en todas las sedes, solo dirección */
+      if (action === 'discountSave' || action === 'discountDelete') {
+        if (session.scope !== SCOPE_ALL) return res.status(403).json({ error: 'Solo la dirección gestiona los descuentos.' })
+        const id = trim(req.body?.id ?? req.body?.discount?.id, 40)
+        let q
+        if (action === 'discountDelete') {
+          if (!id) return res.status(400).json({ error: 'Falta el descuento.' })
+          q = db().from('discounts').delete().eq('id', id)
+        } else {
+          const { row, error: invalid } = discountRow(req.body?.discount)
+          if (invalid) return res.status(400).json({ error: invalid })
+          q = id ? db().from('discounts').update(row).eq('id', id) : db().from('discounts').insert(row)
+        }
+        const { error } = await q
+        if (error) {
+          if (isMissingTable(error)) return res.status(503).json({ error: NO_TABLE })
+          throw error
+        }
+        await loadMenu({ force: true })
+        return res.status(200).json(await listDiscounts())
+      }
 
       /* Ingrediente agotado: las pizzas que lo llevan se descartan solas */
       if (action === 'ingredientOut') {

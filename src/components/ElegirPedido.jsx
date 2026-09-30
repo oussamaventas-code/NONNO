@@ -31,36 +31,37 @@ export default function ElegirPedido() {
             const abierta = isOpen(loc.id)
             return (
               <div key={loc.id} className="frame neon">
-                <div className="frame-in p-3 sm:p-5">
-                  {/* Solo las sedes con foto propia del local */}
+                {/* Foto vertical entera a la izquierda: se ve la fachada completa */}
+                <div className="frame-in grid grid-cols-[7.5rem_1fr] sm:grid-cols-[11rem_1fr] h-[11.5rem] sm:h-[15rem]">
                   {loc.image?.startsWith('own:') && (
                     <img
                       src={img(loc.image, 600)}
                       srcSet={srcSet(loc.image)}
-                      sizes="(min-width: 672px) 640px, 90vw"
-                      alt={`Local de ${loc.name}`}
+                      sizes="(min-width: 640px) 176px, 120px"
+                      alt={`Fachada de Nonno ${loc.name}`}
                       loading="lazy"
-                      className="mb-3 h-28 sm:h-48 w-full rounded-md object-cover object-[50%_10%] border-2 border-[rgb(255_60_80)] shadow-[0_0_8px_rgb(255_60_80_/_0.7)]"
+                      className="h-full w-full object-cover object-center"
                     />
                   )}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-sans font-extrabold uppercase text-xl sm:text-2xl neon-amarillo leading-tight">{loc.name}</h2>
+                  <div className="flex flex-col p-3 sm:p-5 min-w-0">
+                    <h2 className="font-sans font-extrabold uppercase text-lg sm:text-2xl neon-amarillo leading-tight">{loc.name}</h2>
                     <span className={[
+                      'mt-1.5 self-start',
                       abierta ? 'pill-neon' : 'rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide border border-carbon/30 text-carbon/60',
                     ].join(' ')}>
                       {abierta ? 'Abierta' : 'Cerrada ahora'}
                     </span>
+                    <p className="mt-2 flex items-start gap-1 text-sm text-carbon/70">
+                      <MapPin className="w-4 h-4 mt-px flex-shrink-0 text-tomate" /> {loc.address}
+                    </p>
+                    <span className="flex-1 min-h-3" aria-hidden="true" />
+                    <button
+                      onClick={() => choose(loc.id)}
+                      className="btn-neon min-h-[3rem] sm:min-h-[3.5rem] text-lg sm:text-2xl"
+                    >
+                      PEDIR
+                    </button>
                   </div>
-                  <p className="mt-1 flex items-start gap-1 text-sm text-carbon/70">
-                    <MapPin className="w-4 h-4 mt-px flex-shrink-0 text-tomate" /> {loc.address}
-                  </p>
-
-                  <button
-                    onClick={() => choose(loc.id)}
-                    className="btn-neon mt-3 sm:mt-4 min-h-[3.25rem] sm:min-h-[3.75rem] text-xl sm:text-2xl"
-                  >
-                    PEDIR
-                  </button>
                 </div>
               </div>
             )

@@ -136,6 +136,11 @@ export default function ProductModal() {
 
         <div className="px-6 sm:px-8 pb-8 -mt-6 relative">
           {product.badge && <span className="mono normal-case text-tomate">{product.badge}</span>}
+          {product.discount && (
+            <span className="inline-block ml-2 rounded-md bg-[rgb(255_228_60)] text-[#0C0C0C] px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide">
+              {product.discount.label} · {product.discount.name}
+            </span>
+          )}
           <h2 id="product-modal-title" className="font-sans font-extrabold uppercase text-2xl sm:text-3xl text-tomate flex items-center gap-2 mt-1">
             {product.name}
             {product.vegetarian && <Leaf className="w-4 h-4 text-albahaca" strokeWidth={2} />}
@@ -160,7 +165,10 @@ export default function ProductModal() {
                   ].join(' ')}
                 >
                   <span className="block font-sans font-bold text-sm text-carbon">{p.label}</span>
-                  <span className="block mono normal-case text-carbon/55 mt-0.5">{price(p.price)}</span>
+                  <span className="block mono normal-case text-carbon/55 mt-0.5">
+                    {p.priceBefore != null && <span className="line-through mr-1.5 opacity-60">{price(p.priceBefore)}</span>}
+                    {price(p.price)}
+                  </span>
                 </button>
               ))}
             </div>

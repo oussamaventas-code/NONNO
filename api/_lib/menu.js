@@ -15,20 +15,24 @@ let loadedAt = 0
 let inflight = null
 
 export async function readMenuOverrides() {
-  const [o, s, i] = await Promise.all([
+  const [o, s, i, d] = await Promise.all([
     db().from('menu_overrides').select('product_id, price, portion_prices, hidden'),
     db().from('menu_soldout').select('location_id, product_id'),
     db().from('menu_ingredient_soldout').select('location_id, ingredient_key'),
+    db().from('discounts').select('*').eq('active', true),
   ])
+  /* Sin la tabla de descuentos (supabase/descuentos.sql) todo sigue igual */
+  if (d.error && !isMissingTable(d.error)) throw d.error
+  const discountRows = d.error ? [] : d.data
   for (const r of [o, s]) {
     if (r.error) {
-      if (isMissingTable(r.error)) return overridesFromRows([], [], i.error ? [] : i.data)
+      if (isMissingTable(r.error)) return overridesFromRows([], [], i.error ? [] : i.data, discountRows)
       throw r.error
     }
   }
   /* Si aún no se ha creado la tabla de ingredientes, el resto sigue funcionando */
   if (i.error && !isMissingTable(i.error)) throw i.error
-  return overridesFromRows(o.data, s.data, i.error ? [] : i.data)
+  return overridesFromRows(o.data, s.data, i.error ? [] : i.data, discountRows)
 }
 
 /**

@@ -170,6 +170,17 @@ La web lo recoge en menos de un minuto. El servidor aplica los precios nuevos al
 
 **Para activarlo** (una sola vez): en Supabase → SQL Editor → New query, pega el contenido de [`supabase/carta.sql`](supabase/carta.sql) y pulsa **Run**. Sin ese paso la pestaña avisa de que no puede guardar y la web sigue con la carta de siempre. Si ya lo ejecutaste antes de que existieran los ingredientes, **vuelve a ejecutarlo**: solo añade la tabla que falta y no toca lo que ya tienes.
 
+## Descuentos (pestaña "Descuentos" del panel, solo dirección)
+
+Rebaja el precio de **toda la carta, de unas categorías o de unos productos**, en **%** o en **€**. La web lo enseña tachando el precio de antes, y el mostrador y el servidor cobran el precio rebajado.
+
+- Pulsa **Crear descuento**: nombre (lo ve el cliente), cuánto, a qué se aplica y cuándo (**desde ya** o **con fechas** de inicio y fin). Antes de guardar se ve cómo quedan los precios.
+- Cada descuento se puede **apagar y encender** con un toque sin borrarlo.
+- Si a un producto le tocan varios, se aplica el que más rebaja (no se suman). Los toppings no se rebajan. Las ofertas de recogida siguen funcionando: el cliente paga siempre lo más barato.
+- La web lo recoge en menos de un minuto.
+
+**Para activarlo** (una sola vez): en Supabase → SQL Editor → New query, pega [`supabase/descuentos.sql`](supabase/descuentos.sql) y pulsa **Run**. Sin ese paso la pestaña avisa y la carta sigue con sus precios.
+
 ## Crear pedidos: clientes que ya han pedido
 
 En **Mostrador** y **Teléfono**, al escribir un teléfono de 9 cifras el panel busca a ese cliente entre los pedidos de la sede (no cuenta los cancelados; da igual cómo se escriba el número: con espacios, con +34…).

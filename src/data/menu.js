@@ -1,6 +1,7 @@
 /* Extensiones .js explícitas: este fichero también lo importan las
    funciones del servidor (ESM nativo de Node). */
 import { PHOTO } from './images.js'
+import { applyDiscounts, isLive } from '../lib/discounts.js'
 
 /* ═══════════════════════════════════════════════════════════════
    MENÚ — CARTA OFICIAL DE LA PIZZA DE NONNO
@@ -424,7 +425,7 @@ export const PICKUP_DEALS = [
    selectores de abajo devuelven siempre la carta ya corregida, así
    que la web, el carrito y el servidor cuentan con los mismos precios.
    Sin correcciones (base de datos sin conectar) es la carta de siempre. */
-let overrides = { prices: {}, hidden: [], soldOut: {}, ingredients: {} }
+let overrides = { prices: {}, hidden: [], soldOut: {}, ingredients: {}, discounts: [] }
 let effective = PRODUCTS
 
 const applyPrices = (product, o) => {
@@ -440,15 +441,18 @@ const applyPrices = (product, o) => {
   return next
 }
 
-/** Sustituye las correcciones: { prices: {id: {price, portionPrices}}, hidden: [id], soldOut: {sede: [id]}, ingredients: {sede: [claveIngrediente]} } */
+/** Sustituye las correcciones: { prices: {id: {price, portionPrices}}, hidden: [id], soldOut: {sede: [id]}, ingredients: {sede: [claveIngrediente]}, discounts: [descuento] } */
 export function setMenuOverrides(next) {
   overrides = {
     prices: next?.prices || {},
     hidden: Array.isArray(next?.hidden) ? next.hidden : [],
     soldOut: next?.soldOut || {},
     ingredients: next?.ingredients || {},
+    discounts: Array.isArray(next?.discounts) ? next.discounts : [],
   }
-  effective = PRODUCTS.map((p) => applyPrices(p, overrides.prices[p.id]))
+  /* Primero el precio de la carta; encima, el descuento en vigor */
+  const live = overrides.discounts.filter((d) => isLive(d))
+  effective = PRODUCTS.map((p) => applyDiscounts(applyPrices(p, overrides.prices[p.id]), live))
 }
 
 export const getMenuOverrides = () => overrides

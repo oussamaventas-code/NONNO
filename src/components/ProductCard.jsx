@@ -36,6 +36,11 @@ export default function ProductCard({ product, onOpen }) {
             <span className="rounded-md bg-masa text-tomate font-sans font-extrabold uppercase tracking-wider text-[0.65rem] sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 mx-1 text-center">{missing.length ? `Sin ${missing[0]}` : 'Agotado hoy'}</span>
           </span>
         )}
+        {product.discount && (
+          <span className="absolute top-2 right-2 rounded-md bg-[rgb(255_228_60)] text-[#0C0C0C] font-sans font-extrabold uppercase tracking-wide text-xs sm:text-sm px-2 py-1 shadow-[0_0_10px_rgb(255_228_60_/_0.7)]">
+            {product.discount.label}
+          </span>
+        )}
         {product.badge && (
           <span className="absolute top-2 left-2 rounded-md bg-tomate text-masa font-sans font-bold uppercase tracking-wider text-[0.65rem] px-2 py-1">
             {product.badge}
@@ -51,6 +56,9 @@ export default function ProductCard({ product, onOpen }) {
         <p className="mt-1 text-sm text-forno/65 line-clamp-2 flex-1">{product.description}</p>
         <div className="mt-3 sm:mt-4 flex items-end justify-between gap-2">
           <p className="font-display font-extrabold text-xl sm:text-2xl text-tomate leading-none">
+            {product.priceBefore != null && (
+              <span className="block mb-1 font-sans font-semibold text-sm text-forno/50 line-through">{price(product.priceBefore)}</span>
+            )}
             {price(priceOf(product))}
             {halfPortion && <span className="block mt-1 font-sans font-semibold text-xs text-forno/55">½ ración {price(halfPortion.price)}</span>}
           </p>
