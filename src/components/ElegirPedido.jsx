@@ -33,26 +33,29 @@ export default function ElegirPedido() {
             const hours = kitchenHours(loc.kitchen)
             const abierta = isOpen(loc.id) && hours.open
             const estado = abierta ? 'Abierta'
-              : !isOpen(loc.id) ? 'Cerrada ahora'
-                : hours.later ? `Abre a las ${hours.opensAt}` : `Cerrada · abre mañana a las ${hours.opensAt}`
+              : !isOpen(loc.id) ? 'Cerrada'
+                : hours.later ? `Abre a las ${hours.opensAt}` : `Abre mañana ${hours.opensAt}`
             return (
               <div key={loc.id} className="frame neon">
                 {/* Foto vertical entera a la izquierda: se ve la fachada completa */}
-                <div className="frame-in grid grid-cols-[7.5rem_1fr] sm:grid-cols-[11rem_1fr] h-[11.5rem] sm:h-[15rem]">
-                  {loc.image?.startsWith('own:') && (
-                    <img
-                      src={img(loc.image, 600)}
-                      srcSet={srcSet(loc.image)}
-                      sizes="(min-width: 640px) 176px, 120px"
-                      alt={`Fachada de Nonno ${loc.name}`}
-                      loading="lazy"
-                      className="h-full w-full object-cover object-center"
-                    />
-                  )}
+                {/* La altura la marca el texto (nunca corta el botón); la foto se estira a esa altura */}
+                <div className="frame-in grid grid-cols-[7.5rem_1fr] sm:grid-cols-[11rem_1fr] min-h-[11.5rem] sm:min-h-[15rem]">
+                  <div className="relative">
+                    {loc.image?.startsWith('own:') && (
+                      <img
+                        src={img(loc.image, 600)}
+                        srcSet={srcSet(loc.image)}
+                        sizes="(min-width: 640px) 176px, 120px"
+                        alt={`Fachada de Nonno ${loc.name}`}
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover object-center"
+                      />
+                    )}
+                  </div>
                   <div className="flex flex-col p-3 sm:p-5 min-w-0">
                     <h2 className="font-sans font-extrabold uppercase text-lg sm:text-2xl neon-amarillo leading-tight">{loc.name}</h2>
                     <span className={[
-                      'mt-1.5 self-start',
+                      'mt-1.5 self-start whitespace-nowrap',
                       abierta ? 'pill-neon' : 'rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide border border-carbon/30 text-carbon/60',
                     ].join(' ')}>
                       {estado}
