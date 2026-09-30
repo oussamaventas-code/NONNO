@@ -69,7 +69,8 @@ export function sanitizeOrder(body, { staff = false, customerId = null, redeem =
 
   const mode = body?.mode === 'delivery' ? 'delivery' : 'pickup'
   const locationId = trim(body?.location?.id, 40)
-  const where = whereOf(body?.customer)
+  /* El personal puede repartir fuera de la zona de su sede */
+  const where = { ...whereOf(body?.customer), anySede: Boolean(staff) }
   const totals = orderTotals({ lines, mode, locationId, where, pointsRedeemed: redeem })
   const delivery = totals.delivery
   const scheduledFor = scheduleOf(body, { staff, locationId, delivery })

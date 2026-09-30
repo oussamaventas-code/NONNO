@@ -111,7 +111,7 @@ export default function OrderEditor({ order, orders = [], locationIds, defaultLo
 
   const pizzas = ovenUnits(lines)
   const totals = orderTotals({
-    lines, mode, locationId: locId, where: { coords: customer.coords, tier: customer.tier },
+    lines, mode, locationId: locId, where: { coords: customer.coords, tier: customer.tier, anySede: true },
     /* Los puntos que el cliente ya canjeó se mantienen al editar */
     pointsRedeemed: Number(order?.points_redeemed) || 0,
   })
@@ -520,7 +520,7 @@ export default function OrderEditor({ order, orders = [], locationIds, defaultLo
             </div>
 
             {mode === 'delivery' && (
-              <DeliveryPicker locationId={locId} value={customer} onChange={patchCustomer} compact />
+              <DeliveryPicker locationId={locId} value={customer} onChange={patchCustomer} compact anySede />
             )}
             {!editing && (
               <div>

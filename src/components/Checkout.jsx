@@ -239,6 +239,7 @@ export default function Checkout() {
               locationId={locationId}
               errors={fieldErrors}
               onChange={(patch) => { setCustomer(patch); setFieldErrors({}) }}
+              onSwitchSede={setLocation}
             />
           )}
 
@@ -357,7 +358,7 @@ function StepMode({ modes, value, onPick, location, pickupSaving, tiers, readyAt
 }
 
 /* ── Paso 3: datos ────────────────────────────────────────────── */
-function StepCustomer({ customer, mode, locationId, errors, onChange }) {
+function StepCustomer({ customer, mode, locationId, errors, onChange, onSwitchSede }) {
   const field = (key, label, placeholder, type = 'text') => (
     <div>
       <label htmlFor={`f-${key}`} className="mono text-carbon/50 mb-2 block">{label}</label>
@@ -391,6 +392,7 @@ function StepCustomer({ customer, mode, locationId, errors, onChange }) {
             value={customer}
             onChange={onChange}
             invalid={errors.delivery}
+            onSwitchSede={onSwitchSede}
           />
         )}
         <div>

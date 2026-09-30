@@ -47,7 +47,10 @@ export const LOCATIONS = [
     orderUrl: null, // TODO (enlace exacto de pideme.net de esta sede)
 
     /* Envío por distancia en línea recta desde el local:
-       hasta 1 km 1,50 €, de 1 a 3 km 3 €. Más lejos no se reparte.
+       hasta 1 km 1,50 €, de 1 a 3 km 3 €, de 3 a 4 km 3,50 €
+       (TODO: CONFIRMAR precio y minutos del último tramo). Más lejos
+       no se reparte. Con 4 km las dos sedes cubren todo El Palmar;
+       cada dirección va a la sede más cercana (ver deliveryQuote).
        minutes: reparto desde que sale del horno (TODO: CONFIRMAR).
        origin: TODO poner el punto exacto del local si difiere. */
     delivery: {
@@ -55,6 +58,7 @@ export const LOCATIONS = [
       tiers: [
         { upToKm: 1, fee: 1.5, minutes: 10 },
         { upToKm: 3, fee: 3, minutes: 20 },
+        { upToKm: 4, fee: 3.5, minutes: 25 },
       ],
       /* Organizador de rutas. TODO: CONFIRMAR CON NONNO.
          maxStops: pedidos por salida del repartidor
@@ -70,7 +74,7 @@ export const LOCATIONS = [
     kitchen: { open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
 
     deliveryNote:
-      'Envío 1,50 € hasta 1 km y 3 € hasta 3 km del local. Las ofertas "Llévatelas por menos" son solo para recoger.',
+      'Envío 1,50 € hasta 1 km, 3 € hasta 3 km y 3,50 € hasta 4 km del local. Las ofertas "Llévatelas por menos" son solo para recoger.',
   },
   {
     id: 'santo-angel',
@@ -111,12 +115,13 @@ export const LOCATIONS = [
       tiers: [
         { upToKm: 1, fee: 1.5, minutes: 10 },
         { upToKm: 3, fee: 3, minutes: 20 },
+        { upToKm: 4, fee: 3.5, minutes: 25 },
       ],
       routing: { maxStops: 4, groupWindowMin: 10, nearKm: 1.5, speedKmh: 25, stopMinutes: 3 },
     },
 
     deliveryNote:
-      'Envío 1,50 € hasta 1 km y 3 € hasta 3 km del local. Las ofertas "Llévatelas por menos" son solo para recoger.',
+      'Envío 1,50 € hasta 1 km, 3 € hasta 3 km y 3,50 € hasta 4 km del local. Las ofertas "Llévatelas por menos" son solo para recoger.',
   },
 ]
 

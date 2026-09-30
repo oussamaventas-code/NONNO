@@ -13,15 +13,18 @@ import { price } from '../lib/format'
  *    Si falla el GPS o el buscador pero hay coordenadas, la distancia
  *    se calcula igualmente aquí mismo: no depende de nadie.
  *
+ * 3. ZONAS: si la dirección es de la otra sede, la web ofrece cambiar
+ *    (onSwitchSede); el panel (anySede) puede seguir, con un aviso.
+ *
  * value: { address, coords, tier }   onChange(patch)
  */
-export default function DeliveryPicker({ locationId, value, onChange, invalid, compact = false }) {
+export default function DeliveryPicker({ locationId, value, onChange, invalid, compact = false, anySede = false, onSwitchSede }) {
   const [status, setStatus] = useState('idle') // idle | busy | found | not-found | unavailable | gps-denied
   const [found, setFound] = useState(null)
   const tiers = deliveryTiers(locationId)
 
   const quote = value.coords || Number.isInteger(value.tier)
-    ? deliveryQuote(locationId, { coords: value.coords, tier: value.tier })
+    ? deliveryQuote(locationId, { coords: value.coords, tier: value.tier, anySede })
     : null
   const showManual = ['not-found', 'unavailable', 'gps-denied'].includes(status) || Number.isInteger(value.tier)
 
@@ -110,6 +113,9 @@ export default function DeliveryPicker({ locationId, value, onChange, invalid, c
           <span>
             {found && <span className="block font-semibold text-carbon">{found}</span>}
             A {quote.label} · envío <strong>{price(quote.fee)}</strong>
+            {quote.closer && (
+              <span className="block mt-1 text-horno">Ojo: es de la zona de {quote.closer.name} (a {quote.closer.km.toLocaleString('es-ES')} km).</span>
+            )}
           </span>
         </p>
       )}
@@ -118,6 +124,12 @@ export default function DeliveryPicker({ locationId, value, onChange, invalid, c
         <p className="flex items-start gap-2 rounded-2xl bg-tomate/10 px-4 py-3 text-sm text-tomate">
           <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" /> {deliveryProblem(quote)}
         </p>
+      )}
+
+      {quote?.reason === 'other-sede' && onSwitchSede && (
+        <button type="button" onClick={() => onSwitchSede(quote.closer.id)} className="btn-neon min-h-[3rem] text-base">
+          Pedir en {quote.closer.name}
+        </button>
       )}
 
       {showManual && (
