@@ -1,23 +1,21 @@
 import { MapPin } from 'lucide-react'
-import { LOCATIONS, availableModes } from '../data/locations'
-import { useStore, useActions } from '../store/StoreContext'
+import { LOCATIONS } from '../data/locations'
+import { useActions } from '../store/StoreContext'
 import { useStoreStatus } from '../hooks/useStoreStatus'
 import { navigate } from '../lib/router'
 import { img, srcSet } from '../data/images'
 
 /**
- * PANTALLA 2 — ELECCIÓN DEL PEDIDO. Una sola decisión: en qué sede y
- * cómo (recoger o entrega). Usa las sedes y modos reales del proyecto;
- * un toque elige las dos cosas y pasa a la carta.
+ * PANTALLA 2 — ELECCIÓN DEL PEDIDO. Una sola decisión: en qué sede.
+ * Un botón por sede y pasa a la carta; recoger o entrega se elige
+ * después, al hacer el pedido.
  */
 export default function ElegirPedido() {
-  const { locationId, order } = useStore()
-  const { setLocation, setMode } = useActions()
+  const { setLocation } = useActions()
   const { isOpen } = useStoreStatus()
 
-  const choose = (locId, modeId) => {
+  const choose = (locId) => {
     setLocation(locId)
-    setMode(modeId)
     navigate('/carta')
   }
 
@@ -58,25 +56,13 @@ export default function ElegirPedido() {
                     <MapPin className="w-4 h-4 mt-px flex-shrink-0 text-tomate" /> {loc.address}
                   </p>
 
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {availableModes(loc.id).map((m) => {
-                      const picked = locationId === loc.id && order.mode === m.id
-                      return (
-                        <button
-                          key={m.id}
-                          onClick={() => choose(loc.id, m.id)}
-                          aria-pressed={picked}
-                          className="btn bg-tomate text-masa !min-h-[3.75rem] text-base"
-                        >
-                          <span className="btn-layer bg-forno" />
-                          <span className="btn-label flex-col !gap-0.5">
-                            <span>{m.label}</span>
-                            <span className="text-[0.7rem] font-medium normal-case tracking-normal opacity-85">{m.hint}</span>
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
+                  <button
+                    onClick={() => choose(loc.id)}
+                    className="btn bg-tomate text-masa mt-4 w-full !min-h-[3.75rem] text-lg"
+                  >
+                    <span className="btn-layer bg-forno" />
+                    <span className="btn-label">ELEGIR</span>
+                  </button>
                 </div>
               </div>
             )
