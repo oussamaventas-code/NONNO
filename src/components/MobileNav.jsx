@@ -66,7 +66,7 @@ export default function MobileNav() {
       </div>
 
       <nav className="shell flex-1 flex flex-col justify-center gap-2" aria-label="Secciones">
-        {NAV_LINKS.map((link, i) => (
+        {NAV_LINKS.filter((l) => l.href).map((link, i) => (
           <button
             key={link.label}
             onClick={() => go(link)}

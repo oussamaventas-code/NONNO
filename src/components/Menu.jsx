@@ -41,17 +41,14 @@ export default function Menu() {
   }, { dependencies: [active], scope: gridRef })
 
   return (
-    <section id="menu" ref={rootRef} className="bg-masa pt-16 sm:pt-20 pb-24 sm:pb-32">
+    <section id="menu" ref={rootRef} className="bg-masa pt-6 sm:pt-10 pb-28 sm:pb-32">
       <div className="shell">
-        <h1 className="menu-heading text-center font-display font-bold text-tomate text-[clamp(2.5rem,4.45vw,4rem)] leading-none">
+        <h1 className="menu-heading text-center font-display font-bold text-tomate text-[clamp(1.75rem,3.2vw,2.5rem)] leading-none">
           La carta
         </h1>
-        <p className="menu-heading mt-6 mx-auto max-w-2xl text-center font-sans font-medium text-lg text-tomate">
-          {MENU_INTRO} Toca un plato para personalizarlo y añadirlo a tu pedido.
-        </p>
 
         {/* Pestañas: sticky bajo la cabecera */}
-        <div className="sticky top-0 z-30 mt-10 -mx-5 sm:mx-0 px-5 py-3 bg-masa/95 backdrop-blur-sm">
+        <div className="sticky top-0 z-30 mt-4 -mx-5 sm:mx-0 px-5 py-2 border-b border-tomate/30 bg-masa/95 backdrop-blur-sm">
           <div className="hide-scrollbar flex sm:justify-center gap-6 sm:gap-10 overflow-x-auto">
             {CATEGORIES.map((cat) => {
               const on = active === cat.id
@@ -74,13 +71,13 @@ export default function Menu() {
         </div>
 
         {CATEGORY_BLURBS[active] && (
-          <p className="mt-6 mx-auto max-w-2xl text-center font-sans font-medium text-tomate/90 leading-relaxed">
+          <p className="menu-heading mt-4 mx-auto max-w-2xl text-center font-sans font-medium text-sm text-tomate/90 leading-snug">
             {CATEGORY_BLURBS[active]}
           </p>
         )}
 
         {deal && (
-          <div className="frame mt-10 mx-auto max-w-3xl">
+          <div className="frame mt-6 mx-auto max-w-3xl">
           <div className="frame-in p-5 sm:p-7 text-center">
             <p className="font-display font-extrabold text-2xl text-tomate">
               Llévatelas por <em className="italic">menos</em>
@@ -101,12 +98,16 @@ export default function Menu() {
         <div
           ref={gridRef}
           key={active}
-          className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
+          className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-8"
         >
           {products.map((p) => (
             <ProductCard key={p.id} product={p} onOpen={openProduct} />
           ))}
         </div>
+
+        <p className="mt-10 mx-auto max-w-2xl text-center font-sans font-medium text-sm text-tomate/75 leading-snug">
+          {MENU_INTRO} Toca un plato para personalizarlo y añadirlo a tu pedido.
+        </p>
       </div>
     </section>
   )
