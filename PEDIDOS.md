@@ -119,7 +119,7 @@ Muestra:
 
 ## Club Nonno (cuentas de cliente y puntos)
 
-El cliente entra en **Mi cuenta** con su móvil y un código de 4 cifras que le llega por SMS, sin contraseñas. Dentro ve sus puntos, sus pedidos y el tique de cada uno para imprimir o guardar en PDF.
+El cliente entra en **Mi cuenta** con su móvil y un código de 6 cifras que le llega por SMS, sin contraseñas. Dentro ve sus puntos, sus pedidos y el tique de cada uno para imprimir o guardar en PDF.
 
 - **Gana 1 punto por cada euro** del total, cuando el pedido se marca **ENTREGADO** en el panel. Si el pedido lo hizo sin entrar en su cuenta, los puntos van igual al móvil del pedido, si ese móvil ya tiene cuenta.
 - **100 puntos = 5 € de descuento** en un pedido online. Lo elige en el resumen del pedido. El descuento nunca cubre el envío.
@@ -194,7 +194,9 @@ Los pedidos con la dirección sin verificar (el cliente eligió la distancia a m
 Para que quien espera vea cómo va su pedido: **En preparación** y **¡Listo! Recoge tu pedido**, con el número y el nombre abreviado. Solo aparecen los pedidos para recoger; nunca teléfonos ni direcciones.
 
 1. En la TV (o un ordenador/Chromecast/Fire TV conectado a ella) abre `tu-dominio/pantalla/sangonera` (o `/pantalla/santo-angel`).
-2. Entra con la contraseña del local. Se queda guardada 30 días.
+2. Entra con la contraseña del local. Se queda guardada 7 días. Tras 5 contraseñas malas desde el mismo sitio, el acceso se bloquea 15 minutos.
+
+**Seguridad (una sola vez):** en Supabase → SQL Editor, pega [`supabase/seguridad.sql`](supabase/seguridad.sql) y pulsa **Run**. Activa el límite de intentos del login, de los códigos del Club, de los SMS y de los pedidos de la web. Además, en Vercel crea `ADMIN_SESSION_SECRET` con una cadena larga y aleatoria (30+ caracteres). Para **cerrar todas las sesiones abiertas** (por ejemplo si se pierde un ordenador), cambia ese valor y vuelve a desplegar.
 3. Pulsa **Pantalla completa y sonido** una vez: activa el aviso sonoro cuando un pedido pasa a listo.
 
 Los pedidos pasan a "¡Listo!" cuando cocina pulsa **MARCAR LISTO** en el panel, y desaparecen al marcarlos **ENTREGADO**. Si se corta internet, la TV sigue enseñando lo último que sabía y se pone al día sola al volver.

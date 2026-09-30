@@ -1,5 +1,6 @@
 import { db, isConfigured } from './_lib/supabase.js'
 import { sendSms, smsConfigured } from './_lib/sms.js'
+import { guard, clear, clientIp } from './_lib/limiter.js'
 import {
   CODE_TTL_MIN, MAX_ATTEMPTS, RESEND_SECONDS, MAX_SENDS_PER_HOUR,
   normalizePhone, newCode, hashCode, codeMatches, isMissingTable,
@@ -74,6 +75,14 @@ async function sendCode(req, res) {
   const phone = normalizePhone(req.body?.phone)
   if (!phone) return res.status(400).json({ error: 'Escribe un móvil español válido (empieza por 6 o 7).' })
 
+  /* Cada SMS lo paga el local: tope por IP y tope diario entre todos, para
+     que nadie gaste la tarifa probando números uno tras otro. */
+  const blocked = await guard(res, [
+    [`sms:ip:${clientIp(req)}`, { max: 6, window: 3600, lock: 3600 }],
+    ['sms:all', { max: 300, window: 86400, lock: 3600 }],
+  ])
+  if (blocked) return res.status(429).json({ error: 'Demasiadas peticiones. Prueba dentro de un rato.', wait: blocked })
+
   const now = Date.now()
   const { data: row, error } = await db().from('customer_codes').select('*').eq('phone', phone).maybeSingle()
   if (error) throw error
@@ -119,6 +128,15 @@ async function verify(req, res) {
   const code = String(req.body?.code || '').trim()
   if (!phone || !code) return res.status(400).json({ error: 'Falta el móvil o el código.' })
 
+  /* El intento se cuenta ANTES de comparar y de forma atómica: probar
+     muchos códigos a la vez no da más intentos que probarlos uno a uno. */
+  const phoneKey = `code:${phone}`
+  const blocked = await guard(res, [
+    [phoneKey, { max: MAX_ATTEMPTS, window: CODE_TTL_MIN * 60, lock: CODE_TTL_MIN * 60 }],
+    [`code:ip:${clientIp(req)}`, { max: 20, window: 900, lock: 900 }],
+  ])
+  if (blocked) return res.status(429).json({ error: 'Demasiados intentos. Espera un rato y pide un código nuevo.' })
+
   const { data: row, error } = await db().from('customer_codes').select('*').eq('phone', phone).maybeSingle()
   if (error) throw error
   if (!row || Date.parse(row.expires_at) < Date.now()) {
@@ -135,6 +153,7 @@ async function verify(req, res) {
 
   /* Código bueno: se gasta y se entra (creando la cuenta si es la primera vez) */
   await db().from('customer_codes').delete().eq('phone', phone)
+  await clear(phoneKey)
   const name = String(req.body?.name || '').trim().slice(0, 80)
   const { data: existing, error: findError } = await db().from('customers').select('*').eq('phone', phone).maybeSingle()
   if (findError) throw findError

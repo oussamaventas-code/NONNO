@@ -10,7 +10,8 @@ import { readCustomerId, getCustomer, movePoints, isMissingTable } from './_lib/
 import { normalizeRedeem } from '../src/data/loyalty.js'
 import { forcedSlot } from '../src/lib/kitchenSlots.js'
 import { getLocation } from '../src/data/locations.js'
-import { phonePattern, summarizeCustomer } from '../src/lib/customerLookup.js'
+import { phonePattern, phoneKey, summarizeCustomer } from '../src/lib/customerLookup.js'
+import { guard, clientIp } from './_lib/limiter.js'
 
 const reply = (row, staff) => ({
   id: row.id,
@@ -53,6 +54,19 @@ export default async function handler(req, res) {
     const session = staffChannel ? readSession(req) : null
     if (staffChannel && !session) return res.status(401).json({ error: 'No autorizado' })
     const staff = Boolean(session)
+
+    /* Pedidos de la web: tope por IP y por teléfono. Evita llenar el horno
+       con pedidos falsos y que se use el aviso por SMS contra un número
+       ajeno. Con margen de sobra para una familia que pide varias veces. */
+    if (!staff) {
+      const rules = [[`order:ip:${clientIp(req)}`, { max: 12, window: 600, lock: 600 }]]
+      const digits = phoneKey(req.body?.customer?.phone)
+      if (digits) rules.push([`order:tel:${digits}`, { max: 5, window: 600, lock: 600 }])
+      const blocked = await guard(res, rules)
+      if (blocked) {
+        return res.status(429).json({ error: 'Demasiados pedidos seguidos. Espera unos minutos o llámanos.', retryAfter: blocked })
+      }
+    }
 
     /* Cliente del Club Nonno con sesión (solo pedidos de la web): el
        pedido queda a su nombre y puede canjear puntos, como mucho los
