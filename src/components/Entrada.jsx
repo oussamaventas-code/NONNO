@@ -24,17 +24,10 @@ export default function Entrada() {
           />
         ))}
       </div>
-      <div className="absolute inset-0 -z-10 bg-masa/75" aria-hidden="true" />
+      <div className="absolute inset-0 -z-10 bg-masa/80" aria-hidden="true" />
       {/* Mezcla en la unión de las dos fotos: sin línea dura */}
       <div className="absolute -z-10 inset-x-0 top-1/2 h-40 -translate-y-1/2 bg-gradient-to-b from-transparent via-masa/90 to-transparent lg:inset-y-0 lg:inset-x-auto lg:left-1/2 lg:h-auto lg:w-48 lg:-translate-x-1/2 lg:translate-y-0 lg:bg-gradient-to-r" aria-hidden="true" />
-      <img
-        src="/logo-nonno.png"
-        alt="La Pizza de Nonno"
-        width="160"
-        height="160"
-        className="h-32 w-32 sm:h-40 sm:w-40 rounded-full object-cover border border-tomate"
-      />
-      <h1 className="mt-6 font-display font-bold text-tomate text-[clamp(3rem,14vw,6rem)] leading-none">
+      <h1 className="font-display font-bold text-tomate text-[clamp(3rem,14vw,6rem)] leading-none">
         {SITE.brand.line2}
       </h1>
       <p className="mt-4 font-sans font-medium text-tomate text-lg sm:text-xl leading-snug">
