@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Menu as MenuIcon, UserRound, MapPin, Flame } from 'lucide-react'
+import { UserRound, MapPin, Flame } from 'lucide-react'
 import { readLastOrder, LAST_ORDER_EVENT } from '../lib/lastOrder'
 import { trackPath } from '../lib/tracking'
 import { NAV_LINKS } from '../data/site'
@@ -16,7 +16,7 @@ import { followLink, navigate, usePath } from '../lib/router'
 export default function Navbar() {
   const { count } = useCart()
   const { order } = useStore()
-  const { openCart, toggleMobileNav } = useActions()
+  const { openCart } = useActions()
   const { location, modes } = useSelectedLocation()
   const modeLabel = modes.find((m) => m.id === order.mode)?.label
   const path = usePath()
@@ -89,13 +89,7 @@ export default function Navbar() {
               </button>
             ))}
           </nav>
-          <button
-            onClick={() => toggleMobileNav(true)}
-            className="md:hidden justify-self-start inline-flex items-center justify-center w-11 h-11 text-tomate"
-            aria-label="Abrir menú de navegación"
-          >
-            <MenuIcon className="w-7 h-7" strokeWidth={2} />
-          </button>
+          <span className="md:hidden" />
 
           {/* Centro: logo */}
           <button onClick={() => navigate('/')} aria-label="Ir al inicio — La Pizza de Nonno">

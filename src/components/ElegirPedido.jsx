@@ -20,18 +20,18 @@ export default function ElegirPedido() {
   }
 
   return (
-    <section className="bg-masa px-5 py-10 sm:py-14">
+    <section className="bg-masa px-5 py-6 sm:py-14">
       <div className="mx-auto max-w-2xl">
         <h1 className="text-center font-display font-bold text-tomate text-[clamp(2rem,8vw,3.25rem)] leading-none">
           ¿Dónde quieres pedir?
         </h1>
 
-        <div className="mt-8 flex flex-col gap-5">
+        <div className="mt-5 sm:mt-8 flex flex-col gap-4 sm:gap-5">
           {LOCATIONS.map((loc) => {
             const abierta = isOpen(loc.id)
             return (
               <div key={loc.id} className="frame">
-                <div className="frame-in p-4 sm:p-5">
+                <div className="frame-in p-3 sm:p-5">
                   {/* Solo las sedes con foto propia del local */}
                   {loc.image?.startsWith('own:') && (
                     <img
@@ -40,7 +40,7 @@ export default function ElegirPedido() {
                       sizes="(min-width: 672px) 640px, 90vw"
                       alt={`Local de ${loc.name}`}
                       loading="lazy"
-                      className="mb-4 h-40 sm:h-52 w-full rounded-md object-cover object-[50%_10%] border border-tomate/40"
+                      className="mb-3 h-28 sm:h-48 w-full rounded-md object-cover object-[50%_10%] border border-tomate/40"
                     />
                   )}
                   <div className="flex flex-wrap items-center gap-2">
@@ -58,7 +58,7 @@ export default function ElegirPedido() {
 
                   <button
                     onClick={() => choose(loc.id)}
-                    className="btn bg-tomate text-masa mt-4 w-full !min-h-[3.75rem] text-lg"
+                    className="btn bg-tomate text-masa mt-3 sm:mt-4 w-full !min-h-[3.25rem] sm:!min-h-[3.75rem] text-lg"
                   >
                     <span className="btn-layer bg-forno" />
                     <span className="btn-label">ELEGIR</span>
