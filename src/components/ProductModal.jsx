@@ -113,7 +113,7 @@ export default function ProductModal() {
       >
         <button
           onClick={closeProduct}
-          className="absolute top-3 right-3 z-10 w-10 h-10 rounded-md border border-tomate bg-masa text-tomate flex items-center justify-center hover:bg-queso transition-colors"
+          className="absolute top-3 right-3 z-10 w-10 h-10 rounded-md border border-tomate bg-masa text-tomate flex items-center justify-center hover:bg-tomate/20 transition-colors"
           aria-label="Cerrar"
         >
           <X className="w-5 h-5" />

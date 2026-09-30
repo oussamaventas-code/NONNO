@@ -107,7 +107,7 @@ export default function ToppingPicker({ extraIds = [], selected, onToggle, size 
         <p className="mt-3 flex flex-wrap items-center gap-1.5 text-sm">
           <span className="font-semibold text-carbon/70">Llevas:</span>
           {picked.map((e) => (
-            <button key={e.id} type="button" onClick={() => onToggle(e.id)} className="rounded-md bg-queso px-2 py-0.5 font-semibold text-carbon hover:line-through" aria-label={`Quitar ${e.label}`}>
+            <button key={e.id} type="button" onClick={() => onToggle(e.id)} className="rounded-md bg-tomate px-2 py-0.5 font-semibold text-masa hover:line-through" aria-label={`Quitar ${e.label}`}>
               + {e.label} ×
             </button>
           ))}

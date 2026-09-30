@@ -144,7 +144,7 @@ function Login() {
         <form onSubmit={submitCode} className="mt-8 flex flex-col gap-4">
           <p className="text-forno/80">Te hemos mandado un {via} al <strong>{phone}</strong> con un código de {LOYALTY.codeLength} cifras.</p>
           {devCode && (
-            <p className="rounded-md bg-queso border border-forno/30 px-3 py-2 text-sm text-forno">
+            <p className="rounded-md bg-crema border border-tomate/50 px-3 py-2 text-sm text-carbon">
               Modo pruebas (sin SMS configurado): tu código es <strong>{devCode}</strong>
             </p>
           )}
