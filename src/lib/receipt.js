@@ -1,6 +1,7 @@
 import { SITE } from '../data/site'
 import { getLocation } from '../data/locations'
 import { price } from './format'
+import { invoiceNumber } from './orderNumber'
 import { LOYALTY } from '../data/loyalty'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -38,7 +39,7 @@ function html(order) {
   ].join('')
 
   return `<!doctype html><html lang="es"><head><meta charset="utf-8">
-<title>${isInvoice ? 'Factura simplificada' : 'Justificante'} ${esc(order.ref)}</title>
+<title>${isInvoice ? `Factura simplificada ${esc(invoiceNumber(order))}` : `Justificante ${esc(order.ref)}`}</title>
 <style>
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d2b4f;max-width:26rem;margin:2rem auto;padding:0 1rem}
   h1{font-size:1.25rem;margin:0}.muted{color:#6b7280;font-size:.85rem;margin:.15rem 0}
@@ -56,7 +57,8 @@ function html(order) {
   ${location?.phones?.[0] ? `<p class="muted">Tel. ${esc(location.phones[0])}</p>` : ''}
 
   <div class="box">
-    <p class="muted"><strong>Nº ${esc(order.ref)}</strong> · ${esc(date)}</p>
+    <p class="muted"><strong>Pedido ${esc(order.ref)}</strong> · ${esc(date)}</p>
+    ${isInvoice ? `<p class="muted">Factura nº ${esc(invoiceNumber(order))}</p>` : ''}
     <p class="muted">${order.mode === 'delivery' ? 'Entrega a domicilio' : 'Recogida en el local'} · ${esc(STATUS[order.status] || order.status)}</p>
     ${order.customer_name ? `<p class="muted">Cliente: ${esc(order.customer_name)}</p>` : ''}
   </div>

@@ -33,10 +33,10 @@ export default function Experience() {
     <section id="experiencia" ref={rootRef} className="section bg-masa">
       <div className="shell">
         <div className="exp-heading max-w-2xl">
-          <p className="mono text-tomate mb-4">LA EXPERIENCIA</p>
+          <p className="mono text-neon mb-4">LA EXPERIENCIA</p>
           <h2 className="font-sans font-extrabold uppercase text-display-sm text-carbon leading-[0.95]">
             {EXPERIENCE.title[0]}<br />
-            <em className="font-serif italic font-semibold text-tomate ">{EXPERIENCE.title[1]}</em>
+            <em className="font-serif italic font-semibold text-neon ">{EXPERIENCE.title[1]}</em>
           </h2>
           <p className="mt-5 text-carbon/60 text-base sm:text-lg">{EXPERIENCE.text}</p>
         </div>
@@ -54,7 +54,7 @@ export default function Experience() {
                   className="exp-image h-full w-full object-cover"
                 />
               </div>
-              <p className="exp-text mono text-tomate mt-5">{p.label}</p>
+              <p className="exp-text mono text-neon mt-5">{p.label}</p>
               <p className="exp-text mt-2 text-carbon/60">{p.text}</p>
             </div>
           ))}

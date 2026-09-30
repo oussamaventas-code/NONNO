@@ -223,11 +223,43 @@ Estados de un pedido: `nuevo` → `horno` → `listo` → `entregado`. También 
 
 **El pago sigue siendo en persona.** La web no cobra nada; el ticket lo deja escrito.
 
+## Avisos por WhatsApp (Twilio)
+
+Si está configurado, el cliente recibe los avisos por **WhatsApp**. Si no tiene WhatsApp o el mensaje no llega, sale automáticamente el **SMS** de siempre (si hay SMS configurado). El panel dice por dónde salió cada aviso.
+
+WhatsApp solo deja que el negocio escriba primero con **plantillas aprobadas por Meta**. Pasos (una sola vez):
+
+1. **Número de WhatsApp del negocio.** En Twilio → *Messaging → Senders → WhatsApp senders* → registra un número (hace falta cuenta de pago y la cuenta de Facebook/Meta Business del negocio). Nombre visible: *La Pizza de Nonno*. El número de prueba `+49…` de Twilio no sirve para clientes.
+2. **Crear las plantillas** en Twilio → *Messaging → Content Template Builder*. Idioma **Spanish (es)**, categoría **Utility**, tipo *Text*, y **Submit for WhatsApp approval**. Copia cada texto tal cual (`{{1}}`, `{{2}}`… son los huecos que rellena la web):
+
+   | Nombre | Texto | Variable en Vercel |
+   |---|---|---|
+   | `nonno_pedido_recibido` | ¡Hola! Hemos recibido tu pedido *{{1}}* en La Pizza de Nonno. {{2}}. Total: {{3}}. Sigue tu pedido o contacta con nosotros: {{4}} ¡Gracias! | `TWILIO_WA_RECIBIDO` |
+   | `nonno_pedido_listo` | ¡Tu pedido *{{1}}* ya está listo! Puedes recogerlo en La Pizza de Nonno {{2}}. ¡Te esperamos! | `TWILIO_WA_LISTO` |
+   | `nonno_pedido_reparto` | Tu pedido *{{1}}* de La Pizza de Nonno ya va de camino. {{2}}. ¡Que aproveche! | `TWILIO_WA_REPARTO` |
+   | `nonno_pedido_cancelado` | Tu pedido *{{1}}* de La Pizza de Nonno se ha cancelado. Si tienes cualquier duda, llámanos al {{2}}. Disculpa las molestias. | `TWILIO_WA_CANCELADO` |
+   | `nonno_codigo` | tipo **Authentication** (el texto lo pone WhatsApp), con botón *Copy code* | `TWILIO_WA_CODIGO` |
+
+   Ejemplos que pide Twilio para los huecos: `07` · `Recógelo en Sangonera la Verde a las 21:30` · `22,90 €` · `https://tu-dominio/p/07-a1b2c3d4e5` · `Llega hacia las 22:40` · `968 00 00 00`.
+3. **Vercel → Environment Variables**: `TWILIO_WHATSAPP_FROM` (el número del paso 1, `+34…`) y, por cada plantilla **aprobada**, su identificador `HX…` en la variable de la tabla. Pon también `SITE_URL` (`https://tu-dominio`): con ella llega el enlace de seguimiento y Twilio puede avisar a la web cuando un WhatsApp no se entrega (entonces sale el SMS). **Redeploy**.
+4. **Probar**: panel → ⚙ → "Probar los avisos a clientes".
+
+Un aviso sin su plantilla configurada sale por SMS, así que se puede activar poco a poco. Precio: Meta cobra cada plantilla de categoría *Utility* más la comisión de Twilio (mira las tarifas de España en Twilio).
+
+## Número de pedido del día
+
+Cada sede numera sus pedidos **01, 02, 03…** y vuelve a empezar cada día (el día cambia a las 5 de la mañana, así lo pedido después de medianoche cuenta en la misma noche). Es el número que se dice al cliente y el que sale en el ticket y en el SMS.
+
+**Para activarlo** (una sola vez): en Supabase → SQL Editor, pega [`supabase/numero-pedido.sql`](supabase/numero-pedido.sql) y pulsa **Run**. Sin ese paso los pedidos siguen entrando con la referencia de antes (`NN-4821`).
+
+Los pedidos tomados en el mostrador sin conexión mantienen su referencia `SC-…`, la que ya salió impresa. En la factura simplificada el número lleva delante la fecha y la sede (`20260929-sangonera-07`) para que no se repita nunca.
+
 ## Ficheros
 
 | Fichero | Qué hace |
 |---|---|
 | `supabase/schema.sql` | tabla de pedidos y de avisos |
+| `supabase/numero-pedido.sql` | número de pedido del día (01, 02…) por sede |
 | `supabase/club-nonno.sql` | clientes, códigos por SMS y puntos del Club Nonno |
 | `api/account.js` | entrar con el móvil y datos de Mi cuenta |
 | `api/_lib/customer.js` | sesión del cliente, códigos y movimientos de puntos |

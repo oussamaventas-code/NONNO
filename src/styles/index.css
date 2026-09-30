@@ -23,6 +23,7 @@
     --c-panel: 29 43 79;      /* bloques oscuros */
     --c-luz: 255 250 233;     /* texto claro */
     --c-tomate: 226 62 87;    /* rojo del logo: acción */
+    --c-neon: 14 132 214;     /* azul neón del cartel: textos destacados */
     --c-horno: 245 150 52;    /* naranja "Nonno" del logo */
     --c-albahaca: 47 133 90;  /* verde: estados positivos */
     --c-queso: 255 238 170;   /* amarillo queso: sección de valores */

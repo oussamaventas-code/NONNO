@@ -42,7 +42,7 @@ export default function Toasts() {
             {t.action && (
               <button
                 onClick={() => { openCart(); dismissToast(t.id) }}
-                className="mono text-tomate mt-0.5 hover:text-horno transition-colors"
+                className="mono text-neon mt-0.5 hover:text-horno transition-colors"
               >
                 {t.action} →
               </button>

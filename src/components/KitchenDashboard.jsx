@@ -50,10 +50,10 @@ export default function KitchenDashboard() {
     <section ref={rootRef} className="section bg-masa">
       <div className="shell">
         <div className="max-w-2xl">
-          <p className="mono text-tomate mb-4">VISUAL EXPERIENCE</p>
+          <p className="mono text-neon mb-4">VISUAL EXPERIENCE</p>
           <h2 className="font-sans font-extrabold uppercase text-display-sm text-carbon leading-[0.95]">
             HECHA CON RITMO.<br />
-            <em className="font-serif italic font-semibold text-tomate ">SERVIDA CON FUEGO.</em>
+            <em className="font-serif italic font-semibold text-neon ">SERVIDA CON FUEGO.</em>
           </h2>
         </div>
 
@@ -66,7 +66,7 @@ export default function KitchenDashboard() {
                   <circle
                     cx="50" cy="50" r={R} fill="none" strokeWidth="6" strokeLinecap="round"
                     stroke="currentColor"
-                    className="kpi-ring text-tomate"
+                    className="kpi-ring text-neon"
                     data-arc={kpi.arc}
                     strokeDasharray={CIRC}
                     strokeDashoffset={CIRC}

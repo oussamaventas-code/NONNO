@@ -7,7 +7,7 @@
 
 create table if not exists public.orders (
   id            uuid primary key default gen_random_uuid(),
-  ref           text not null unique,              -- NN-4821, visible para el cliente
+  ref           text not null,                     -- número del día ("07"), ver numero-pedido.sql
   created_at    timestamptz not null default now(),
 
   -- Estado del pedido en cocina

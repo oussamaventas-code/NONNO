@@ -110,7 +110,7 @@ export default function ProductModal() {
       >
         <button
           onClick={closeProduct}
-          className="absolute top-3 right-3 z-10 w-10 h-10 rounded-md border border-tomate bg-masa text-tomate flex items-center justify-center hover:bg-queso transition-colors"
+          className="absolute top-3 right-3 z-10 w-10 h-10 rounded-md border border-tomate bg-masa text-neon flex items-center justify-center hover:bg-queso transition-colors"
           aria-label="Cerrar"
         >
           <X className="w-5 h-5" />
@@ -132,11 +132,11 @@ export default function ProductModal() {
         </div>
 
         <div className="px-6 sm:px-8 pb-8 -mt-6 relative">
-          {product.badge && <span className="mono normal-case text-tomate">{product.badge}</span>}
-          <h2 id="product-modal-title" className="font-sans font-extrabold uppercase text-2xl sm:text-3xl text-tomate flex items-center gap-2 mt-1">
+          {product.badge && <span className="mono normal-case text-neon">{product.badge}</span>}
+          <h2 id="product-modal-title" className="font-sans font-extrabold uppercase text-2xl sm:text-3xl text-neon flex items-center gap-2 mt-1">
             {product.name}
             {product.vegetarian && <Leaf className="w-4 h-4 text-albahaca" strokeWidth={2} />}
-            {product.spicy && <FlameIcon className="w-4 h-4 text-tomate" strokeWidth={2} />}
+            {product.spicy && <FlameIcon className="w-4 h-4 text-neon" strokeWidth={2} />}
           </h2>
           <p className="mt-1 text-carbon/70">{product.description}</p>
 
@@ -167,11 +167,11 @@ export default function ProductModal() {
           {product.ingredients?.length > 0 && (
             <div className="mt-6">
               <div className="flex items-baseline justify-between gap-3 mb-2">
-                <p className="mono text-tomate">¿QUITAR ALGO? <span className="normal-case text-carbon/50">toca para quitar</span></p>
+                <p className="mono text-neon">¿QUITAR ALGO? <span className="normal-case text-carbon/50">toca para quitar</span></p>
                 {removed.length > 0 && (
                   <button
                     onClick={() => setRemoved([])}
-                    className="mono normal-case text-tomate hover:text-horno transition-colors"
+                    className="mono normal-case text-neon hover:text-horno transition-colors"
                   >
                     Restaurar todos
                   </button>
@@ -190,13 +190,13 @@ export default function ProductModal() {
                       className={[
                         'group flex items-center gap-1.5 rounded-md border px-3 py-2 min-h-[40px] text-sm font-semibold transition-all duration-300 ease-magnetic',
                         off
-                          ? 'border-tomate bg-tomate/10 text-tomate line-through'
+                          ? 'border-tomate bg-tomate/10 text-neon line-through'
                           : 'border-tomate/40 bg-masa text-carbon',
                       ].join(' ')}
                     >
                       {off
                         ? <X className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
-                        : <Check className="w-3.5 h-3.5 flex-shrink-0 text-tomate" strokeWidth={2.5} />}
+                        : <Check className="w-3.5 h-3.5 flex-shrink-0 text-neon" strokeWidth={2.5} />}
                       {ing}
                     </button>
                   )
@@ -204,7 +204,7 @@ export default function ProductModal() {
               </div>
 
               {removed.length > 0 && (
-                <p className="mt-3 rounded-md border border-tomate bg-tomate/10 px-4 py-2 text-sm font-bold uppercase text-tomate">
+                <p className="mt-3 rounded-md border border-tomate bg-tomate/10 px-4 py-2 text-sm font-bold uppercase text-neon">
                   Sin {removed.join(', sin ')}
                 </p>
               )}
@@ -218,7 +218,7 @@ export default function ProductModal() {
           )}
 
           <div className="mt-7">
-            <label htmlFor="product-note" className="mono text-tomate mb-2 block">
+            <label htmlFor="product-note" className="mono text-neon mb-2 block">
               NOTA (OPCIONAL)
             </label>
             <input
@@ -240,7 +240,7 @@ export default function ProductModal() {
             <div className="flex items-center gap-1 rounded-md border border-tomate/50 p-1">
               <button
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="w-10 h-10 rounded-md flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors disabled:opacity-30"
+                className="w-10 h-10 rounded-md flex items-center justify-center text-neon hover:bg-tomate/10 transition-colors disabled:opacity-30"
                 disabled={qty <= 1}
                 aria-label="Quitar unidad"
               >
@@ -249,7 +249,7 @@ export default function ProductModal() {
               <span className="w-8 text-center font-sans font-bold text-carbon">{qty}</span>
               <button
                 onClick={() => setQty((q) => q + 1)}
-                className="w-10 h-10 rounded-md flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors"
+                className="w-10 h-10 rounded-md flex items-center justify-center text-neon hover:bg-tomate/10 transition-colors"
                 aria-label="Añadir unidad"
               >
                 <Plus className="w-4 h-4" />

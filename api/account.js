@@ -1,5 +1,5 @@
 import { db, isConfigured } from './_lib/supabase.js'
-import { sendSms, smsConfigured } from './_lib/sms.js'
+import { sendLoginCode } from './_lib/sms.js'
 import {
   CODE_TTL_MIN, MAX_ATTEMPTS, RESEND_SECONDS, MAX_SENDS_PER_HOUR,
   normalizePhone, newCode, hashCode, codeMatches, isMissingTable,
@@ -100,18 +100,18 @@ async function sendCode(req, res) {
   })
   if (saveError) throw saveError
 
-  /* Sin pasarela de SMS configurada: en pruebas se devuelve el código
-     para poder entrar; en la web publicada, nunca. */
-  if (!smsConfigured()) {
+  /* WhatsApp si hay plantilla de código; si no, SMS. Sin ninguna vía
+     configurada: en pruebas se devuelve el código para poder entrar;
+     en la web publicada, nunca. */
+  const sent = await sendLoginCode(phone, code, CODE_TTL_MIN)
+  if (sent.skipped === 'sms-no-configurado') {
     if (process.env.VERCEL_ENV === 'production') {
-      return res.status(503).json({ error: 'Ahora mismo no podemos mandar SMS. Inténtalo más tarde.' })
+      return res.status(503).json({ error: 'Ahora mismo no podemos mandar el código. Inténtalo más tarde.' })
     }
     return res.status(200).json({ ok: true, devCode: code })
   }
-
-  const sent = await sendSms(phone, `La Pizza de Nonno: tu codigo es ${code}. Caduca en ${CODE_TTL_MIN} min. No se lo digas a nadie.`)
-  if (!sent.ok) return res.status(502).json({ error: 'No hemos podido mandar el SMS. Inténtalo en un momento.' })
-  return res.status(200).json({ ok: true })
+  if (!sent.ok) return res.status(502).json({ error: 'No hemos podido mandar el código. Inténtalo en un momento.' })
+  return res.status(200).json({ ok: true, via: sent.via || 'sms' })
 }
 
 async function verify(req, res) {

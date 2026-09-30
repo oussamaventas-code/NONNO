@@ -34,10 +34,10 @@ export default function Process() {
     <section ref={rootRef} className="section bg-masa overflow-hidden">
       <div className="shell">
         <div className="process-heading max-w-xl">
-          <p className="mono text-tomate mb-4">CÓMO FUNCIONA</p>
+          <p className="mono text-neon mb-4">CÓMO FUNCIONA</p>
           <h2 className="font-sans font-extrabold uppercase text-display-sm text-carbon leading-[0.95]">
             DEL HORNO<br />
-            <em className="font-serif italic font-semibold text-tomate ">A TU MESA.</em>
+            <em className="font-serif italic font-semibold text-neon ">A TU MESA.</em>
           </h2>
         </div>
 
@@ -47,7 +47,7 @@ export default function Process() {
             <line x1="0" y1="2" x2="1000" y2="2" stroke="currentColor" strokeWidth="2" className="text-carbon/10" />
             <line
               x1="0" y1="2" x2="1000" y2="2" stroke="currentColor" strokeWidth="2"
-              className="process-line text-tomate"
+              className="process-line text-neon"
               strokeDasharray="1000" strokeDashoffset="1000"
             />
           </svg>
@@ -70,7 +70,7 @@ export default function Process() {
             <line x1="2" y1="0" x2="2" y2="100%" stroke="currentColor" strokeWidth="2" className="text-carbon/10" />
             <line
               x1="2" y1="0" x2="2" y2="100%" stroke="currentColor" strokeWidth="2"
-              className="process-line text-tomate"
+              className="process-line text-neon"
               strokeDasharray="600" strokeDashoffset="600"
             />
           </svg>

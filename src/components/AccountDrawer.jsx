@@ -36,8 +36,8 @@ export default function AccountDrawer() {
         className="relative w-full sm:w-[27rem] max-h-[92dvh] sm:max-h-none sm:h-full overflow-y-auto bg-masa rounded-t-block sm:rounded-none border-t sm:border-t-0 sm:border-l border-tomate"
       >
         <div className="sticky top-0 z-10 bg-masa flex items-center justify-between px-6 pt-6 pb-4 border-b border-tomate">
-          <h2 id="account-title" className="font-display italic font-bold text-2xl text-tomate">{LOYALTY.name}</h2>
-          <button onClick={closeAccount} className="w-10 h-10 rounded-full flex items-center justify-center text-tomate hover:bg-tomate/10" aria-label="Cerrar">
+          <h2 id="account-title" className="font-display italic font-bold text-2xl text-neon">{LOYALTY.name}</h2>
+          <button onClick={closeAccount} className="w-10 h-10 rounded-full flex items-center justify-center text-neon hover:bg-tomate/10" aria-label="Cerrar">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -57,9 +57,9 @@ export default function AccountDrawer() {
 function Rules() {
   return (
     <ul className="flex flex-col gap-2 font-sans text-sm text-forno/80">
-      <li className="flex gap-2"><Star className="w-4 h-4 mt-0.5 text-tomate fill-tomate flex-shrink-0" strokeWidth={0} />{LOYALTY.pointsPerEuro} punto por cada euro de tus pedidos, al entregártelos.</li>
-      <li className="flex gap-2"><Gift className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />{LOYALTY.redeemStep} puntos = {price(LOYALTY.stepValue)} de descuento en tu próximo pedido online.</li>
-      <li className="flex gap-2"><Smartphone className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />Sin contraseñas: entras con tu móvil y un código por SMS.</li>
+      <li className="flex gap-2"><Star className="w-4 h-4 mt-0.5 text-neon fill-tomate flex-shrink-0" strokeWidth={0} />{LOYALTY.pointsPerEuro} punto por cada euro de tus pedidos, al entregártelos.</li>
+      <li className="flex gap-2"><Gift className="w-4 h-4 mt-0.5 text-neon flex-shrink-0" />{LOYALTY.redeemStep} puntos = {price(LOYALTY.stepValue)} de descuento en tu próximo pedido online.</li>
+      <li className="flex gap-2"><Smartphone className="w-4 h-4 mt-0.5 text-neon flex-shrink-0" />Sin contraseñas: entras con tu móvil y un código por WhatsApp o SMS.</li>
     </ul>
   )
 }
@@ -67,7 +67,7 @@ function Rules() {
 function ClubOff() {
   return (
     <div className="text-center">
-      <p className="font-display font-bold text-2xl text-tomate">Muy pronto</p>
+      <p className="font-display font-bold text-2xl text-neon">Muy pronto</p>
       <p className="mt-2 text-forno/70">El {LOYALTY.name} se está preparando. Así funcionará:</p>
       <div className="mt-6 text-left"><Rules /></div>
     </div>
@@ -84,6 +84,7 @@ function Login() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [devCode, setDevCode] = useState(null)
+  const [via, setVia] = useState('SMS')
   const [wait, setWait] = useState(0)
   const codeRef = useRef(null)
 
@@ -104,6 +105,7 @@ function Login() {
       return
     }
     setDevCode(data.devCode || null)
+    setVia(data.via === 'whatsapp' ? 'WhatsApp' : 'SMS')
     setStep('code'); setCode(''); setWait(60)
     setTimeout(() => codeRef.current?.focus(), 50)
   }
@@ -126,28 +128,28 @@ function Login() {
       {step === 'phone' ? (
         <form onSubmit={requestCode} className="mt-8 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
-            <span className="font-sans font-semibold uppercase text-xs tracking-wider text-tomate">Tu móvil</span>
+            <span className="font-sans font-semibold uppercase text-xs tracking-wider text-neon">Tu móvil</span>
             <input className={input} type="tel" inputMode="tel" autoComplete="tel" placeholder="600 000 000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="font-sans font-semibold uppercase text-xs tracking-wider text-tomate">Tu nombre <span className="normal-case font-normal text-forno/50">(si es tu primera vez)</span></span>
+            <span className="font-sans font-semibold uppercase text-xs tracking-wider text-neon">Tu nombre <span className="normal-case font-normal text-forno/50">(si es tu primera vez)</span></span>
             <input className={input} autoComplete="given-name" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
           </label>
-          {error && <p className="text-sm text-tomate font-semibold" role="alert">{error}</p>}
+          {error && <p className="text-sm text-neon font-semibold" role="alert">{error}</p>}
           <button className="btn-retro self-start" disabled={busy || wait > 0}>
             <span>{busy ? 'Enviando…' : wait > 0 ? `Espera ${wait} s` : 'Enviarme el código'}</span>
           </button>
         </form>
       ) : (
         <form onSubmit={submitCode} className="mt-8 flex flex-col gap-4">
-          <p className="text-forno/80">Te hemos mandado un SMS al <strong>{phone}</strong> con un código de {LOYALTY.codeLength} cifras.</p>
+          <p className="text-forno/80">Te hemos mandado un {via} al <strong>{phone}</strong> con un código de {LOYALTY.codeLength} cifras.</p>
           {devCode && (
             <p className="rounded-md bg-queso border border-forno/30 px-3 py-2 text-sm text-forno">
               Modo pruebas (sin SMS configurado): tu código es <strong>{devCode}</strong>
             </p>
           )}
           <label className="flex flex-col gap-1.5">
-            <span className="font-sans font-semibold uppercase text-xs tracking-wider text-tomate">Código</span>
+            <span className="font-sans font-semibold uppercase text-xs tracking-wider text-neon">Código</span>
             <input
               ref={codeRef}
               className={`${input} text-center text-2xl tracking-[0.5em] font-bold`}
@@ -160,15 +162,15 @@ function Login() {
               required
             />
           </label>
-          {error && <p className="text-sm text-tomate font-semibold" role="alert">{error}</p>}
+          {error && <p className="text-sm text-neon font-semibold" role="alert">{error}</p>}
           <button className="btn-retro self-start" disabled={busy || code.length < LOYALTY.codeLength}>
             <span>{busy ? 'Comprobando…' : 'Entrar'}</span>
           </button>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            <button type="button" onClick={() => requestCode()} disabled={wait > 0 || busy} className="text-tomate underline underline-offset-4 disabled:no-underline disabled:text-forno/40">
+            <button type="button" onClick={() => requestCode()} disabled={wait > 0 || busy} className="text-neon underline underline-offset-4 disabled:no-underline disabled:text-forno/40">
               {wait > 0 ? `Reenviar en ${wait} s` : 'Reenviar el código'}
             </button>
-            <button type="button" onClick={() => { setStep('phone'); setError('') }} className="text-tomate underline underline-offset-4">Cambiar de móvil</button>
+            <button type="button" onClick={() => { setStep('phone'); setError('') }} className="text-neon underline underline-offset-4">Cambiar de móvil</button>
           </div>
         </form>
       )}
@@ -200,8 +202,8 @@ function Member() {
       {/* Tarjeta de puntos */}
       <div className="frame mt-6">
         <div className="frame-in bg-crema p-5 text-center">
-          <p className="font-sans font-semibold uppercase text-xs tracking-wider text-tomate">Tus puntos</p>
-          <p className="font-display font-bold text-6xl text-tomate leading-none mt-2">{points}</p>
+          <p className="font-sans font-semibold uppercase text-xs tracking-wider text-neon">Tus puntos</p>
+          <p className="font-display font-bold text-6xl text-neon leading-none mt-2">{points}</p>
           <p className="mt-3 text-forno font-semibold">
             {available > 0 ? `Tienes ${price(available)} de descuento para tu próximo pedido` : `Te faltan ${toNext} puntos para tus primeros ${price(LOYALTY.stepValue)}`}
           </p>
@@ -215,7 +217,7 @@ function Member() {
       <div className="mt-8 flex gap-6 border-b border-tomate/30" role="tablist">
         {[['pedidos', 'Mis pedidos'], ['puntos', 'Movimientos']].map(([id, label]) => (
           <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-            className={['pb-2 font-sans font-semibold uppercase text-sm tracking-wider border-b-2 -mb-px', tab === id ? 'text-tomate border-tomate' : 'text-forno/50 border-transparent'].join(' ')}>
+            className={['pb-2 font-sans font-semibold uppercase text-sm tracking-wider border-b-2 -mb-px', tab === id ? 'text-neon border-tomate' : 'text-forno/50 border-transparent'].join(' ')}>
             {label}
           </button>
         ))}
@@ -234,11 +236,11 @@ function Member() {
                 <span className={['text-xs font-semibold uppercase', o.status === 'cancelado' ? 'text-forno/50' : 'text-albahaca'].join(' ')}>{STATUS[o.status]}</span>
               </div>
               <div className="mt-3 flex items-center justify-between text-sm">
-                <span className="text-tomate font-semibold">
+                <span className="text-neon font-semibold">
                   {earnedByOrder[o.id] ? `+${earnedByOrder[o.id]} puntos` : o.status === 'cancelado' ? '' : 'Puntos al entregarlo'}
                   {o.points_redeemed > 0 ? ` · usaste ${o.points_redeemed}` : ''}
                 </span>
-                <button onClick={() => openReceipt(o)} className="inline-flex items-center gap-1 text-tomate underline underline-offset-4">
+                <button onClick={() => openReceipt(o)} className="inline-flex items-center gap-1 text-neon underline underline-offset-4">
                   <FileText className="w-4 h-4" /> Tique
                 </button>
               </div>
@@ -256,14 +258,14 @@ function Member() {
                 <span className="font-semibold text-forno">{REASON[l.reason]}</span>
                 <span className="block text-xs text-forno/60">{l.note || ''} · {day(l.created_at)}</span>
               </span>
-              <span className={['font-bold', l.delta > 0 ? 'text-albahaca' : 'text-tomate'].join(' ')}>{l.delta > 0 ? '+' : ''}{l.delta}</span>
+              <span className={['font-bold', l.delta > 0 ? 'text-albahaca' : 'text-neon'].join(' ')}>{l.delta > 0 ? '+' : ''}{l.delta}</span>
             </li>
           ))}
         </ul>
       )}
 
       <div className="mt-8"><Rules /></div>
-      <button onClick={logout} className="mt-8 inline-flex items-center gap-2 text-sm text-forno/60 hover:text-tomate">
+      <button onClick={logout} className="mt-8 inline-flex items-center gap-2 text-sm text-forno/60 hover:text-neon">
         <LogOut className="w-4 h-4" /> Cerrar sesión
       </button>
     </div>

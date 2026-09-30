@@ -19,6 +19,11 @@ const list = (value, max, len) =>
   Array.isArray(value) ? value.slice(0, max).map((v) => trim(v, len)).filter(Boolean) : []
 
 const CHANNELS = ['mostrador', 'telefono']
+
+/** Referencia de reserva ("NN-4821"), solo si la base de datos aún no tiene
+    el número del día (supabase/numero-pedido.sql). Con 6 cifras si las de 4 chocan. */
+export const newRef = (digits = 4) =>
+  `NN-${Math.floor(10 ** (digits - 1) + Math.random() * 9 * 10 ** (digits - 1))}`
 export const PAYMENT_METHODS = ['efectivo', 'tarjeta']
 
 /**
@@ -89,7 +94,10 @@ export function sanitizeOrder(body, { staff = false, customerId = null, redeem =
 
   return {
     order: {
-      ref: trim(body?.ref, 20) || `NN-${Math.floor(1000 + Math.random() * 9000)}`,
+      /* El número del día lo pone api/orders.js al guardar. Solo se respeta
+         el de un pedido que el mostrador tomó sin conexión ("SC-213045"):
+         es el que ya salió impreso en la comanda. */
+      ref: staff && /^SC-\d{6}$/.test(trim(body?.ref, 20)) ? trim(body.ref, 20) : newRef(),
       location_id: locationId,
       location_name: getLocation(locationId)?.name || '',
       mode,

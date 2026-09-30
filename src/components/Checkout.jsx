@@ -191,12 +191,12 @@ export default function Checkout() {
 
         <div ref={bodyRef} className="px-6 sm:px-8 py-7">
           {order.status === 'idle' && locationClosed && (
-            <p className="mb-6 rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">
+            <p className="mb-6 rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-neon">
               {location?.name} está cerrado ahora mismo. No se pueden hacer pedidos hasta que vuelva a abrir.
             </p>
           )}
           {order.status === 'idle' && !locationClosed && slotFull && (
-            <p className="mb-6 rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">
+            <p className="mb-6 rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-neon">
               {eta.message}
             </p>
           )}
@@ -261,7 +261,7 @@ export default function Checkout() {
 function StepLocation({ locationId, onPick }) {
   return (
     <div>
-      <p className="mono text-tomate mb-2">01 / SEDE</p>
+      <p className="mono text-neon mb-2">01 / SEDE</p>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">¿Desde qué Nonno pedimos?</h3>
       <div className="flex flex-col gap-3">
         {LOCATIONS.map((loc) => {
@@ -282,7 +282,7 @@ function StepLocation({ locationId, onPick }) {
                 <span className="block font-sans font-bold text-sm text-carbon">{loc.name}</span>
                 <span className="block mono normal-case text-carbon/45 mt-0.5">{loc.tagline}</span>
               </span>
-              {active && <Check className="w-5 h-5 text-tomate flex-shrink-0" />}
+              {active && <Check className="w-5 h-5 text-neon flex-shrink-0" />}
             </button>
           )
         })}
@@ -305,7 +305,7 @@ function StepMode({ modes, value, onPick, location, pickupSaving, tiers, readyAt
   }
   return (
     <div>
-      <p className="mono text-tomate mb-2">02 / MODO</p>
+      <p className="mono text-neon mb-2">02 / MODO</p>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">¿Cómo quieres tu pizza?</h3>
       <div className="grid grid-cols-2 gap-3">
         {modes.map((m) => {
@@ -320,7 +320,7 @@ function StepMode({ modes, value, onPick, location, pickupSaving, tiers, readyAt
                 active ? 'border-tomate bg-tomate/5' : 'border-carbon/12 hover:border-carbon/30',
               ].join(' ')}
             >
-              <Icon className={['w-6 h-6', active ? 'text-tomate' : 'text-carbon/50'].join(' ')} />
+              <Icon className={['w-6 h-6', active ? 'text-neon' : 'text-carbon/50'].join(' ')} />
               <span className="font-sans font-bold text-sm text-carbon">{m.label}</span>
               <span className="text-xs text-carbon/45">{m.hint}</span>
               {when && (
@@ -361,19 +361,19 @@ function StepCustomer({ customer, mode, locationId, errors, onChange }) {
           errors[key] ? 'border-tomate' : 'border-carbon/12 focus:border-tomate',
         ].join(' ')}
       />
-      {errors[key] && <p className="mt-1 text-xs text-tomate">Este campo es necesario.</p>}
+      {errors[key] && <p className="mt-1 text-xs text-neon">Este campo es necesario.</p>}
     </div>
   )
 
   return (
     <div>
-      <p className="mono text-tomate mb-2">03 / DATOS</p>
+      <p className="mono text-neon mb-2">03 / DATOS</p>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">¿A nombre de quién?</h3>
       <div className="flex flex-col gap-5">
         {field('name', 'NOMBRE', 'Tu nombre')}
         <div>
           {field('phone', 'TELÉFONO MÓVIL', '600 000 000', 'tel')}
-          <p className="mt-1.5 text-xs text-carbon/45">Te mandamos un SMS con la confirmación y la hora, y otro cuando esté listo.</p>
+          <p className="mt-1.5 text-xs text-carbon/45">Te mandamos un WhatsApp o SMS con la confirmación y la hora, y otro cuando esté listo.</p>
         </div>
         {mode === 'delivery' && (
           <DeliveryPicker
@@ -408,7 +408,7 @@ function ClubBox({ account, totals, redeem, redeemMax, onRedeem }) {
     return (
       <button
         onClick={account.openAccount}
-        className="mb-6 w-full text-left rounded-md border border-dashed border-tomate bg-tomate/5 px-4 py-3 text-sm text-tomate"
+        className="mb-6 w-full text-left rounded-md border border-dashed border-tomate bg-tomate/5 px-4 py-3 text-sm text-neon"
       >
         <span className="font-semibold">Con este pedido ganarías {earn} puntos del {LOYALTY.name}.</span>{' '}
         <span className="underline underline-offset-4">Entra con tu móvil</span>
@@ -419,7 +419,7 @@ function ClubBox({ account, totals, redeem, redeemMax, onRedeem }) {
   const step = LOYALTY.redeemStep
   return (
     <div className="mb-6 rounded-md border border-tomate bg-tomate/5 px-4 py-3">
-      <p className="flex items-center gap-2 text-sm font-semibold text-tomate">
+      <p className="flex items-center gap-2 text-sm font-semibold text-neon">
         <Star className="w-4 h-4 fill-tomate" strokeWidth={0} />
         Tienes {account.points} puntos · con este pedido ganas {earn}
       </p>
@@ -429,7 +429,7 @@ function ClubBox({ account, totals, redeem, redeemMax, onRedeem }) {
             {redeem > 0 ? `Usas ${redeem} puntos: −${price(totals.pointsDiscount)}` : `Puedes usar hasta ${redeemMax} puntos`}
           </span>
           <span className="flex items-center gap-2">
-            <button onClick={() => onRedeem(Math.max(0, redeem - step))} disabled={redeem <= 0} className="w-8 h-8 rounded-full border border-tomate text-tomate flex items-center justify-center disabled:opacity-30" aria-label="Usar menos puntos">
+            <button onClick={() => onRedeem(Math.max(0, redeem - step))} disabled={redeem <= 0} className="w-8 h-8 rounded-full border border-tomate text-neon flex items-center justify-center disabled:opacity-30" aria-label="Usar menos puntos">
               <Minus className="w-4 h-4" />
             </button>
             <button onClick={() => onRedeem(Math.min(redeemMax, redeem + step))} disabled={redeem >= redeemMax} className="w-8 h-8 rounded-full bg-tomate text-masa flex items-center justify-center disabled:opacity-30" aria-label="Usar más puntos">
@@ -450,7 +450,7 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
   const arrival = readyAt && (trip ? readyAt + trip.minutes * 60000 : readyAt)
   return (
     <div>
-      <p className="mono text-tomate mb-2">04 / RESUMEN</p>
+      <p className="mono text-neon mb-2">04 / RESUMEN</p>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">Todo listo para confirmar</h3>
 
       <div className="rounded-2xl border border-carbon/10 divide-y divide-carbon/8">
@@ -465,7 +465,7 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
         {arrival && (
           <div className="p-4 flex items-center justify-between">
             <span className="mono text-carbon/45">{mode === 'delivery' ? 'LLEGA HACIA LAS' : 'LISTA A LAS'}</span>
-            <span className="font-sans font-extrabold text-lg text-tomate">{hourOf(arrival)}</span>
+            <span className="font-sans font-extrabold text-lg text-neon">{hourOf(arrival)}</span>
           </div>
         )}
         <div className="p-4 flex items-center justify-between">
@@ -488,7 +488,7 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
             <span className="text-carbon/70">
               {l.qty}× {l.name}
               {l.removed?.length > 0 && (
-                <span className="block text-tomate font-semibold">
+                <span className="block text-neon font-semibold">
                   Sin {l.removed.join(', sin ')}
                 </span>
               )}
@@ -560,7 +560,7 @@ function OrderSuccess({ result, onClose }) {
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon">Perfecto. Ya está en tu pedido.</h3>
       <p className="mt-2 text-carbon/55">{result?.message}</p>
       {result?.arrivalAt && (
-        <p className="mt-4 font-sans font-extrabold uppercase text-lg text-tomate">
+        <p className="mt-4 font-sans font-extrabold uppercase text-lg text-neon">
           {result.payload?.mode === 'delivery' ? 'Llega hacia las ' : 'Lista para recoger a las '}
           {hourOf(result.arrivalAt)}
         </p>
@@ -617,7 +617,7 @@ function OrderFallback({ result, locationId, onRetry, retrying, onDone }) {
             <span className="btn-label"><Phone className="w-4 h-4" /> LLAMAR AL {p}</span>
           </a>
         ))}
-        <button onClick={onRetry} disabled={retrying} className="mono normal-case mt-1 text-carbon/60 hover:text-tomate disabled:opacity-50">
+        <button onClick={onRetry} disabled={retrying} className="mono normal-case mt-1 text-carbon/60 hover:text-neon disabled:opacity-50">
           {retrying ? 'Reintentando…' : 'Volver a intentarlo por la web'}
         </button>
         <button onClick={onDone} className="mono normal-case text-carbon/40 hover:text-carbon">
@@ -632,7 +632,7 @@ function OrderFallback({ result, locationId, onRetry, retrying, onDone }) {
 function OrderError({ message, onRetry }) {
   return (
     <div className="text-center py-6">
-      <span className="inline-flex w-16 h-16 rounded-full bg-tomate/10 text-tomate items-center justify-center mb-5">
+      <span className="inline-flex w-16 h-16 rounded-full bg-tomate/10 text-neon items-center justify-center mb-5">
         <X className="w-7 h-7" strokeWidth={1.5} />
       </span>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon">{message || 'No hemos podido actualizar tu pedido.'}</h3>

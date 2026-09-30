@@ -29,11 +29,15 @@ export default function SmsStatus({ order, onUpdated, onError }) {
     }
   }
 
+  /* WhatsApp si todos los que salieron fueron por WhatsApp; si no, SMS */
+  const sent = entries.filter(([, r]) => r.ok)
+  const channel = sent.length && sent.every(([, r]) => r.via === 'whatsapp') ? 'WhatsApp' : 'SMS'
+
   if (failed.length) {
     return (
       <p className="flex flex-wrap items-center gap-2 rounded-md bg-tomate/10 px-3 py-2 text-sm text-tomate">
         <MessageSquareWarning className="w-4 h-4 flex-shrink-0" />
-        No salió el SMS de {failed.map(([k]) => LABEL[k]).join(' y ')} ({failed[0][1].error}).
+        No salió el aviso de {failed.map(([k]) => LABEL[k]).join(' y ')} ({failed[0][1].error}).
         <button onClick={() => retry(failed[0][0])} disabled={busy} className="font-semibold underline disabled:opacity-50">
           {busy ? 'Reintentando…' : 'Reintentar'}
         </button>
@@ -44,13 +48,13 @@ export default function SmsStatus({ order, onUpdated, onError }) {
   if (notMobile) {
     return (
       <p className="flex items-center gap-2 text-xs text-carbon/55">
-        <MessageSquare className="w-3.5 h-3.5" /> Sin SMS: el teléfono no es un móvil.
+        <MessageSquare className="w-3.5 h-3.5" /> Sin avisos: el teléfono no es un móvil.
       </p>
     )
   }
   return (
     <p className="flex items-center gap-2 text-xs text-albahaca">
-      <MessageSquare className="w-3.5 h-3.5" /> SMS enviado: {entries.filter(([, r]) => r.ok).map(([k]) => LABEL[k]).join(', ')}
+      <MessageSquare className="w-3.5 h-3.5" /> {channel} enviado: {sent.map(([k]) => LABEL[k]).join(', ')}
     </p>
   )
 }

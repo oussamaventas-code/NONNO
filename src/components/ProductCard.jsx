@@ -32,7 +32,7 @@ export default function ProductCard({ product, onOpen }) {
         />
         {soldOut && (
           <span className="absolute inset-0 flex items-center justify-center bg-forno/55">
-            <span className="rounded-md bg-masa text-tomate font-sans font-extrabold uppercase tracking-wider text-sm px-3 py-1.5">Agotado hoy</span>
+            <span className="rounded-md bg-masa text-neon font-sans font-extrabold uppercase tracking-wider text-sm px-3 py-1.5">Agotado hoy</span>
           </span>
         )}
         {product.badge && (
@@ -45,11 +45,11 @@ export default function ProductCard({ product, onOpen }) {
         <h3 className="font-display font-extrabold text-xl text-forno flex items-center gap-1.5">
           {product.name}
           {product.vegetarian && <Leaf className="w-4 h-4 text-albahaca flex-shrink-0" strokeWidth={2} />}
-          {product.spicy && <FlameIcon className="w-4 h-4 text-tomate flex-shrink-0" strokeWidth={2} />}
+          {product.spicy && <FlameIcon className="w-4 h-4 text-neon flex-shrink-0" strokeWidth={2} />}
         </h3>
         <p className="mt-1 text-sm text-forno/65 line-clamp-2 flex-1">{product.description}</p>
         <div className="mt-4 flex items-end justify-between gap-3">
-          <p className="font-display font-extrabold text-2xl text-tomate leading-none">
+          <p className="font-display font-extrabold text-2xl text-neon leading-none">
             {price(priceOf(product))}
             {halfPortion && <span className="block mt-1 font-sans font-semibold text-xs text-forno/55">½ ración {price(halfPortion.price)}</span>}
           </p>

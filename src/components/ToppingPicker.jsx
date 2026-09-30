@@ -40,7 +40,7 @@ export default function ToppingPicker({ extraIds = [], selected, onToggle, size 
   return (
     <div>
       <div className="flex items-baseline justify-between mb-2">
-        <p className="mono text-tomate">{title}</p>
+        <p className="mono text-neon">{title}</p>
         {uniform != null && <p className="mono normal-case text-carbon/55">+{price(uniform)} cada uno</p>}
       </div>
 
@@ -58,7 +58,7 @@ export default function ToppingPicker({ extraIds = [], selected, onToggle, size 
               className={[
                 'relative flex flex-col items-center gap-1 rounded-md border px-1 font-semibold uppercase tracking-wide transition-colors',
                 lg ? 'py-2.5 text-[0.7rem]' : 'py-2 text-[0.65rem]',
-                active ? 'border-tomate bg-tomate text-masa' : 'border-tomate/40 text-tomate hover:bg-tomate/10',
+                active ? 'border-tomate bg-tomate text-masa' : 'border-tomate/40 text-neon hover:bg-tomate/10',
               ].join(' ')}
             >
               <g.Icon className={lg ? 'w-6 h-6' : 'w-5 h-5'} strokeWidth={1.75} />
@@ -66,7 +66,7 @@ export default function ToppingPicker({ extraIds = [], selected, onToggle, size 
               {n > 0 && (
                 <span className={[
                   'absolute -top-1.5 -right-1.5 min-w-[1.15rem] h-[1.15rem] px-1 rounded-full text-[0.65rem] leading-[1.15rem] text-center font-bold',
-                  active ? 'bg-masa text-tomate' : 'bg-tomate text-masa',
+                  active ? 'bg-masa text-neon' : 'bg-tomate text-masa',
                 ].join(' ')}>{n}</span>
               )}
             </button>

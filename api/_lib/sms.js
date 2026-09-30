@@ -1,14 +1,16 @@
+import { createHmac, timingSafeEqual } from 'node:crypto'
 import { getLocation } from '../../src/data/locations.js'
 import { hourOf } from '../../src/lib/kitchenSlots.js'
 import { trackToken, trackPath } from '../../src/lib/tracking.js'
 
 /* Enlace para seguir el pedido. Solo si SITE_URL está puesto en Vercel
    (p. ej. https://lapizzadenonno.es): sin él, el SMS va como antes. */
-const trackLink = (order) => {
+const trackUrl = (order) => {
   const base = String(process.env.SITE_URL || '').replace(/\/+$/, '')
   const token = trackToken(order)
-  return base && token ? ` Sigue tu pedido: ${base}${trackPath(token)}` : ''
+  return base && token ? `${base}${trackPath(token)}` : ''
 }
+const trackLink = (order) => (trackUrl(order) ? ` Sigue tu pedido: ${trackUrl(order)}` : '')
 
 /* ═══════════════════════════════════════════════════════════════
    SMS AL CLIENTE — desde un móvil Android del local
@@ -40,8 +42,40 @@ const gatewayConfigured = () =>
 
 export const smsConfigured = () => twilioConfigured() || gatewayConfigured()
 
+/* ═══════════════════════════════════════════════════════════════
+   WHATSAPP (Twilio) — va primero si está configurado; el SMS queda
+   de reserva por si el cliente no tiene WhatsApp.
+
+   WhatsApp solo deja al negocio escribir primero con PLANTILLAS
+   aprobadas por Meta. Cada plantilla se crea en Twilio (Content
+   Template Builder) y su identificador (HX…) va en una variable:
+     TWILIO_WHATSAPP_FROM  → número de WhatsApp del negocio (+34…)
+     TWILIO_WA_RECIBIDO    → pedido recibido      {{1}} nº {{2}} cuándo {{3}} total {{4}} enlace o teléfono
+     TWILIO_WA_LISTO       → listo para recoger   {{1}} nº {{2}} sede
+     TWILIO_WA_REPARTO     → sale a domicilio     {{1}} nº {{2}} hora de llegada
+     TWILIO_WA_CANCELADO   → cancelado            {{1}} nº {{2}} teléfono
+     TWILIO_WA_CODIGO      → código del Club      {{1}} código (plantilla de autenticación)
+   Aviso que no tenga su plantilla → sale por SMS como siempre.
+   ═══════════════════════════════════════════════════════════════ */
+
+const WA_TEMPLATES = {
+  recibido: 'TWILIO_WA_RECIBIDO',
+  listo: 'TWILIO_WA_LISTO',
+  reparto: 'TWILIO_WA_REPARTO',
+  cancelado: 'TWILIO_WA_CANCELADO',
+  codigo: 'TWILIO_WA_CODIGO',
+}
+
+const whatsappConfigured = () =>
+  Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_FROM)
+
+/** Identificador de la plantilla (HX…) de ese aviso, o null. */
+const waTemplate = (key) => (whatsappConfigured() && process.env[WA_TEMPLATES[key]]) || null
+
+
 /** Qué vía de envío está activa, para enseñarlo en el panel */
-export const smsProvider = () => (twilioConfigured() ? 'twilio' : gatewayConfigured() ? 'android' : null)
+export const smsProvider = () =>
+  waTemplate('listo') ? 'whatsapp' : twilioConfigured() ? 'twilio' : gatewayConfigured() ? 'android' : null
 
 /** Móvil español en formato +34XXXXXXXXX, o null si no es un móvil (los fijos no reciben SMS). */
 export function mobileNumber(raw) {
@@ -79,6 +113,27 @@ export function smsText(kind, order) {
   if (kind === 'cancelado') {
     return plain(`La Pizza de Nonno: tu pedido ${order.ref} se ha cancelado.${tail}`)
   }
+  return null
+}
+
+/** Plantilla de WhatsApp y valores de sus huecos para cada aviso. null = no aplica. */
+export function waMessage(kind, order) {
+  const location = getLocation(order.location_id)
+  const contact = location?.phones?.[0] || 'la tienda'
+  const total = `${Number(order.total).toFixed(2).replace('.', ',')} €`
+
+  if (kind === 'recibido') {
+    const when = order.mode === 'delivery'
+      ? (order.eta_at ? `Te lo llevamos hacia las ${hourOf(order.eta_at)}` : 'Te avisamos cuando salga')
+      : (order.ready_at ? `Recógelo en ${location?.name} a las ${hourOf(order.ready_at)}` : `Recógelo en ${location?.name}`)
+    return { template: 'recibido', vars: { 1: order.ref, 2: when, 3: total, 4: trackUrl(order) || `llama al ${contact}` } }
+  }
+  if (kind === 'listo') {
+    return order.mode === 'delivery'
+      ? { template: 'reparto', vars: { 1: order.ref, 2: order.eta_at ? `Llega hacia las ${hourOf(order.eta_at)}` : 'Llega en unos minutos' } }
+      : { template: 'listo', vars: { 1: order.ref, 2: location?.name || order.location_name } }
+  }
+  if (kind === 'cancelado') return { template: 'cancelado', vars: { 1: order.ref, 2: contact } }
   return null
 }
 
@@ -131,9 +186,71 @@ async function sendTwilio(to, text, at) {
   }
 }
 
+/* Dirección pública de la web, para que Twilio avise de cómo acabó cada WhatsApp. */
+const siteBase = () => {
+  const base = process.env.SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '')
+  return String(base).replace(/\/+$/, '')
+}
+
+/**
+ * Manda un WhatsApp con plantilla. Que Twilio lo acepte no quiere decir
+ * que llegue: si el cliente no tiene WhatsApp, Twilio avisa después a
+ * `callback` (ver whatsappStatus) y entonces sale el SMS de reserva.
+ */
+async function sendWhatsApp(phone, templateSid, vars, callback) {
+  const at = new Date().toISOString()
+  const to = mobileNumber(phone)
+  if (!to) return { ok: false, at, skipped: 'no-es-movil' }
+  const sid = process.env.TWILIO_ACCOUNT_SID
+  const params = new URLSearchParams({
+    To: `whatsapp:${to}`,
+    From: `whatsapp:${process.env.TWILIO_WHATSAPP_FROM.replace(/^whatsapp:/, '')}`,
+    ContentSid: templateSid,
+    ContentVariables: JSON.stringify(vars),
+  })
+  if (callback && siteBase()) params.set('StatusCallback', `${siteBase()}/api/push?${new URLSearchParams({ twilio: 'status', ...callback })}`)
+  try {
+    const auth = Buffer.from(`${sid}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Authorization: `Basic ${auth}` },
+      body: params,
+      signal: AbortSignal.timeout(5000),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) return { ok: false, at, via: 'whatsapp', error: `whatsapp ${data.code || res.status}: ${String(data.message || '').slice(0, 120)}` }
+    return { ok: true, at, via: 'whatsapp', sid: data.sid }
+  } catch (err) {
+    return { ok: false, at, via: 'whatsapp', error: err?.name === 'TimeoutError' ? 'twilio no responde' : 'sin conexion con twilio' }
+  }
+}
+
+/** WhatsApp primero (si hay plantilla); si no se puede, SMS. */
+async function sendAviso(phone, wa, text, callback) {
+  const templateSid = wa && waTemplate(wa.template)
+  let first = null
+  if (templateSid) {
+    first = await sendWhatsApp(phone, templateSid, wa.vars, callback)
+    if (first.ok || first.skipped) return first
+  }
+  if (!text || !smsConfigured()) return first || { ok: false, at: new Date().toISOString(), skipped: 'sms-no-configurado' }
+  const sms = await sendSms(phone, text)
+  return sms.ok || !first ? { ...sms, via: 'sms' } : { ...sms, via: 'sms', error: `${first.error}; sms: ${sms.error || sms.skipped}` }
+}
+
+/** Código de entrada al Club Nonno, por WhatsApp o SMS. */
+export const sendLoginCode = (phone, code, minutes) =>
+  sendAviso(phone, { template: 'codigo', vars: { 1: code } },
+    `La Pizza de Nonno: tu codigo es ${code}. Caduca en ${minutes} min. No se lo digas a nadie.`)
+
+/** Aviso de prueba desde el panel: el de "listo" con un pedido de mentira. */
+export const sendTestAviso = (phone) =>
+  sendAviso(phone, { template: 'listo', vars: { 1: '00', 2: '(esto es un mensaje de prueba)' } },
+    'La Pizza de Nonno: SMS de prueba. Si lo lees, los avisos a clientes funcionan.')
+
 /**
  * Manda un aviso una sola vez por pedido y lo apunta en `sms`
- * ({ recibido: {ok, at, ...}, listo: ..., cancelado: ... }).
+ * ({ recibido: {ok, at, via, ...}, listo: ..., cancelado: ... }).
  * @param {object} db   cliente de Supabase
  * @returns {Promise<object|null>} el registro actualizado, o null si no se envió nada
  */
@@ -144,10 +261,50 @@ export async function notifyCustomer(db, order, kind) {
   const text = smsText(kind, order)
   if (!text || !order.customer_phone) return null
 
-  const result = await sendSms(order.customer_phone, text)
+  const result = await sendAviso(order.customer_phone, waMessage(kind, order), text, { order: order.id, kind })
   if (result.skipped === 'sms-no-configurado') return null
   const sms = { ...(order.sms || {}), [kind]: result }
   const { error } = await db.from('orders').update({ sms }).eq('id', order.id)
   if (error) console.error('Error apuntando el SMS:', error)
   return sms
+}
+
+/** ¿La petición viene de verdad de Twilio? (cabecera X-Twilio-Signature) */
+export function validTwilioSignature(url, params, signature, token = process.env.TWILIO_AUTH_TOKEN) {
+  if (!token || !signature) return false
+  const data = Object.keys(params || {}).sort().reduce((s, k) => s + k + params[k], url)
+  const expected = Buffer.from(createHmac('sha1', token).update(data).digest('base64'))
+  const given = Buffer.from(String(signature))
+  return expected.length === given.length && timingSafeEqual(expected, given)
+}
+
+/**
+ * Twilio avisa de cómo acabó cada WhatsApp. Si no llegó (el cliente no
+ * tiene WhatsApp, bloqueó al negocio…), sale el SMS de reserva y se
+ * apunta en el pedido; si tampoco hay SMS, el panel avisa para llamar.
+ */
+export async function whatsappStatus(db, req, res) {
+  const url = `${siteBase()}${req.url}`
+  if (!validTwilioSignature(url, req.body, req.headers?.['x-twilio-signature'])) return res.status(403).end()
+
+  const { MessageStatus: status, MessageSid: messageSid, ErrorCode: code } = req.body || {}
+  const { order: id, kind } = req.query || {}
+  if (!['failed', 'undelivered'].includes(status) || !id || !['recibido', 'listo', 'cancelado'].includes(kind)) {
+    return res.status(200).end()
+  }
+
+  const { data: order } = await db.from('orders').select('*').eq('id', id).maybeSingle()
+  /* Solo si ese aviso sigue siendo este WhatsApp (no uno ya reintentado) */
+  if (!order || order.sms?.[kind]?.sid !== messageSid) return res.status(200).end()
+
+  const error = `whatsapp no entregado${code ? ` (${code})` : ''}`
+  let result = { ok: false, at: new Date().toISOString(), via: 'whatsapp', error }
+  const text = smsText(kind, order)
+  if (text && smsConfigured()) {
+    const sms = await sendSms(order.customer_phone, text)
+    result = sms.ok ? { ...sms, via: 'sms' } : { ...sms, via: 'sms', error: `${error}; sms: ${sms.error || sms.skipped}` }
+  }
+  const { error: saveError } = await db.from('orders').update({ sms: { ...order.sms, [kind]: result } }).eq('id', id)
+  if (saveError) console.error('Error apuntando el WhatsApp:', saveError)
+  return res.status(200).end()
 }

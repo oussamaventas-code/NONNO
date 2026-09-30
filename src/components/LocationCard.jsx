@@ -15,7 +15,7 @@ export default function LocationCard({ location, selected, closed, onOrder }) {
 
   return (
     <article className={['frame', selected ? 'ring-2 ring-albahaca ring-offset-4 ring-offset-masa' : ''].join(' ')}>
-      <div className="frame-in grid md:grid-cols-[1fr_1.45fr_1fr] gap-6 md:gap-6 px-6 sm:px-8 pt-10 pb-8 text-tomate font-sans font-semibold text-lg leading-6">
+      <div className="frame-in grid md:grid-cols-[1fr_1.45fr_1fr] gap-6 md:gap-6 px-6 sm:px-8 pt-10 pb-8 text-neon font-sans font-semibold text-lg leading-6">
         <div>
           <button
             onClick={onOrder}
@@ -24,7 +24,7 @@ export default function LocationCard({ location, selected, closed, onOrder }) {
           >
             {location.name}
           </button>
-          <p className="mt-2 text-sm font-medium text-tomate/80">
+          <p className="mt-2 text-sm font-medium text-neon/80">
             {closed ? 'Cerrado ahora' : full ? (eta.reason === 'full' ? 'Completo por hoy' : 'Cocina cerrada') : selected ? 'Tu sede · pedir aquí' : 'Pedir en esta sede'}
           </p>
         </div>

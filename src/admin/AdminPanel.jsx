@@ -605,7 +605,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
                   )}
                   {/* SMS de prueba: para comprobar al abrir que los avisos salen */}
                   <div className="rounded-md border border-tomate/40 p-2.5">
-                    <p className="mono normal-case text-carbon/60 mb-1.5">Probar los SMS a clientes</p>
+                    <p className="mono normal-case text-carbon/60 mb-1.5">Probar los avisos a clientes (WhatsApp / SMS)</p>
                     <div className="flex gap-1.5">
                       <input
                         type="tel"
@@ -630,7 +630,9 @@ export default function AdminPanel({ scope, onSignedOut }) {
                     {testResult && !testResult.sending && (
                       <p className={['mt-1.5 text-xs font-semibold', testResult.ok ? 'text-albahaca' : 'text-tomate'].join(' ')}>
                         {testResult.ok
-                          ? `Enviado por ${testResult.provider === 'twilio' ? 'Twilio' : 'el Android del local'}. Mira el móvil.`
+                          ? testResult.via === 'whatsapp'
+                            ? 'Enviado por WhatsApp. Si en un minuto no llega, mira Twilio → Monitor → Logs.'
+                            : `SMS enviado por ${testResult.provider === 'twilio' ? 'Twilio' : 'el Android del local'}. Mira el móvil.`
                           : testResult.error || (testResult.skipped === 'no-es-movil' ? 'Ese número no es un móvil.' : 'No ha salido.')}
                       </p>
                     )}

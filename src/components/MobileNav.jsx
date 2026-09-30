@@ -52,7 +52,7 @@ export default function MobileNav() {
       role="dialog"
       aria-modal="true"
       aria-label="Menú de navegación"
-      className="fixed inset-0 z-[110] bg-masa text-tomate flex flex-col"
+      className="fixed inset-0 z-[110] bg-masa text-neon flex flex-col"
     >
       <div className="shell flex items-center justify-between pt-6 pb-4">
         <img src="/logo-nonno.png" alt="La Pizza de Nonno" className="h-14 w-14 rounded-full object-cover border-[3px] border-tomate" />
@@ -70,25 +70,25 @@ export default function MobileNav() {
           <button
             key={link.label}
             onClick={() => go(link)}
-            className="mobile-nav-link text-left py-3 border-b-2 border-dashed border-tomate/30 font-display italic font-extrabold text-display-sm text-tomate hover:text-forno transition-colors"
+            className="mobile-nav-link text-left py-3 border-b-2 border-dashed border-tomate/30 font-display italic font-extrabold text-display-sm text-neon hover:text-forno transition-colors"
           >
-            <span className="mono not-italic font-sans mr-3 text-tomate/50 align-top">{String(i + 1).padStart(2, '0')}</span>
+            <span className="mono not-italic font-sans mr-3 text-neon/50 align-top">{String(i + 1).padStart(2, '0')}</span>
             {link.label}
           </button>
         ))}
         {status !== 'loading' && (
           <button
             onClick={() => { toggleMobileNav(false); openAccount() }}
-            className="mobile-nav-link text-left py-3 border-b-2 border-dashed border-tomate/30 font-display italic font-extrabold text-display-sm text-tomate hover:text-forno transition-colors"
+            className="mobile-nav-link text-left py-3 border-b-2 border-dashed border-tomate/30 font-display italic font-extrabold text-display-sm text-neon hover:text-forno transition-colors"
           >
-            <span className="mono not-italic font-sans mr-3 text-tomate/50 align-top">{String(NAV_LINKS.length + 1).padStart(2, '0')}</span>
+            <span className="mono not-italic font-sans mr-3 text-neon/50 align-top">{String(NAV_LINKS.length + 1).padStart(2, '0')}</span>
             {status === 'member' ? `Mi cuenta · ${points} pts` : 'Mi cuenta'}
           </button>
         )}
       </nav>
 
       <div className="checker" aria-hidden="true" />
-      <div className="shell py-6 font-sans font-bold uppercase tracking-[0.12em] text-xs text-tomate/70">
+      <div className="shell py-6 font-sans font-bold uppercase tracking-[0.12em] text-xs text-neon/70">
         {SITE.brand.claim}
       </div>
     </div>

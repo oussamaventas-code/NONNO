@@ -83,7 +83,7 @@ export default function FeaturedProduct() {
             />
           </div>
           <span className="absolute -top-3 -right-3 sm:top-4 sm:right-4 mono normal-case flex items-center gap-1.5 rounded-full bg-crema text-carbon px-4 py-2 shadow-float">
-            <Star className="w-3.5 h-3.5 fill-tomate text-tomate" /> FAVORITA
+            <Star className="w-3.5 h-3.5 fill-tomate text-neon" /> FAVORITA
           </span>
         </div>
       </div>

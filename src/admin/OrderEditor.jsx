@@ -758,7 +758,7 @@ function KnownCustomer({ known, canUseAddress, dropped, onRepeat, onAddress }) {
           <summary className="cursor-pointer text-xs text-carbon/55">Pedidos anteriores</summary>
           <ul className="mt-1 flex flex-col gap-1">
             {older.map((o) => (
-              <li key={o.ref} className="flex items-center gap-2 text-xs text-carbon/70">
+              <li key={`${o.ref}-${o.created_at}`} className="flex items-center gap-2 text-xs text-carbon/70">
                 <span className="flex-1">{shortDate(o.created_at)} · {price(o.total)} · {itemsText(o)}</span>
                 <button type="button" onClick={() => onRepeat(o)} className="rounded-md border border-tomate/60 px-2.5 py-1 font-semibold text-tomate">Repetir</button>
               </li>

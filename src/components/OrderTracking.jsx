@@ -87,7 +87,7 @@ export default function OrderTracking({ token }) {
   if (error && !order) {
     return (
       <section className="shell py-20 text-center">
-        <h1 className="font-display italic font-bold text-4xl text-tomate">{error}</h1>
+        <h1 className="font-display italic font-bold text-4xl text-neon">{error}</h1>
         <p className="mt-3 text-carbon/70">Revisa el enlace del SMS o llama a tu Nonno.</p>
         <button onClick={() => navigate('/carta')} className="btn-retro mt-8"><span>Ver la carta</span></button>
       </section>
@@ -109,15 +109,15 @@ export default function OrderTracking({ token }) {
   return (
     <section className="shell py-10 sm:py-16">
       <div className="mx-auto max-w-2xl">
-        <p className="mono text-tomate text-center">PEDIDO {order.ref}{order.name ? ` · ${order.name.toUpperCase()}` : ''}</p>
-        <h1 className="mt-2 text-center font-display italic font-bold text-4xl sm:text-5xl text-tomate leading-none">{title}</h1>
+        <p className="mono text-neon text-center">PEDIDO {order.ref}{order.name ? ` · ${order.name.toUpperCase()}` : ''}</p>
+        <h1 className="mt-2 text-center font-display italic font-bold text-4xl sm:text-5xl text-neon leading-none">{title}</h1>
         <p className="mt-3 text-center text-carbon/75">{sub}</p>
 
         {!finished && hour && (
           <div className="mt-6 mx-auto w-fit frame">
             <div className="frame-in px-6 py-3 text-center">
               <p className="mono text-carbon/60">{delivery ? 'LLEGA HACIA LAS' : 'LISTO A LAS'}</p>
-              <p className="font-display italic font-bold text-5xl text-tomate leading-tight">{hourOf(hour)}</p>
+              <p className="font-display italic font-bold text-5xl text-neon leading-tight">{hourOf(hour)}</p>
               {order.scheduledFor && <p className="mono normal-case text-carbon/60 flex items-center justify-center gap-1"><CalendarClock className="w-3.5 h-3.5" /> pedido programado</p>}
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function OrderTracking({ token }) {
 
         {/* Línea de pasos */}
         {cancelled ? (
-          <div className="mt-8 flex items-center justify-center gap-2 rounded-md border border-tomate bg-tomate/10 py-4 font-sans font-bold uppercase text-tomate">
+          <div className="mt-8 flex items-center justify-center gap-2 rounded-md border border-tomate bg-tomate/10 py-4 font-sans font-bold uppercase text-neon">
             <XCircle className="w-5 h-5" /> Cancelado
           </div>
         ) : (
@@ -140,11 +140,11 @@ export default function OrderTracking({ token }) {
                   )}
                   <span className={[
                     'relative z-10 flex h-12 w-12 items-center justify-center rounded-full border-2',
-                    now ? 'border-tomate bg-tomate text-masa animate-pulse' : done ? 'border-tomate bg-tomate text-masa' : 'border-tomate/30 bg-masa text-tomate/40',
+                    now ? 'border-tomate bg-tomate text-masa animate-pulse' : done ? 'border-tomate bg-tomate text-masa' : 'border-tomate/30 bg-masa text-neon/40',
                   ].join(' ')}>
                     <s.Icon className="w-5 h-5" />
                   </span>
-                  <span className={['mt-2 text-[0.7rem] sm:text-xs font-bold uppercase tracking-wide', now || done ? 'text-tomate' : 'text-carbon/40'].join(' ')}>{s.label}</span>
+                  <span className={['mt-2 text-[0.7rem] sm:text-xs font-bold uppercase tracking-wide', now || done ? 'text-neon' : 'text-carbon/40'].join(' ')}>{s.label}</span>
                 </li>
               )
             })}
@@ -154,14 +154,14 @@ export default function OrderTracking({ token }) {
         {/* Qué lleva */}
         <div className="mt-10 frame">
           <div className="frame-in p-5">
-            <p className="mono text-tomate mb-3">TU PEDIDO</p>
+            <p className="mono text-neon mb-3">TU PEDIDO</p>
             <ul className="flex flex-col gap-2">
               {order.items.map((it, i) => (
                 <li key={i} className="flex gap-3">
-                  <span className="font-mono font-bold text-tomate w-8">{it.qty}×</span>
+                  <span className="font-mono font-bold text-neon w-8">{it.qty}×</span>
                   <span className="flex-1">
                     <span className="font-semibold text-carbon">{it.name}</span>
-                    {it.removed.length > 0 && <span className="block text-xs font-bold uppercase text-tomate">Sin {it.removed.join(', sin ')}</span>}
+                    {it.removed.length > 0 && <span className="block text-xs font-bold uppercase text-neon">Sin {it.removed.join(', sin ')}</span>}
                     {it.extras.length > 0 && <span className="block text-xs text-carbon/60">+ {it.extras.join(', ')}</span>}
                   </span>
                 </li>
@@ -169,7 +169,7 @@ export default function OrderTracking({ token }) {
             </ul>
             <div className="mt-4 flex items-baseline justify-between border-t border-tomate/30 pt-3">
               <span className="text-sm text-carbon/70">{order.paid ? 'Pagado' : delivery ? 'Pagas al recibirlo' : 'Pagas al recogerlo'}</span>
-              <span className="font-display italic font-bold text-3xl text-tomate">{price(order.total)}</span>
+              <span className="font-display italic font-bold text-3xl text-neon">{price(order.total)}</span>
             </div>
           </div>
         </div>
@@ -184,9 +184,9 @@ export default function OrderTracking({ token }) {
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 rounded-md border border-tomate bg-crema p-4 hover:bg-queso/50 transition-colors"
               >
-                <MapPin className="w-6 h-6 text-tomate flex-shrink-0" />
+                <MapPin className="w-6 h-6 text-neon flex-shrink-0" />
                 <span className="text-sm">
-                  <span className="block font-bold uppercase text-tomate">Cómo llegar</span>
+                  <span className="block font-bold uppercase text-neon">Cómo llegar</span>
                   <span className="text-carbon/70">{order.location.address}</span>
                 </span>
               </a>
@@ -196,9 +196,9 @@ export default function OrderTracking({ token }) {
                 href={`tel:${order.location.phone.replace(/\s/g, '')}`}
                 className="flex items-center gap-3 rounded-md border border-tomate bg-crema p-4 hover:bg-queso/50 transition-colors"
               >
-                <Phone className="w-6 h-6 text-tomate flex-shrink-0" />
+                <Phone className="w-6 h-6 text-neon flex-shrink-0" />
                 <span className="text-sm">
-                  <span className="block font-bold uppercase text-tomate">Llamar a {order.location.name}</span>
+                  <span className="block font-bold uppercase text-neon">Llamar a {order.location.name}</span>
                   <span className="text-carbon/70">{order.location.phone}</span>
                 </span>
               </a>

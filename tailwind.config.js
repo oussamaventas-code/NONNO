@@ -14,6 +14,7 @@ export default {
         panel: 'rgb(var(--c-panel) / <alpha-value>)',      // Panel      — bloques oscuros
         luz: 'rgb(var(--c-luz) / <alpha-value>)',          // Luz        — texto claro
         tomate: 'rgb(var(--c-tomate) / <alpha-value>)',    // Rojo logo  — CTA y acción
+        neon: 'rgb(var(--c-neon) / <alpha-value>)',        // Azul neón del cartel — textos destacados
         horno: 'rgb(var(--c-horno) / <alpha-value>)',      // Naranja    — hover, highlights
         albahaca: 'rgb(var(--c-albahaca) / <alpha-value>)', // Verde     — estados positivos
         queso: 'rgb(var(--c-queso) / <alpha-value>)'       // Amarillo   — sección de valores

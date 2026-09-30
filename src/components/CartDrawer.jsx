@@ -109,7 +109,7 @@ export default function CartDrawer() {
                     <p className="font-sans font-bold text-sm text-carbon truncate">{line.name}</p>
                     <button
                       onClick={() => removeLine(line.id)}
-                      className="text-carbon/30 hover:text-tomate transition-colors flex-shrink-0"
+                      className="text-carbon/30 hover:text-neon transition-colors flex-shrink-0"
                       aria-label={`Eliminar ${line.name}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -119,7 +119,7 @@ export default function CartDrawer() {
                     <p className="mono normal-case text-carbon/45 mt-0.5">{line.sizeLabel}</p>
                   )}
                   {line.removed?.length > 0 && (
-                    <p className="mono normal-case text-tomate font-semibold mt-0.5">
+                    <p className="mono normal-case text-neon font-semibold mt-0.5">
                       Sin {line.removed.join(', sin ')}
                     </p>
                   )}
@@ -166,7 +166,7 @@ export default function CartDrawer() {
             {eta && (
               <p className={[
                 '-mt-2 mb-4 flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold',
-                eta.ok ? 'bg-carbon/5 text-carbon' : 'bg-tomate/10 text-tomate',
+                eta.ok ? 'bg-carbon/5 text-carbon' : 'bg-tomate/10 text-neon',
               ].join(' ')}>
                 <Clock className="w-4 h-4 flex-shrink-0" />
                 {eta.ok

@@ -15,7 +15,7 @@ export default function ProductImage({ image, category, alt, width = 500, widths
   if (!image) {
     const Icon = ICON[category] || Pizza
     return (
-      <div className={`flex items-center justify-center bg-panel text-tomate ${className}`} role="img" aria-label={alt}>
+      <div className={`flex items-center justify-center bg-panel text-neon ${className}`} role="img" aria-label={alt}>
         <Icon className={iconClassName} strokeWidth={1.5} />
       </div>
     )

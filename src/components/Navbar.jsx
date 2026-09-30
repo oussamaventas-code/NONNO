@@ -43,7 +43,7 @@ export default function Navbar() {
               <button
                 key={link.label}
                 onClick={() => followLink(link)}
-                className="w-[8.25rem] h-[3.4rem] text-left font-sans font-semibold uppercase text-base text-tomate hover:text-forno transition-colors"
+                className="w-[8.25rem] h-[3.4rem] text-left font-sans font-semibold uppercase text-base text-neon hover:text-forno transition-colors"
               >
                 {link.label}
               </button>
@@ -51,7 +51,7 @@ export default function Navbar() {
           </nav>
           <button
             onClick={() => toggleMobileNav(true)}
-            className="md:hidden justify-self-start inline-flex items-center justify-center w-11 h-11 text-tomate"
+            className="md:hidden justify-self-start inline-flex items-center justify-center w-11 h-11 text-neon"
             aria-label="Abrir menú de navegación"
           >
             <MenuIcon className="w-7 h-7" strokeWidth={2} />
@@ -73,7 +73,7 @@ export default function Navbar() {
             {status !== 'loading' && (
               <button
                 onClick={openAccount}
-                className="inline-flex items-center gap-1.5 font-sans font-semibold uppercase text-base text-tomate hover:text-forno transition-colors"
+                className="inline-flex items-center gap-1.5 font-sans font-semibold uppercase text-base text-neon hover:text-forno transition-colors"
                 aria-label={status === 'member' ? `Mi cuenta, ${points} puntos` : 'Mi cuenta: Club Nonno'}
               >
                 <UserRound className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2} />
@@ -87,7 +87,7 @@ export default function Navbar() {
               aria-label={`Pide ya${count > 0 ? `, ${count} producto${count > 1 ? 's' : ''} en el carrito` : ''}`}
             >
               PIDE YA
-              {count > 0 && <span className="rounded-full bg-masa text-tomate px-1.5 text-xs leading-5">{count}</span>}
+              {count > 0 && <span className="rounded-full bg-masa text-neon px-1.5 text-xs leading-5">{count}</span>}
             </button>
           </div>
         </div>
@@ -107,14 +107,14 @@ export default function Navbar() {
         onClick={openLocationPrompt}
         className="w-full flex items-center justify-center gap-1.5 border-b border-tomate/40 bg-crema h-9 px-3 font-sans text-[0.8rem] sm:text-sm text-carbon/80 hover:bg-queso/60 transition-colors"
       >
-        <MapPin className="w-4 h-4 text-tomate flex-shrink-0" />
+        <MapPin className="w-4 h-4 text-neon flex-shrink-0" />
         {location ? (
           <span className="truncate">
-            Pides en <strong className="font-bold uppercase text-tomate">{location.name}</strong>
+            Pides en <strong className="font-bold uppercase text-neon">{location.name}</strong>
             <span className="ml-2 underline underline-offset-2 text-carbon/55">cambiar</span>
           </span>
         ) : (
-          <span className="font-bold uppercase text-tomate">Elige tu Nonno para pedir →</span>
+          <span className="font-bold uppercase text-neon">Elige tu Nonno para pedir →</span>
         )}
       </button>
     </header>

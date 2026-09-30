@@ -1,7 +1,9 @@
 import { db, isConfigured } from './_lib/supabase.js'
 import { requireSession } from './_lib/auth.js'
 import { pushConfigured } from './_lib/push.js'
-import { sendSms, smsProvider, mobileNumber } from './_lib/sms.js'
+import { sendTestAviso, smsProvider, mobileNumber, whatsappStatus } from './_lib/sms.js'
+
+const twilioSms = () => Boolean(process.env.TWILIO_FROM)
 
 /**
  * Suscripción del panel a las notificaciones.
@@ -20,17 +22,22 @@ export default async function handler(req, res) {
   if (!isConfigured()) {
     return res.status(503).json({ error: 'Base de datos no configurada.' })
   }
+
+  /* Twilio avisando de cómo acabó un WhatsApp. Sin sesión: se comprueba
+     la firma de Twilio. Va aquí para no gastar otra función de Vercel. */
+  if (req.method === 'POST' && req.query?.twilio === 'status') return whatsappStatus(db(), req, res)
+
   const session = requireSession(req, res)
   if (!session) return
 
-  /* SMS de prueba desde el panel (menú ⚙): comprueba que la vía de envío
+  /* Aviso de prueba desde el panel (menú ⚙): comprueba que la vía de envío
      funciona sin tener que hacer un pedido falso. */
   if (req.method === 'POST' && req.body?.action === 'test-sms') {
     const provider = smsProvider()
-    if (!provider) return res.status(200).json({ ok: false, error: 'No hay ninguna vía de SMS configurada en Vercel (ni Twilio ni el Android).' })
+    if (!provider) return res.status(200).json({ ok: false, error: 'No hay ninguna vía de avisos configurada en Vercel (ni WhatsApp, ni Twilio SMS, ni el Android).' })
     if (!mobileNumber(req.body.phone)) return res.status(400).json({ ok: false, error: 'Escribe un móvil español (6XX o 7XX).' })
-    const result = await sendSms(req.body.phone, 'La Pizza de Nonno: SMS de prueba. Si lo lees, los avisos a clientes funcionan.')
-    return res.status(200).json({ ...result, provider })
+    const result = await sendTestAviso(req.body.phone)
+    return res.status(200).json({ ...result, provider: result.via === 'sms' && provider === 'whatsapp' ? (twilioSms() ? 'twilio' : 'android') : provider })
   }
 
   if (req.method === 'POST') {

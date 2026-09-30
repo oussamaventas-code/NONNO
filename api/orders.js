@@ -1,7 +1,7 @@
 import { db, isConfigured } from './_lib/supabase.js'
 import { requireSession, readSession, SCOPE_ALL } from './_lib/auth.js'
 import { notifyNewOrder } from './_lib/push.js'
-import { sanitizeOrder, validateOrder } from './_lib/order.js'
+import { sanitizeOrder, validateOrder, newRef } from './_lib/order.js'
 import { isStoreOpen } from './_lib/store.js'
 import { loadMenu } from './_lib/menu.js'
 import { precheck, assignSlot, SLOT_ERRORS } from './_lib/slots.js'
@@ -12,6 +12,7 @@ import { forcedSlot } from '../src/lib/kitchenSlots.js'
 import { getLocation } from '../src/data/locations.js'
 import { phonePattern, summarizeCustomer } from '../src/lib/customerLookup.js'
 import { trackToken, parseTrackToken, keyMatches } from '../src/lib/tracking.js'
+import { serviceDay, nextNumber } from '../src/lib/orderNumber.js'
 
 const reply = (row, staff) => ({
   id: row.id,
@@ -29,6 +30,17 @@ async function findByClientKey(key) {
   const { data } = await db().from('orders').select('*').eq('client_key', key).maybeSingle()
   return data
 }
+
+/** Siguiente número del día en la sede ("01", "02"…). */
+async function dailyNumber(locationId, day) {
+  const { data, error } = await db().from('orders').select('ref').eq('location_id', locationId).eq('service_day', day)
+  if (error) throw error
+  return nextNumber(data.map((r) => r.ref))
+}
+
+/** La base de datos aún no tiene la columna service_day. */
+const missingDayColumn = (err) =>
+  ['42703', 'PGRST204'].includes(err?.code) && /service_day/.test(err?.message || '')
 
 /** Hora ISO de las últimas 12 h (nunca futura), o null. */
 function validPastTime(value) {
@@ -110,16 +122,41 @@ export default async function handler(req, res) {
       }
     }
 
-    const { data, error } = await db()
-      .from('orders')
-      .insert(order)
-      .select('id')
-      .single()
+    /* Número del día de la sede: 01, 02, 03… Si dos pedidos cogen el
+       mismo a la vez, la base de datos rechaza uno y ese coge el
+       siguiente. Sin la columna service_day (falta ejecutar
+       supabase/numero-pedido.sql) se usa la referencia al azar de antes. */
+    const offlineRef = order.ref.startsWith('SC-')
+    order.service_day = serviceDay(offlineAt ? Date.parse(offlineAt) : Date.now())
+    let data, error
+    for (let attempt = 0; attempt < 10; attempt++) {
+      if (order.service_day && !offlineRef) {
+        try {
+          order.ref = await dailyNumber(order.location_id, order.service_day)
+        } catch (err) {
+          if (!missingDayColumn(err)) {
+            console.error('Error leyendo el número del día:', err)
+            return res.status(500).json({ error: 'No hemos podido registrar el pedido.' })
+          }
+          delete order.service_day
+          order.ref = newRef()
+        }
+      } else if (attempt > 0) {
+        order.ref = newRef(attempt < 5 ? 4 : 6)
+      }
+      ;({ data, error } = await db().from('orders').insert(order).select('id').single())
+      if (error && order.service_day && missingDayColumn(error)) {
+        delete order.service_day
+        if (!offlineRef) order.ref = newRef()
+        continue
+      }
+      if (error?.code !== '23505') break
+      /* Dos envíos del mismo pedido a la vez: gana uno, el otro lo recoge. */
+      const dup = await findByClientKey(order.client_key)
+      if (dup) return res.status(200).json(reply(dup, staff))
+    }
 
     if (error) {
-      /* Dos envíos del mismo pedido a la vez: gana uno, el otro lo recoge. */
-      const dup = error.code === '23505' ? await findByClientKey(order.client_key) : null
-      if (dup) return res.status(200).json(reply(dup, staff))
       console.error('Error guardando el pedido:', error)
       if (error.code === '42703' && order.scheduled_for) {
         return res.status(409).json({ error: 'Los pedidos programados aún no están activados en la base de datos (falta ejecutar supabase/fase2.sql).' })
@@ -251,10 +288,16 @@ const firstName = (name) => String(name || '').trim().split(/\s+/)[0] || ''
 async function trackOrder(req, res) {
   const parsed = parseTrackToken(req.query.track)
   if (!parsed) return res.status(404).json({ error: 'No encontramos ese pedido.' })
+  /* El número del día se repite cada día: se busca por número y por el
+     principio del id que lleva el enlace (los 10 primeros caracteres). */
+  const k = parsed.key
   const { data, error } = await db()
     .from('orders')
     .select('*')
     .eq('ref', parsed.ref)
+    .gte('id', `${k.slice(0, 8)}-${k.slice(8)}00-0000-0000-000000000000`)
+    .lte('id', `${k.slice(0, 8)}-${k.slice(8)}ff-ffff-ffff-ffffffffffff`)
+    .limit(1)
     .maybeSingle()
   if (error) {
     console.error('Error leyendo el seguimiento:', error)

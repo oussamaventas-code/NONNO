@@ -45,7 +45,7 @@ export default function LocationSelector() {
 
   return (
     <section id="sedes" ref={rootRef} className="bg-masa pt-24 sm:pt-[7.5rem] pb-24 sm:pb-[7.5rem] overflow-hidden">
-      <h2 className="px-5 mx-auto max-w-[70rem] text-center font-display font-bold text-tomate text-[clamp(2rem,3.6vw,3.25rem)] leading-none">
+      <h2 className="px-5 mx-auto max-w-[70rem] text-center font-display font-bold text-neon text-[clamp(2rem,3.6vw,3.25rem)] leading-none">
         {ORDER_BAND.title}
       </h2>
 
