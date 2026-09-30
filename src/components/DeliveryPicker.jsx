@@ -153,7 +153,7 @@ export default function DeliveryPicker({ locationId, value, onChange, invalid, c
                 aria-pressed={value.tier === i}
                 className={[
                   'flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-sm',
-                  value.tier === i ? 'border-tomate bg-tomate/5 font-semibold text-carbon' : 'border-carbon/12 text-carbon/70',
+                  value.tier === i ? 'sel-on font-semibold text-carbon' : 'border-carbon/12 text-carbon/70',
                 ].join(' ')}
               >
                 <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{tierLabel(tiers, i)}</span>

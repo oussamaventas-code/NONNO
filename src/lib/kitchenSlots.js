@@ -132,3 +132,17 @@ export function buildLoad(orders, kitchen) {
 
   return { load, plans }
 }
+
+/**
+ * ¿Está la cocina dentro de su horario ahora? Para avisar en la web
+ * antes de que el cliente llene el carrito (el servidor lo vuelve a
+ * comprobar al pedir).
+ * @returns {{ open: boolean, opensAt: string, later: boolean }}
+ *   later: todavía abre hoy (antes de la hora de apertura)
+ */
+export function kitchenHours(kitchen, nowMs = Date.now()) {
+  if (!kitchen) return { open: true, opensAt: '', later: false }
+  const openMs = madridTime(nowMs, kitchen.open)
+  const closeMs = madridTime(nowMs, closeOf(kitchen, nowMs))
+  return { open: nowMs >= openMs && nowMs < closeMs, opensAt: kitchen.open, later: nowMs < openMs }
+}

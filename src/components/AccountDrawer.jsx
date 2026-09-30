@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { X, Star, Smartphone, LogOut, FileText, Gift } from 'lucide-react'
 import { useAccount } from '../store/AccountContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
@@ -12,7 +12,7 @@ const REASON = { pedido: 'Pedido', canje: 'Canje', devolucion: 'Devolución', an
 const day = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Madrid' })
 
 /**
- * "Mi cuenta" del Club Nonno: entrar con el móvil (código por SMS) y,
+ * "Mi cuenta" del Club Nonno: entrar solo con el móvil y,
  * dentro, los puntos, los pedidos con su tique y los movimientos.
  */
 export default function AccountDrawer() {
@@ -59,7 +59,7 @@ function Rules() {
     <ul className="flex flex-col gap-2 font-sans text-sm text-forno/80">
       <li className="flex gap-2"><Star className="w-4 h-4 mt-0.5 text-tomate fill-tomate flex-shrink-0" strokeWidth={0} />{LOYALTY.pointsPerEuro} punto por cada euro de tus pedidos, al entregártelos.</li>
       <li className="flex gap-2"><Gift className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />{LOYALTY.redeemStep} puntos = {price(LOYALTY.stepValue)} de descuento en tu próximo pedido online.</li>
-      <li className="flex gap-2"><Smartphone className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />Sin contraseñas: entras con tu móvil y un código por WhatsApp o SMS.</li>
+      <li className="flex gap-2"><Smartphone className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />Sin contraseñas ni códigos: entras solo con tu móvil.</li>
     </ul>
   )
 }
@@ -74,48 +74,20 @@ function ClubOff() {
   )
 }
 
-/* ── Entrar: móvil → código ──────────────────────────────────── */
+/* ── Entrar: solo el móvil ──────────────────────────────────── */
 function Login() {
-  const { sendCode, verify } = useAccount()
-  const [step, setStep] = useState('phone')
+  const { login } = useAccount()
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
-  const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [devCode, setDevCode] = useState(null)
-  const [via, setVia] = useState('SMS')
-  const [wait, setWait] = useState(0)
-  const codeRef = useRef(null)
 
-  useEffect(() => {
-    if (wait <= 0) return undefined
-    const t = setTimeout(() => setWait((w) => w - 1), 1000)
-    return () => clearTimeout(t)
-  }, [wait])
-
-  const requestCode = async (e) => {
-    e?.preventDefault()
-    setBusy(true); setError('')
-    const { ok, data } = await sendCode(phone)
-    setBusy(false)
-    if (!ok) {
-      setError(data.error || 'No hemos podido mandar el código.')
-      if (data.wait) setWait(data.wait)
-      return
-    }
-    setDevCode(data.devCode || null)
-    setVia(data.via === 'whatsapp' ? 'WhatsApp' : 'SMS')
-    setStep('code'); setCode(''); setWait(60)
-    setTimeout(() => codeRef.current?.focus(), 50)
-  }
-
-  const submitCode = async (e) => {
+  const submit = async (e) => {
     e.preventDefault()
     setBusy(true); setError('')
-    const { ok, data } = await verify(phone, code, name)
+    const { ok, data } = await login(phone, name)
     setBusy(false)
-    if (!ok) setError(data.error || 'No hemos podido comprobar el código.')
+    if (!ok) setError(data.error || 'No hemos podido entrar. Inténtalo otra vez.')
   }
 
   const input = 'w-full rounded-md border border-tomate bg-crema px-4 h-12 text-forno placeholder:text-forno/35 outline-none focus:ring-2 focus:ring-tomate/40'
@@ -125,55 +97,20 @@ function Login() {
       <p className="font-display font-bold text-2xl text-forno leading-tight">Gana puntos con cada pizza</p>
       <div className="mt-4"><Rules /></div>
 
-      {step === 'phone' ? (
-        <form onSubmit={requestCode} className="mt-8 flex flex-col gap-4">
-          <label className="flex flex-col gap-1.5">
-            <span className="font-sans font-semibold uppercase text-xs tracking-wider text-tomate">Tu móvil</span>
-            <input className={input} type="tel" inputMode="tel" autoComplete="tel" placeholder="600 000 000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="font-sans font-semibold uppercase text-xs tracking-wider text-tomate">Tu nombre <span className="normal-case font-normal text-forno/50">(si es tu primera vez)</span></span>
-            <input className={input} autoComplete="given-name" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
-          </label>
-          {error && <p className="text-sm text-tomate font-semibold" role="alert">{error}</p>}
-          <button className="btn-retro self-start" disabled={busy || wait > 0}>
-            <span>{busy ? 'Enviando…' : wait > 0 ? `Espera ${wait} s` : 'Enviarme el código'}</span>
-          </button>
-        </form>
-      ) : (
-        <form onSubmit={submitCode} className="mt-8 flex flex-col gap-4">
-          <p className="text-forno/80">Te hemos mandado un {via} al <strong>{phone}</strong> con un código de {LOYALTY.codeLength} cifras.</p>
-          {devCode && (
-            <p className="rounded-md bg-crema border border-tomate/50 px-3 py-2 text-sm text-carbon">
-              Modo pruebas (sin SMS configurado): tu código es <strong>{devCode}</strong>
-            </p>
-          )}
-          <label className="flex flex-col gap-1.5">
-            <span className="font-sans font-semibold uppercase text-xs tracking-wider text-tomate">Código</span>
-            <input
-              ref={codeRef}
-              className={`${input} text-center text-2xl tracking-[0.5em] font-bold`}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="[0-9]*"
-              maxLength={LOYALTY.codeLength}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-              required
-            />
-          </label>
-          {error && <p className="text-sm text-tomate font-semibold" role="alert">{error}</p>}
-          <button className="btn-retro self-start" disabled={busy || code.length < LOYALTY.codeLength}>
-            <span>{busy ? 'Comprobando…' : 'Entrar'}</span>
-          </button>
-          <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            <button type="button" onClick={() => requestCode()} disabled={wait > 0 || busy} className="text-tomate underline underline-offset-4 disabled:no-underline disabled:text-forno/40">
-              {wait > 0 ? `Reenviar en ${wait} s` : 'Reenviar el código'}
-            </button>
-            <button type="button" onClick={() => { setStep('phone'); setError('') }} className="text-tomate underline underline-offset-4">Cambiar de móvil</button>
-          </div>
-        </form>
-      )}
+      <form onSubmit={submit} className="mt-8 flex flex-col gap-4">
+        <label className="flex flex-col gap-1.5">
+          <span className="font-sans font-semibold uppercase text-xs tracking-wider text-tomate">Tu móvil</span>
+          <input className={input} type="tel" inputMode="tel" autoComplete="tel" placeholder="600 000 000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="font-sans font-semibold uppercase text-xs tracking-wider text-tomate">Tu nombre <span className="normal-case font-normal text-forno/50">(si es tu primera vez)</span></span>
+          <input className={input} autoComplete="given-name" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
+        </label>
+        {error && <p className="text-sm text-tomate font-semibold" role="alert">{error}</p>}
+        <button className="btn-retro self-start" disabled={busy || phone.replace(/D/g, '').length < 9}>
+          <span>{busy ? 'Entrando…' : 'Entrar'}</span>
+        </button>
+      </form>
     </div>
   )
 }

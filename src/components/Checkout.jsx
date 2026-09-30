@@ -174,7 +174,7 @@ export default function Checkout() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="checkout-title"
-        className="relative w-full sm:max-w-xl max-h-[94dvh] sm:max-h-[88vh] overflow-y-auto bg-crema rounded-t-block sm:rounded-block shadow-float"
+        className="relative w-full sm:max-w-xl max-h-[94dvh] sm:max-h-[88vh] overflow-y-auto overflow-x-hidden bg-crema rounded-t-block sm:rounded-block shadow-float"
       >
         <div className="sticky top-0 bg-crema/95 backdrop-blur-md z-10 px-6 sm:px-8 pt-6 pb-4 border-b border-carbon/8">
           <div className="flex items-center justify-between">
@@ -285,7 +285,7 @@ function StepLocation({ locationId, onPick }) {
               onClick={() => onPick(loc.id)}
               className={[
                 'flex items-center gap-3 rounded-2xl border p-4 text-left transition-all',
-                active ? 'border-tomate bg-tomate/5' : 'border-carbon/12 hover:border-carbon/30',
+                active ? 'sel-on' : 'border-carbon/12 hover:border-carbon/30',
               ].join(' ')}
             >
               <span className={['w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0', active ? 'bg-tomate text-forno' : 'bg-carbon/8 text-carbon/50'].join(' ')}>
@@ -329,7 +329,7 @@ function StepMode({ modes, value, onPick, location, pickupSaving, tiers, readyAt
               onClick={() => onPick(m.id)}
               className={[
                 'flex flex-col items-center gap-2 rounded-2xl border p-6 text-center transition-all',
-                active ? 'border-tomate bg-tomate/5' : 'border-carbon/12 hover:border-carbon/30',
+                active ? 'sel-on' : 'border-carbon/12 hover:border-carbon/30',
               ].join(' ')}
             >
               <Icon className={['w-6 h-6', active ? 'text-tomate' : 'text-carbon/50'].join(' ')} />

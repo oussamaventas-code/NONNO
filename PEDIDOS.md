@@ -123,7 +123,7 @@ Muestra:
 
 ## Club Nonno (cuentas de cliente y puntos)
 
-El cliente entra en **Mi cuenta** con su móvil y un código de 6 cifras que le llega por SMS, sin contraseñas. Dentro ve sus puntos, sus pedidos y el tique de cada uno para imprimir o guardar en PDF.
+El cliente entra en **Mi cuenta** solo con su móvil, sin contraseñas ni códigos. Dentro ve sus puntos, sus pedidos y el tique de cada uno para imprimir o guardar en PDF.
 
 - **Gana 1 punto por cada euro** del total, cuando el pedido se marca **ENTREGADO** en el panel. Si el pedido lo hizo sin entrar en su cuenta, los puntos van igual al móvil del pedido, si ese móvil ya tiene cuenta.
 - **100 puntos = 5 € de descuento** en un pedido online. Lo elige en el resumen del pedido. El descuento nunca cubre el envío.
@@ -136,12 +136,11 @@ Las reglas están en `src/data/loyalty.js`. Si cambias ahí el reparto de puntos
 
 1. En Supabase → **SQL Editor**, pega el contenido de [`supabase/club-nonno.sql`](supabase/club-nonno.sql) y pulsa **Run**. Va **después** de `schema.sql` y también se puede ejecutar varias veces.
 2. En Vercel → **Environment Variables**, añade `CUSTOMER_SESSION_SECRET` con una frase larga al azar (como `ADMIN_SESSION_SECRET`). Si no la pones, se usa la del panel.
-3. Los códigos salen por la misma pasarela de SMS que los avisos de pedido (ver arriba). **Sin la pasarela configurada, en la web publicada no se puede entrar**. En entornos de prueba de Vercel el código aparece en pantalla.
-4. Vuelve a desplegar.
+3. Vuelve a desplegar.
 
 Mientras no se ejecute el SQL, la web funciona exactamente igual: **Mi cuenta** muestra "Muy pronto".
 
-**Límites contra abusos:** un SMS por minuto y 5 por hora a cada móvil; cada código caduca a los 10 minutos y admite 5 intentos. La tabla guarda solo una huella del código, nunca el código.
+**Sin código, con cuidado:** como basta el móvil, quien sepa el número de otra persona podría entrar en su cuenta y usar sus puntos. Por eso el historial del Club no enseña direcciones y cada conexión tiene un tope de 8 entradas cada 15 minutos (con `supabase/seguridad.sql` ejecutado). El código por SMS sigue en el servidor por si algún día se quiere volver a pedir.
 
 **Facturas:** el tique sale como *Justificante de pedido*. Para que salga como **factura simplificada**, con la base imponible y el IVA desglosados, rellena la razón social y el NIF en `src/data/site.js` → `billing`.
 

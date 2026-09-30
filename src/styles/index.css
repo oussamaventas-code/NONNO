@@ -584,3 +584,11 @@
 .tema-negro .frame.neon { padding: 0; box-shadow: 0 0 6px rgb(var(--tubo) / 0.6), 0 0 14px rgb(var(--tubo) / 0.2); }
 .tema-negro .frame-in,
 .tema-negro .frame.neon > .frame-in { border: 0; box-shadow: none; }
+
+/* Opción elegida (recoger/entrega, sede, ración, distancia): tubo azul
+   encendido, que se vea de un vistazo cuál está marcada */
+.sel-on {
+  border-color: rgb(72 190 255) !important;
+  background-color: rgb(72 190 255 / 0.12);
+  box-shadow: 0 0 0 1px rgb(72 190 255), 0 0 14px rgb(72 190 255 / 0.55) !important;
+}

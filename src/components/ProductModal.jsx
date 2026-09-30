@@ -161,7 +161,7 @@ export default function ProductModal() {
                   aria-pressed={portionId === p.id}
                   className={[
                     'rounded-md border p-4 text-left transition-all',
-                    portionId === p.id ? 'border-tomate bg-tomate/10 shadow-island' : 'border-tomate/40 hover:border-tomate',
+                    portionId === p.id ? 'sel-on' : 'border-tomate/40 hover:border-tomate',
                   ].join(' ')}
                 >
                   <span className="block font-sans font-bold text-sm text-carbon">{p.label}</span>

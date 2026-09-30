@@ -46,6 +46,13 @@ export function AccountProvider({ children }) {
 
   useEffect(() => { refresh() }, [refresh])
 
+  /* Se entra solo con el móvil (sin código) */
+  const login = useCallback(async (phone, name) => {
+    const result = await call('POST', { action: 'login', phone, name })
+    if (result.ok) await refresh()
+    return result
+  }, [refresh])
+
   const sendCode = useCallback((phone) => call('POST', { action: 'send-code', phone }), [])
 
   const verify = useCallback(async (phone, code, name) => {
@@ -73,8 +80,8 @@ export function AccountProvider({ children }) {
     isOpen: open,
     openAccount: () => setOpen(true),
     closeAccount: () => setOpen(false),
-    refresh, sendCode, verify, updateName, logout,
-  }), [status, account, open, refresh, sendCode, verify, updateName, logout])
+    refresh, login, sendCode, verify, updateName, logout,
+  }), [status, account, open, refresh, login, sendCode, verify, updateName, logout])
 
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>
 }

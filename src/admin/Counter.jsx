@@ -89,12 +89,13 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
 
   return (
     <div>
-      <div className="flex flex-wrap gap-3">
-        <button onClick={() => setEditor({ channel: 'mostrador' })} className="btn bg-tomate text-crema px-6">
+      {/* Móvil: los dos botones grandes, uno debajo de otro, a todo el ancho */}
+      <div className="grid gap-3 md:flex md:flex-wrap">
+        <button onClick={() => setEditor({ channel: 'mostrador' })} className="btn bg-tomate text-crema px-6 min-h-[56px] md:min-h-[48px]">
           <span className="btn-layer bg-horno" />
           <span className="btn-label"><Plus className="w-4 h-4" strokeWidth={2.5} /> NUEVO PEDIDO</span>
         </button>
-        <button onClick={() => setEditor({ channel: 'telefono' })} className="btn bg-carbon text-crema px-6">
+        <button onClick={() => setEditor({ channel: 'telefono' })} className="btn bg-carbon text-crema px-6 min-h-[56px] md:min-h-[48px]">
           <span className="btn-layer bg-tomate" />
           <span className="btn-label"><Phone className="w-4 h-4" /> PEDIDO POR TELÉFONO</span>
         </button>
@@ -184,7 +185,8 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-2">
+                {/* Móvil: acciones en dos columnas iguales, nada queda suelto */}
+                <div className="mt-4 grid grid-cols-2 gap-2 md:flex md:flex-wrap">
                   {!local && !paid && o.status !== 'cancelado' && (
                     <button onClick={() => setCharging(o)} disabled={busy} className="btn bg-albahaca text-crema px-5 disabled:opacity-50">
                       <span className="btn-layer bg-carbon" />

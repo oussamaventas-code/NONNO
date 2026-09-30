@@ -11,7 +11,9 @@ import {
    /api/account — Club Nonno
 
    GET                         → mi cuenta (puntos, movimientos, pedidos)
-   POST { action: 'send-code', phone }        → manda el código por SMS
+   POST { action: 'login', phone, name }      → entra solo con el móvil (lo que usa la web)
+   POST { action: 'send-code', phone }        → manda el código por SMS (apagado en la web;
+                                                se deja por si se vuelve al código)
    POST { action: 'verify', phone, code, name } → entra (cookie de sesión)
    POST { action: 'update', name }            → cambia el nombre
    POST { action: 'logout' }                  → sale
@@ -19,9 +21,11 @@ import {
    Todo en una función para no pasar del límite de funciones de Vercel.
    ═══════════════════════════════════════════════════════════════ */
 
+/* Sin dirección: se entra solo con el móvil, así que quien sepa un número
+   no debe ver dónde vive esa persona. */
 const ORDER_FIELDS = [
   'id', 'ref', 'created_at', 'status', 'location_id', 'location_name', 'mode',
-  'customer_name', 'address', 'items', 'subtotal', 'discount', 'deals', 'delivery_fee',
+  'customer_name', 'items', 'subtotal', 'discount', 'deals', 'delivery_fee',
   'points_redeemed', 'points_discount', 'total', 'payment_status', 'payment_method',
 ].join(', ')
 
@@ -36,6 +40,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') return await me(req, res)
     if (req.method === 'POST') {
       const action = req.body?.action
+      if (action === 'login') return await login(req, res)
       if (action === 'send-code') return await sendCode(req, res)
       if (action === 'verify') return await verify(req, res)
       if (action === 'update') return await update(req, res)
@@ -69,6 +74,39 @@ async function me(req, res) {
   if (orders.error) throw orders.error
 
   return res.status(200).json({ customer: publicCustomer(customer), ledger: ledger.data, orders: orders.data })
+}
+
+/** Entrar solo con el móvil: sin código. Tope de intentos por conexión
+    para que nadie vaya probando números uno tras otro. */
+async function login(req, res) {
+  const phone = normalizePhone(req.body?.phone)
+  if (!phone) return res.status(400).json({ error: 'Escribe un móvil español válido (empieza por 6 o 7).' })
+
+  const blocked = await guard(res, [
+    [`login:ip:${clientIp(req)}`, { max: 8, window: 900, lock: 900 }],
+  ])
+  if (blocked) return res.status(429).json({ error: 'Demasiados intentos. Prueba dentro de un rato.', wait: blocked })
+
+  const name = String(req.body?.name || '').trim().slice(0, 80)
+  const { data: existing, error: findError } = await db().from('customers').select('*').eq('phone', phone).maybeSingle()
+  if (findError) throw findError
+
+  let customer = existing
+  const loginAt = new Date().toISOString()
+  if (customer) {
+    const patch = { last_login_at: loginAt, ...(name && !customer.name ? { name } : {}) }
+    const { data, error } = await db().from('customers').update(patch).eq('id', customer.id).select('*').single()
+    if (error) throw error
+    customer = data
+  } else {
+    const { data, error } = await db().from('customers')
+      .insert({ phone, name: name || null, last_login_at: loginAt }).select('*').single()
+    if (error) throw error
+    customer = data
+  }
+
+  res.setHeader('Set-Cookie', createCustomerCookie(customer.id))
+  return res.status(200).json({ customer: publicCustomer(customer), created: !existing })
 }
 
 async function sendCode(req, res) {

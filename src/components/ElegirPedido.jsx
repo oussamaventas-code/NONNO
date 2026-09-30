@@ -4,6 +4,7 @@ import { useActions } from '../store/StoreContext'
 import { useStoreStatus } from '../hooks/useStoreStatus'
 import { navigate } from '../lib/router'
 import { img, srcSet } from '../data/images'
+import { kitchenHours } from '../lib/kitchenSlots'
 
 /**
  * PANTALLA 2 — ELECCIÓN DEL PEDIDO. Una sola decisión: en qué sede.
@@ -28,7 +29,12 @@ export default function ElegirPedido() {
 
         <div className="mt-5 sm:mt-8 flex flex-col gap-4 sm:gap-5">
           {LOCATIONS.map((loc) => {
-            const abierta = isOpen(loc.id)
+            /* Abierta de verdad: interruptor del local encendido y dentro del horario de cocina */
+            const hours = kitchenHours(loc.kitchen)
+            const abierta = isOpen(loc.id) && hours.open
+            const estado = abierta ? 'Abierta'
+              : !isOpen(loc.id) ? 'Cerrada ahora'
+                : hours.later ? `Abre a las ${hours.opensAt}` : `Cerrada · abre mañana a las ${hours.opensAt}`
             return (
               <div key={loc.id} className="frame neon">
                 {/* Foto vertical entera a la izquierda: se ve la fachada completa */}
@@ -49,7 +55,7 @@ export default function ElegirPedido() {
                       'mt-1.5 self-start',
                       abierta ? 'pill-neon' : 'rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide border border-carbon/30 text-carbon/60',
                     ].join(' ')}>
-                      {abierta ? 'Abierta' : 'Cerrada ahora'}
+                      {estado}
                     </span>
                     <p className="mt-2 flex items-start gap-1 text-sm text-carbon/70">
                       <MapPin className="w-4 h-4 mt-px flex-shrink-0 text-tomate" /> {loc.address}
