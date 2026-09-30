@@ -30,7 +30,7 @@ export default function ElegirPedido() {
           {LOCATIONS.map((loc) => {
             const abierta = isOpen(loc.id)
             return (
-              <div key={loc.id} className="frame">
+              <div key={loc.id} className="frame neon">
                 <div className="frame-in p-3 sm:p-5">
                   {/* Solo las sedes con foto propia del local */}
                   {loc.image?.startsWith('own:') && (
@@ -40,14 +40,13 @@ export default function ElegirPedido() {
                       sizes="(min-width: 672px) 640px, 90vw"
                       alt={`Local de ${loc.name}`}
                       loading="lazy"
-                      className="mb-3 h-28 sm:h-48 w-full rounded-md object-cover object-[50%_10%] border border-tomate/40"
+                      className="mb-3 h-28 sm:h-48 w-full rounded-md object-cover object-[50%_10%] border-2 border-[rgb(255_60_80)] shadow-[0_0_8px_rgb(255_60_80_/_0.7)]"
                     />
                   )}
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-sans font-extrabold uppercase text-xl text-tomate leading-tight">{loc.name}</h2>
+                    <h2 className="font-sans font-extrabold uppercase text-xl sm:text-2xl neon-amarillo leading-tight">{loc.name}</h2>
                     <span className={[
-                      'rounded-md px-1.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide',
-                      abierta ? 'bg-albahaca text-masa' : 'bg-forno/10 text-carbon/60',
+                      abierta ? 'pill-neon' : 'rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide border border-carbon/30 text-carbon/60',
                     ].join(' ')}>
                       {abierta ? 'Abierta' : 'Cerrada ahora'}
                     </span>
@@ -58,10 +57,9 @@ export default function ElegirPedido() {
 
                   <button
                     onClick={() => choose(loc.id)}
-                    className="btn bg-tomate text-masa mt-3 sm:mt-4 w-full !min-h-[3.25rem] sm:!min-h-[3.75rem] text-lg"
+                    className="btn-neon mt-3 sm:mt-4 min-h-[3.25rem] sm:min-h-[3.75rem] text-xl sm:text-2xl"
                   >
-                    <span className="btn-layer bg-forno" />
-                    <span className="btn-label">ELEGIR</span>
+                    PEDIR
                   </button>
                 </div>
               </div>

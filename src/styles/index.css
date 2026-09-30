@@ -136,6 +136,44 @@
   .frame-in {
     @apply relative h-full rounded-md border border-tomate overflow-hidden;
   }
+  /* ── Neón (rótulo del local): tubos que brillan sobre negro ──
+     .frame.neon    tarjeta con doble filete rojo neón
+     .btn-neon      botón hueco con borde y letra azul neón
+     .neon-amarillo texto amarillo neón (nombres de sede)
+     .pill-neon     etiqueta con contorno azul neón */
+  .frame.neon {
+    border: 2px solid rgb(255 60 80);
+    box-shadow: 0 0 6px rgb(255 60 80 / 0.9), 0 0 18px rgb(255 60 80 / 0.45), inset 0 0 8px rgb(255 60 80 / 0.35);
+  }
+  .frame.neon > .frame-in {
+    border: 2px solid rgb(255 60 80);
+    box-shadow: 0 0 6px rgb(255 60 80 / 0.8), inset 0 0 6px rgb(255 60 80 / 0.3);
+  }
+  .btn-neon {
+    @apply relative w-full flex items-center justify-center rounded-lg font-sans font-extrabold uppercase tracking-[0.08em] transition-[background-color,box-shadow,transform] duration-200;
+    color: rgb(120 205 255);
+    background: rgb(8 14 34 / 0.85);
+    border: 2.5px solid rgb(72 190 255);
+    text-shadow: 0 0 6px rgb(72 190 255 / 0.9), 0 0 14px rgb(72 190 255 / 0.6);
+    box-shadow: 0 0 6px rgb(72 190 255 / 0.9), 0 0 20px rgb(72 190 255 / 0.5), inset 0 0 10px rgb(72 190 255 / 0.4);
+  }
+  .btn-neon:hover {
+    background: rgb(72 190 255 / 0.14);
+    box-shadow: 0 0 8px rgb(72 190 255), 0 0 28px rgb(72 190 255 / 0.7), inset 0 0 14px rgb(72 190 255 / 0.55);
+  }
+  .btn-neon:active { transform: scale(0.98); }
+  .neon-amarillo {
+    color: rgb(255 228 60);
+    text-shadow: 0 0 6px rgb(255 228 60 / 0.7), 0 0 16px rgb(255 200 0 / 0.4);
+  }
+  .pill-neon {
+    @apply rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide;
+    color: rgb(150 215 255);
+    background: rgb(72 190 255 / 0.12);
+    border: 1.5px solid rgb(72 190 255);
+    box-shadow: 0 0 6px rgb(72 190 255 / 0.7);
+  }
+
   .frame-navy {
     @apply relative rounded-lg border border-forno p-[7px];
     box-shadow: 3px 3px 0 0 rgb(var(--c-forno));
