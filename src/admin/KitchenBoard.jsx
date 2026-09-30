@@ -120,7 +120,7 @@ function KitchenCard({ order, col, now, busy, onStatus, onUpdated }) {
       {!farOff && (late || soon) && (
         <p className={[
           'flex items-center justify-center gap-2 rounded-t-md py-1.5 font-sans font-extrabold uppercase text-sm tracking-wide',
-          late ? 'bg-tomate text-masa' : 'bg-queso text-carbon border-b border-tomate',
+          late ? 'bg-tomate text-masa' : 'neon-amarillo bg-[rgb(255_228_60_/_0.12)] border-b border-[rgb(255_228_60)]',
         ].join(' ')}>
           <AlertTriangle className="w-4 h-4" />
           {late ? `Retrasado ${-left} min` : left === 0 ? 'Sale ahora' : `Sale en ${left} min`}

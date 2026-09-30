@@ -21,7 +21,7 @@ export default function Footer() {
   return (
     <footer>
       <div className="checker" aria-hidden="true" />
-      <div className="bg-tomate text-masa">
+      <div className="neon-banda">
         <div className="px-5 pt-20 pb-16 grid lg:grid-cols-[38.5rem_1fr] gap-14">
           <div>
             <p className="font-sans font-medium uppercase text-lg">Pide online y recoge tu pizza recién hecha en tu sede</p>

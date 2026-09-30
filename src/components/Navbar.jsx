@@ -71,7 +71,7 @@ export default function Navbar() {
 
   return (
     <header className="relative z-[90] bg-masa">
-      <p className="bg-tomate text-masa text-center font-sans font-medium uppercase text-[0.72rem] sm:text-sm h-9 leading-9 px-3 truncate">
+      <p className="neon-banda text-center font-sans font-medium uppercase text-[0.72rem] sm:text-sm h-9 leading-9 px-3 truncate">
         {ANNOUNCE}
       </p>
 
@@ -116,12 +116,11 @@ export default function Navbar() {
             )}
             <button
               onClick={openCart}
-              className="relative inline-flex items-center justify-center gap-1.5 bg-tomate text-masa font-sans font-semibold uppercase tracking-[0.03em] text-sm sm:text-base h-10 sm:h-[3.4rem] w-[6.5rem] sm:w-[7.3rem] hover:bg-forno transition-colors"
-              style={{ clipPath: 'polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%)' }}
+              className="btn-neon gap-1.5 !text-sm sm:!text-base h-10 sm:h-[3.4rem] !w-[6.5rem] sm:!w-[7.3rem]"
               aria-label={`Pide ya${count > 0 ? `, ${count} producto${count > 1 ? 's' : ''} en el carrito` : ''}`}
             >
               PIDE YA
-              {count > 0 && <span className="rounded-full bg-masa text-tomate px-1.5 text-xs leading-5">{count}</span>}
+              {count > 0 && <span className="rounded-full bg-[rgb(72_190_255)] text-[#0C0C0C] [text-shadow:none] px-1.5 text-xs leading-5">{count}</span>}
             </button>
           </div>
         </div>

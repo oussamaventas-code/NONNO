@@ -426,3 +426,144 @@
 /* Botón retro invertido (crema con letra roja), p. ej. en el footer rojo */
 .tema-negro .btn-retro > span.bg-papel,
 .tema-negro .btn-retro:hover > span.bg-papel { background-color: rgb(var(--c-papel)); border-color: rgb(var(--c-papel)); color: rgb(226 62 87); }
+
+/* ═══════════════════════════════════════════════════════════════
+   NEÓN EN TODA LA WEB (web, panel y pantalla de la TV)
+   Como el rótulo del local: tubos que brillan sobre negro.
+     rojo  → marcos, tarjetas, filetes
+     azul  → acción principal (PEDIR, añadir, confirmar)
+     verde → confirmaciones del panel (cobrar, listo)
+   Se apoya en .tema-negro, que index.html pone siempre.
+   ═══════════════════════════════════════════════════════════════ */
+:root.tema-negro {
+  --neon-rojo: 255 60 80;
+  --neon-azul: 72 190 255;
+  --neon-verde: 82 230 150;
+}
+
+/* Tubo genérico: el color lo da --tubo */
+.tema-negro .frame,
+.tema-negro .frame-in,
+.tema-negro .pframe,
+.tema-negro .pframe-in,
+.tema-negro .pcard { --tubo: var(--neon-rojo); }
+.tema-negro .frame-navy,
+.tema-negro .frame-navy > .frame-in { --tubo: var(--neon-azul); }
+
+.tema-negro .frame,
+.tema-negro .frame-navy,
+.tema-negro .pcard {
+  border: 2px solid rgb(var(--tubo));
+  box-shadow: 0 0 6px rgb(var(--tubo) / 0.9), 0 0 18px rgb(var(--tubo) / 0.4), inset 0 0 8px rgb(var(--tubo) / 0.3);
+}
+.tema-negro .frame-in {
+  border: 2px solid rgb(var(--tubo));
+  box-shadow: 0 0 5px rgb(var(--tubo) / 0.75), inset 0 0 6px rgb(var(--tubo) / 0.25);
+}
+
+/* Tarjetas del panel: el estado sigue mandando en el color (--frame) */
+.tema-negro .pframe.pf-navy,
+.tema-negro .pframe.pf-muted { --frame: var(--neon-azul); }
+.tema-negro .pframe:not(.pf-horno):not(.pf-verde):not(.pf-navy):not(.pf-muted) { --frame: var(--neon-rojo); }
+.tema-negro .pframe.pf-verde { --frame: var(--neon-verde); }
+.tema-negro .pframe {
+  border-width: 2px;
+  box-shadow: 0 0 6px rgb(var(--frame) / 0.9), 0 0 18px rgb(var(--frame) / 0.35), inset 0 0 8px rgb(var(--frame) / 0.25);
+}
+.tema-negro .pframe-in {
+  border-width: 2px;
+  box-shadow: 0 0 5px rgb(var(--frame) / 0.7);
+}
+
+/* Botones rellenos → tubos huecos que se encienden al pasar */
+.tema-negro .btn.bg-tomate,
+.tema-negro .btn.bg-horno { --tubo: var(--neon-azul); }
+.tema-negro .btn.bg-albahaca { --tubo: var(--neon-verde); }
+.tema-negro .btn.bg-forno,
+.tema-negro .btn.bg-panel,
+.tema-negro .btn.bg-carbon { --tubo: var(--neon-rojo); }
+.tema-negro .btn.bg-tomate,
+.tema-negro .btn.bg-horno,
+.tema-negro .btn.bg-albahaca,
+.tema-negro .btn.bg-forno,
+.tema-negro .btn.bg-panel,
+.tema-negro .btn.bg-carbon {
+  background: rgb(8 14 34 / 0.85);
+  color: rgb(var(--tubo));
+  border: 2.5px solid rgb(var(--tubo));
+  text-shadow: 0 0 6px rgb(var(--tubo) / 0.9), 0 0 14px rgb(var(--tubo) / 0.5);
+  box-shadow: 0 0 6px rgb(var(--tubo) / 0.9), 0 0 20px rgb(var(--tubo) / 0.45), inset 0 0 10px rgb(var(--tubo) / 0.35);
+}
+.tema-negro .btn > .btn-layer { background: rgb(var(--tubo, var(--neon-azul)) / 0.16) !important; }
+.tema-negro .btn:disabled { opacity: 0.45; }
+
+/* Botón retro (PEDIR de la entrada, footer) → tubo azul */
+.tema-negro .btn-retro {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+}
+.tema-negro .btn-retro > span,
+.tema-negro .btn-retro:hover > span,
+.tema-negro .btn-retro > span.bg-papel,
+.tema-negro .btn-retro:hover > span.bg-papel {
+  background: rgb(8 14 34 / 0.85);
+  color: rgb(var(--neon-azul));
+  border: 3px solid rgb(var(--neon-azul));
+  text-shadow: 0 0 8px rgb(var(--neon-azul) / 0.9), 0 0 18px rgb(var(--neon-azul) / 0.5);
+  box-shadow: 0 0 8px rgb(var(--neon-azul) / 0.9), 0 0 26px rgb(var(--neon-azul) / 0.5), inset 0 0 12px rgb(var(--neon-azul) / 0.4);
+}
+.tema-negro .btn-retro:hover > span { background: rgb(var(--neon-azul) / 0.16); }
+
+/* Pestañas y filtros del panel */
+.tema-negro .ptab {
+  border-color: rgb(var(--neon-rojo) / 0.7);
+  box-shadow: 0 0 5px rgb(var(--neon-rojo) / 0.45);
+}
+.tema-negro .ptab:hover { background: rgb(var(--neon-rojo) / 0.1); }
+.tema-negro .ptab[aria-selected='true'],
+.tema-negro .ptab[aria-pressed='true'],
+.tema-negro .ptab.is-on,
+.tema-negro .ptab.soft.is-on {
+  background: rgb(var(--neon-azul) / 0.16);
+  border-color: rgb(var(--neon-azul));
+  color: rgb(var(--neon-azul));
+  text-shadow: 0 0 6px rgb(var(--neon-azul) / 0.8);
+  box-shadow: 0 0 6px rgb(var(--neon-azul) / 0.9), 0 0 16px rgb(var(--neon-azul) / 0.4), inset 0 0 8px rgb(var(--neon-azul) / 0.3);
+}
+
+/* Campos: se encienden en azul al escribir */
+.tema-negro .pfield:focus,
+.tema-negro input:focus-visible,
+.tema-negro textarea:focus-visible,
+.tema-negro select:focus-visible {
+  border-color: rgb(var(--neon-azul));
+  box-shadow: 0 0 6px rgb(var(--neon-azul) / 0.8), 0 0 14px rgb(var(--neon-azul) / 0.35);
+}
+.tema-negro .palert { box-shadow: 0 0 6px rgb(var(--neon-rojo) / 0.6); }
+
+/* Sombras duras de cartel → resplandor neón */
+.tema-negro .shadow-island,
+.tema-negro .shadow-ember { box-shadow: 0 0 6px rgb(var(--neon-rojo) / 0.85), 0 0 16px rgb(var(--neon-rojo) / 0.4); }
+.tema-negro .shadow-float { box-shadow: 0 0 8px rgb(var(--neon-azul) / 0.7), 0 0 22px rgb(var(--neon-azul) / 0.3); }
+
+/* Títulos: el azul del cartel con su brillo */
+.tema-negro h1.text-tomate, .tema-negro h2.text-tomate,
+.tema-negro .font-display.text-tomate {
+  text-shadow: 0 0 8px rgb(var(--neon-azul) / 0.55), 0 0 22px rgb(var(--neon-azul) / 0.3);
+}
+
+/* Franjas de color (aviso de arriba, footer) → negro con dos tubos rojos */
+.neon-banda {
+  background: rgb(12 12 12);
+  color: rgb(var(--c-papel));
+  border-block: 2px solid rgb(255 60 80);
+  box-shadow: 0 0 8px rgb(255 60 80 / 0.7), inset 0 0 10px rgb(255 60 80 / 0.25);
+}
+
+/* Texto de tubo: verde (listo) */
+.neon-verde {
+  color: rgb(82 230 150);
+  text-shadow: 0 0 6px rgb(82 230 150 / 0.8), 0 0 16px rgb(82 230 150 / 0.4);
+}

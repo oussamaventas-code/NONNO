@@ -111,7 +111,7 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
       <main className="flex-1 min-h-0 grid grid-cols-[1.15fr_1fr]">
         {/* En preparación */}
         <section className="min-h-0 px-[3vw] py-[3vh] flex flex-col">
-          <h2 className="flex items-center gap-[1vw] font-sans font-extrabold uppercase text-[2.4vw] text-tomate">
+          <h2 className="flex items-center gap-[1vw] font-sans font-extrabold uppercase text-[2.4vw] neon-amarillo">
             <span className="inline-block w-[1vw] h-[1vw] rounded-full bg-tomate animate-pulse-dot" />
             En preparación
           </h2>
@@ -122,8 +122,8 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
               {preparing.slice(0, MAX_PREP).map((o) => {
                 const { prefix, number } = splitRef(o.ref)
                 return (
-                  <li key={o.id} className="rounded-lg border border-tomate bg-crema shadow-[0.25vw_0.25vw_0_0_rgb(226_62_87)] px-[1.2vw] py-[1.5vh]">
-                    <p className={['font-mono font-bold leading-none text-tomate', number.length > 4 ? 'text-[2.4vw]' : 'text-[3.4vw]'].join(' ')}>
+                  <li key={o.id} className="pcard px-[1.2vw] py-[1.5vh]">
+                    <p className={['font-mono font-bold leading-none neon-amarillo', number.length > 4 ? 'text-[2.4vw]' : 'text-[3.4vw]'].join(' ')}>
                       <span className="text-[1.1vw] text-tomate/60 align-top mr-[0.3vw]">{prefix}</span>{number}
                     </p>
                     <p className="mt-[0.8vh] text-[1.2vw] text-carbon/70 truncate">{o.name}</p>
@@ -139,9 +139,9 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
         </section>
 
         {/* Listos */}
-        <section className="min-h-0 bg-tomate text-masa px-[3vw] py-[3vh] flex flex-col">
-          <h2 className="font-sans font-extrabold uppercase text-[2.4vw] leading-none">
-            ¡Listo! <span className="text-queso">Recoge tu pedido</span>
+        <section className="min-h-0 border-l-2 border-[rgb(82_230_150)] shadow-[inset_0_0_40px_rgb(82_230_150_/_0.15)] px-[3vw] py-[3vh] flex flex-col">
+          <h2 className="font-sans font-extrabold uppercase text-[2.4vw] leading-none neon-verde">
+            ¡Listo! <span className="neon-amarillo">Recoge tu pedido</span>
           </h2>
           {ready.length === 0 ? (
             <p className="mt-[4vh] font-serif italic text-[2vw] text-masa/80">Enseguida saldrán los primeros.</p>
@@ -154,11 +154,11 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
                   <li
                     key={o.id}
                     className={[
-                      'rounded-lg border-2 border-masa bg-crema text-carbon px-[1.4vw] py-[1.8vh] shadow-[0.35vw_0.35vw_0_0_rgb(140_25_45)] transition-all',
+                      'rounded-lg border-2 border-[rgb(82_230_150)] bg-crema text-carbon px-[1.4vw] py-[1.8vh] shadow-[0_0_10px_rgb(82_230_150_/_0.8),inset_0_0_10px_rgb(82_230_150_/_0.3)] transition-all',
                       isNew ? 'ring-[0.4vw] ring-queso animate-pulse' : '',
                     ].join(' ')}
                   >
-                    <p className={['font-mono font-bold leading-none text-tomate', number.length > 4 ? 'text-[3.2vw]' : 'text-[4.4vw]'].join(' ')}>
+                    <p className={['font-mono font-bold leading-none neon-verde', number.length > 4 ? 'text-[3.2vw]' : 'text-[4.4vw]'].join(' ')}>
                       <span className="text-[1.3vw] text-tomate/60 align-top mr-[0.3vw]">{prefix}</span>{number}
                     </p>
                     <p className="mt-[0.8vh] text-[1.5vw] font-semibold truncate">{o.name}</p>
