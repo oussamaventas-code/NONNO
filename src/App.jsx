@@ -17,6 +17,7 @@ import Checkout from './components/Checkout'
 import StickyOrderBar from './components/StickyOrderBar'
 import Toasts from './components/Toasts'
 import AccountDrawer from './components/AccountDrawer'
+import OrderTracking from './components/OrderTracking'
 import { usePath } from './lib/router'
 import { useMenuOverrides } from './hooks/useMenuOverrides'
 
@@ -40,7 +41,9 @@ export default function App() {
       <MobileNav />
 
       <main>
-        {path === '/carta' ? (
+        {path.startsWith('/p/') ? (
+          <OrderTracking token={decodeURIComponent(path.slice(3))} />
+        ) : path === '/carta' ? (
           <Menu />
         ) : (
           <>

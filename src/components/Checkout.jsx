@@ -16,6 +16,9 @@ import { useKitchenEta } from '../hooks/useKitchenEta'
 import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 import { useAccount } from '../store/AccountContext'
 import { LOYALTY, pointsFor, maxRedeemable } from '../data/loyalty'
+import { rememberLastOrder } from '../lib/lastOrder'
+import { trackPath } from '../lib/tracking'
+import { navigate } from '../lib/router'
 
 const newClientKey = () =>
   (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -544,6 +547,11 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
 
 /* ── Estado: éxito ────────────────────────────────────────────── */
 function OrderSuccess({ result, onClose }) {
+  /* El pedido queda apuntado en este navegador para poder seguirlo */
+  useEffect(() => {
+    if (result?.track) rememberLastOrder(result.track, result.payload?.ref)
+  }, [result?.track, result?.payload?.ref])
+
   return (
     <div className="text-center py-6">
       <span className="inline-flex w-16 h-16 rounded-full bg-albahaca/10 text-albahaca items-center justify-center mb-5">
@@ -563,10 +571,19 @@ function OrderSuccess({ result, onClose }) {
       <p className="mt-3 text-xs text-carbon/40 max-w-xs mx-auto">
         Recuerda: el pago se realiza en el local o al recibir el pedido.
       </p>
-      <button onClick={onClose} className="btn mt-6 bg-tomate text-forno px-8">
-        <span className="btn-layer bg-horno" />
-        <span className="btn-label">CERRAR</span>
-      </button>
+      {result?.track ? (
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <button onClick={() => { onClose(); navigate(trackPath(result.track)) }} className="btn-retro">
+            <span>Sigue tu pedido</span>
+          </button>
+          <button onClick={onClose} className="text-sm font-semibold text-carbon/55 underline underline-offset-4">Cerrar</button>
+        </div>
+      ) : (
+        <button onClick={onClose} className="btn mt-6 bg-tomate text-masa px-8">
+          <span className="btn-layer bg-forno" />
+          <span className="btn-label">CERRAR</span>
+        </button>
+      )}
     </div>
   )
 }

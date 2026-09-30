@@ -21,3 +21,4 @@ yarn-error.log*
 # Vídeos en bruto (los de la web están en public/videos)
 videos-originales/
 ilustraciones-originales/
+fotos-originales/

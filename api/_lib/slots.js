@@ -7,12 +7,16 @@ import { getLocation } from '../../src/data/locations.js'
 export async function activeOrders(locationId) {
   if (!isConfigured()) return []
   const since = new Date(Date.now() - 12 * 3600 * 1000).toISOString()
-  const { data, error } = await db()
+  const read = (columns) => db()
     .from('orders')
-    .select('id, created_at, pizza_count, oven_slots')
+    .select(columns)
     .eq('location_id', locationId)
     .neq('status', 'cancelado')
     .gte('created_at', since)
+  let { data, error } = await read('id, created_at, pizza_count, oven_slots, scheduled_for')
+  /* Columna de pedidos programados aún sin crear (supabase/fase2.sql):
+     el horno sigue funcionando sin ella. */
+  if (error?.code === '42703') ({ data, error } = await read('id, created_at, pizza_count, oven_slots'))
   if (error) throw error
   return data
 }
@@ -27,10 +31,10 @@ export const SLOT_ERRORS = {
 }
 
 /** ¿Cabría ahora un pedido de N unidades de horno? Sin guardar nada. */
-export async function precheck(locationId, pizzas) {
+export async function precheck(locationId, pizzas, notBefore = null) {
   const kitchen = getLocation(locationId).kitchen
   const { load } = await kitchenLoad(locationId, kitchen)
-  return planOrder({ nowMs: Date.now(), kitchen, load, pizzas })
+  return planOrder({ nowMs: Date.now(), kitchen, load, pizzas, notBeforeMs: notBefore ? Date.parse(notBefore) : 0 })
 }
 
 /**

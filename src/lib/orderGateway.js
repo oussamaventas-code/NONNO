@@ -202,6 +202,8 @@ export async function submitOrder(input) {
         payload: { ...payload, ref: data.ref || payload.ref, total: data.total ?? payload.total },
         /* Hora definitiva: la franja que ha asignado el servidor. */
         arrivalAt: payload.mode === 'delivery' ? data.etaAt : data.readyAt,
+        /* Enlace de seguimiento del pedido (página /p/...) */
+        track: data.track || null,
         text,
         message: 'Pedido recibido en cocina.',
       }

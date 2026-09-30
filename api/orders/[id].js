@@ -10,6 +10,8 @@ const SMS_KINDS = ['recibido', 'listo', 'cancelado']
 
 const STATUSES = ['nuevo', 'horno', 'listo', 'entregado', 'cancelado']
 const PAYMENT_STATUSES = ['pendiente', 'pagado']
+/* Motivos al cancelar (botones del panel) */
+const CANCEL_REASONS = ['cliente', 'sin-producto', 'error', 'no-vino', 'otro']
 
 /* Campos que cambia una edición desde el mostrador. Se guardan los
    de antes para poder deshacerla si el horno no tiene hueco. */
@@ -47,7 +49,7 @@ export default async function handler(req, res) {
   if (req.body?.edit) return editOrder(req, res, id, scoped)
 
   const patch = {}
-  const { status, printed, seen, paymentStatus, paymentMethod, resendSms } = req.body || {}
+  const { status, printed, seen, paymentStatus, paymentMethod, resendSms, cancelReason } = req.body || {}
 
   /* Reintentar un SMS que no salió (móvil apagado, sin cobertura…). */
   if (SMS_KINDS.includes(resendSms)) {
@@ -62,6 +64,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Estado no válido.' })
     }
     patch.status = status
+    if (status === 'cancelado' && CANCEL_REASONS.includes(cancelReason)) patch.cancel_reason = cancelReason
   }
   if (printed) patch.printed_at = new Date().toISOString()
   if (seen) patch.seen_at = new Date().toISOString()
@@ -80,9 +83,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Nada que actualizar.' })
   }
 
-  const { data, error } = await scoped(db().from('orders').update(patch).eq('id', id))
-    .select('*')
-    .maybeSingle()
+  const run = (changes) => scoped(db().from('orders').update(changes).eq('id', id)).select('*').maybeSingle()
+  let { data, error } = await run(patch)
+  /* Columna del motivo aún sin crear (supabase/fase2.sql): se cancela igual. */
+  if (error?.code === '42703' && 'cancel_reason' in patch) {
+    const { cancel_reason: _omit, ...rest } = patch
+    ;({ data, error } = await run(rest))
+  }
 
   if (error) {
     console.error('Error actualizando el pedido:', error)

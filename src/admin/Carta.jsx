@@ -61,7 +61,7 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
             {!esDireccion && ' · los precios los cambia la dirección'}
           </p>
         </div>
-        <label className="flex items-center gap-2 rounded-full border border-carbon/15 px-4 py-2 focus-within:border-carbon/50">
+        <label className="flex items-center gap-2 rounded-md border border-tomate/50 bg-masa px-4 py-2 focus-within:border-tomate">
           <Search className="w-4 h-4 text-carbon/50" />
           <input
             value={query}
@@ -80,8 +80,8 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
               key={id}
               onClick={() => setLocId(id)}
               className={[
-                'rounded-full border px-4 py-2 text-sm font-semibold',
-                locId === id ? 'border-carbon bg-carbon text-crema' : 'border-carbon/15 text-carbon/60',
+                'ptab',
+                locId === id ? 'is-on' : '',
               ].join(' ')}
             >
               {getLocation(id).name}
@@ -91,7 +91,7 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
       )}
 
       {sections.length === 0 && (
-        <p className="rounded-card border border-dashed border-carbon/15 p-6 text-center text-carbon/55">No hay ningún producto con ese nombre.</p>
+        <p className="rounded-lg border border-dashed border-tomate/50 p-6 text-center text-carbon/55">No hay ningún producto con ese nombre.</p>
       )}
 
       {sections.map((section) => (
@@ -105,8 +105,8 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
                 <li
                   key={p.id}
                   className={[
-                    'rounded-card border bg-crema p-4 flex flex-wrap items-center gap-3',
-                    hidden ? 'border-carbon/10 opacity-60' : soldOut ? 'border-tomate/40' : 'border-carbon/10',
+                    'pcard p-4 flex flex-wrap items-center gap-3',
+                    hidden ? 'opacity-55' : soldOut ? 'bg-tomate/5' : '',
                   ].join(' ')}
                 >
                   <div className="flex-1 min-w-[9rem]">
@@ -124,8 +124,8 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
                     disabled={busy === `sold:${p.id}`}
                     aria-pressed={soldOut}
                     className={[
-                      'mono normal-case flex items-center gap-1.5 rounded-full border px-3 py-2 transition-colors disabled:opacity-50',
-                      soldOut ? 'bg-tomate text-crema border-tomate' : 'border-carbon/15 text-carbon/70 hover:border-carbon/40',
+                      'ptab disabled:opacity-50',
+                      soldOut ? 'is-on' : '',
                     ].join(' ')}
                   >
                     {soldOut ? <PackageX className="w-3.5 h-3.5" /> : <Package className="w-3.5 h-3.5" />}
@@ -138,7 +138,7 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
                       disabled={busy === `hide:${p.id}`}
                       aria-pressed={hidden}
                       title={hidden ? 'Volver a mostrarlo en la web' : 'Quitarlo de la web en todas las sedes'}
-                      className="mono normal-case flex items-center gap-1.5 rounded-full border border-carbon/15 px-3 py-2 text-carbon/70 hover:border-carbon/40 disabled:opacity-50"
+                      className="ptab disabled:opacity-50"
                     >
                       {hidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                       {hidden ? 'Mostrar' : 'Ocultar'}
@@ -186,7 +186,7 @@ function PriceFields({ product, editable, busy, onSave }) {
               aria-label={`Precio de ${product.name}${f.label ? ` (${f.label})` : ''}`}
               onBlur={(e) => commit(f, e.target.value, f.value)}
               onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-              className="w-20 rounded-xl border border-carbon/15 bg-white/60 px-3 py-2 text-right font-bold text-carbon outline-none focus:border-carbon/50 disabled:opacity-50"
+              className="pfield !w-20 !px-3 !py-2 text-right font-bold disabled:opacity-50"
             />
             <span className="text-carbon/50">€</span>
           </label>

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Minus, Plus, Leaf, Flame as FlameIcon, Check } from 'lucide-react'
-import { getProduct, getExtra, isPizza, isSoldOut, PIZZA_SIZE } from '../data/menu'
+import { getProduct, isPizza, isSoldOut, PIZZA_SIZE } from '../data/menu'
 import ProductImage from './ProductImage'
+import ToppingPicker from './ToppingPicker'
 import { unitPrice } from '../lib/pricing'
 import { price } from '../lib/format'
 import { useStore, useActions } from '../store/StoreContext'
@@ -81,14 +82,6 @@ export default function ProductModal() {
 
   const total = unitPrice(product, { extraIds, portionId }) * qty
 
-  const extrasByGroup = (product.extras || []).reduce((acc, id) => {
-    const extra = getExtra(id)
-    if (!extra) return acc
-    acc[extra.group] = acc[extra.group] || []
-    acc[extra.group].push(extra)
-    return acc
-  }, {})
-
   const handleAdd = () => {
     if (!locationId) {
       pendingAdd.current = true
@@ -113,17 +106,18 @@ export default function ProductModal() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="product-modal-title"
-        className="relative w-full sm:max-w-2xl max-h-[92dvh] sm:max-h-[85vh] overflow-y-auto bg-crema rounded-t-block sm:rounded-block shadow-float"
+        className="relative w-full sm:max-w-2xl max-h-[92dvh] sm:max-h-[88vh] flex flex-col bg-crema rounded-t-lg sm:rounded-lg border border-tomate shadow-ember overflow-hidden"
       >
         <button
           onClick={closeProduct}
-          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-forno/40 backdrop-blur-sm text-luz flex items-center justify-center hover:bg-forno/60 transition-colors"
+          className="absolute top-3 right-3 z-10 w-10 h-10 rounded-md border border-tomate bg-masa text-tomate flex items-center justify-center hover:bg-queso transition-colors"
           aria-label="Cerrar"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className={product.image ? 'relative h-56 sm:h-72' : 'relative h-40'}>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className={product.image ? 'relative h-52 sm:h-64' : 'relative h-36'}>
           <ProductImage
             image={product.image}
             category={product.category}
@@ -131,7 +125,7 @@ export default function ProductModal() {
             width={900}
             widths={[500, 900, 1300]}
             sizes="(min-width: 640px) 42rem, 100vw"
-            className="h-full w-full rounded-t-block"
+            className="h-full w-full"
             iconClassName="w-12 h-12"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-crema via-transparent to-transparent" />
@@ -139,15 +133,15 @@ export default function ProductModal() {
 
         <div className="px-6 sm:px-8 pb-8 -mt-6 relative">
           {product.badge && <span className="mono normal-case text-tomate">{product.badge}</span>}
-          <h2 id="product-modal-title" className="font-sans font-extrabold uppercase text-2xl sm:text-3xl text-carbon flex items-center gap-2 mt-1">
+          <h2 id="product-modal-title" className="font-sans font-extrabold uppercase text-2xl sm:text-3xl text-tomate flex items-center gap-2 mt-1">
             {product.name}
             {product.vegetarian && <Leaf className="w-4 h-4 text-albahaca" strokeWidth={2} />}
             {product.spicy && <FlameIcon className="w-4 h-4 text-tomate" strokeWidth={2} />}
           </h2>
-          <p className="mt-2 text-carbon/60">{product.description}</p>
+          <p className="mt-1 text-carbon/70">{product.description}</p>
 
           {isPizza(product) && (
-            <p className="mono text-carbon/40 mt-3">TAMAÑO ÚNICO · {PIZZA_SIZE.diameter}</p>
+            <p className="mono text-carbon/50 mt-2">TAMAÑO ÚNICO · {PIZZA_SIZE.diameter}</p>
           )}
 
           {product.portions?.length > 1 && (
@@ -158,8 +152,8 @@ export default function ProductModal() {
                   onClick={() => setPortionId(p.id)}
                   aria-pressed={portionId === p.id}
                   className={[
-                    'rounded-2xl border p-4 text-left transition-all',
-                    portionId === p.id ? 'border-tomate bg-tomate/5' : 'border-carbon/12 hover:border-carbon/30',
+                    'rounded-md border p-4 text-left transition-all',
+                    portionId === p.id ? 'border-tomate bg-tomate/10 shadow-island' : 'border-tomate/40 hover:border-tomate',
                   ].join(' ')}
                 >
                   <span className="block font-sans font-bold text-sm text-carbon">{p.label}</span>
@@ -171,9 +165,9 @@ export default function ProductModal() {
 
           {/* Ingredientes: se quitan tocándolos */}
           {product.ingredients?.length > 0 && (
-            <div className="mt-8">
-              <div className="flex items-baseline justify-between gap-3 mb-1">
-                <p className="mono text-carbon/50">INGREDIENTES</p>
+            <div className="mt-6">
+              <div className="flex items-baseline justify-between gap-3 mb-2">
+                <p className="mono text-tomate">¿QUITAR ALGO? <span className="normal-case text-carbon/50">toca para quitar</span></p>
                 {removed.length > 0 && (
                   <button
                     onClick={() => setRemoved([])}
@@ -183,9 +177,6 @@ export default function ProductModal() {
                   </button>
                 )}
               </div>
-              <p className="text-xs text-carbon/45 mb-3">
-                Toca un ingrediente para quitarlo. El precio no cambia.
-              </p>
 
               <div className="flex flex-wrap gap-2">
                 {product.ingredients.map((ing) => {
@@ -197,15 +188,15 @@ export default function ProductModal() {
                       aria-pressed={!off}
                       aria-label={off ? `Añadir ${ing}` : `Quitar ${ing}`}
                       className={[
-                        'group flex items-center gap-1.5 rounded-full border px-3.5 py-2 min-h-[40px] text-sm transition-all duration-300 ease-magnetic',
+                        'group flex items-center gap-1.5 rounded-md border px-3 py-2 min-h-[40px] text-sm font-semibold transition-all duration-300 ease-magnetic',
                         off
-                          ? 'border-carbon/12 text-carbon/35 line-through bg-transparent'
-                          : 'border-albahaca/35 bg-albahaca/8 text-carbon',
+                          ? 'border-tomate bg-tomate/10 text-tomate line-through'
+                          : 'border-tomate/40 bg-masa text-carbon',
                       ].join(' ')}
                     >
                       {off
-                        ? <Plus className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
-                        : <Check className="w-3.5 h-3.5 flex-shrink-0 text-albahaca" strokeWidth={2.5} />}
+                        ? <X className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
+                        : <Check className="w-3.5 h-3.5 flex-shrink-0 text-tomate" strokeWidth={2.5} />}
                       {ing}
                     </button>
                   )
@@ -213,49 +204,21 @@ export default function ProductModal() {
               </div>
 
               {removed.length > 0 && (
-                <p className="mt-3 rounded-2xl bg-tomate/8 px-4 py-2.5 text-sm font-semibold text-tomate">
+                <p className="mt-3 rounded-md border border-tomate bg-tomate/10 px-4 py-2 text-sm font-bold uppercase text-tomate">
                   Sin {removed.join(', sin ')}
                 </p>
               )}
             </div>
           )}
 
-          {/* Extras */}
-          {Object.keys(extrasByGroup).length > 0 && (
-            <div className="mt-8">
-              <p className="mono text-carbon/50 mb-3">AÑADIR EXTRAS</p>
-              <div className="space-y-5">
-                {Object.entries(extrasByGroup).map(([group, extras]) => (
-                  <div key={group}>
-                    <p className="text-xs font-sans font-bold uppercase text-carbon/40 mb-2">{group}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {extras.map((extra) => {
-                        const checked = extraIds.includes(extra.id)
-                        return (
-                          <button
-                            key={extra.id}
-                            onClick={() => toggleExtra(extra.id)}
-                            aria-pressed={checked}
-                            className={[
-                              'rounded-full border px-4 py-2 min-h-[40px] text-sm transition-all duration-300 ease-magnetic',
-                              checked
-                                ? 'border-tomate bg-tomate/10 text-tomate font-semibold'
-                                : 'border-carbon/12 text-carbon/60 hover:border-carbon/30',
-                            ].join(' ')}
-                          >
-                            {extra.label} <span className="mono normal-case">+{price(extra.price)}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {product.extras?.length > 0 && (
+            <div className="mt-7">
+              <ToppingPicker extraIds={product.extras} selected={extraIds} onToggle={toggleExtra} title="¿AÑADIR ALGO?" />
             </div>
           )}
 
-          <div className="mt-8">
-            <label htmlFor="product-note" className="mono text-carbon/50 mb-3 block">
+          <div className="mt-7">
+            <label htmlFor="product-note" className="mono text-tomate mb-2 block">
               NOTA (OPCIONAL)
             </label>
             <input
@@ -265,15 +228,19 @@ export default function ProductModal() {
               onChange={(e) => setNote(e.target.value)}
               placeholder={notePlaceholder}
               maxLength={140}
-              className="w-full rounded-2xl border border-carbon/12 bg-white/60 px-4 py-3 text-sm text-carbon placeholder:text-carbon/35 focus:border-tomate outline-none transition-colors"
+              className="pfield text-sm"
             />
           </div>
 
-          <div className="mt-8 flex items-center gap-4">
-            <div className="flex items-center gap-1 rounded-full border border-carbon/15 p-1">
+        </div>
+        </div>
+
+        {/* Siempre a la vista: no hay que bajar hasta el final para añadir */}
+        <div className="flex items-center gap-3 border-t border-tomate bg-masa px-4 sm:px-6 py-3 pb-safe">
+            <div className="flex items-center gap-1 rounded-md border border-tomate/50 p-1">
               <button
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-carbon hover:bg-carbon/5 transition-colors disabled:opacity-30"
+                className="w-10 h-10 rounded-md flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors disabled:opacity-30"
                 disabled={qty <= 1}
                 aria-label="Quitar unidad"
               >
@@ -282,18 +249,17 @@ export default function ProductModal() {
               <span className="w-8 text-center font-sans font-bold text-carbon">{qty}</span>
               <button
                 onClick={() => setQty((q) => q + 1)}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-carbon hover:bg-carbon/5 transition-colors"
+                className="w-10 h-10 rounded-md flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors"
                 aria-label="Añadir unidad"
               >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
 
-            <button onClick={handleAdd} disabled={soldOut} className="btn flex-1 bg-tomate text-forno px-6 disabled:opacity-50 disabled:pointer-events-none">
-              <span className="btn-layer bg-horno" />
-              <span className="btn-label">{soldOut ? 'AGOTADO HOY EN ESTA SEDE' : `AÑADIR AL PEDIDO · ${price(total)}`}</span>
+            <button onClick={handleAdd} disabled={soldOut} className="btn flex-1 bg-tomate text-masa px-4 sm:px-6 disabled:opacity-50 disabled:pointer-events-none">
+              <span className="btn-layer bg-forno" />
+              <span className="btn-label">{soldOut ? 'AGOTADO HOY EN ESTA SEDE' : `AÑADIR · ${price(total)}`}</span>
             </button>
-          </div>
         </div>
       </div>
     </div>

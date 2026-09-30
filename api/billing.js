@@ -3,6 +3,7 @@ import { requireSession, SCOPE_ALL } from './_lib/auth.js'
 import { getLocation } from '../src/data/locations.js'
 import { madridDay } from '../src/lib/stock.js'
 import { madridTime } from '../src/lib/kitchenSlots.js'
+import cashHandler from './_lib/cashHandler.js'
 
 /**
  * GET /api/billing?from=2026-09-01&to=2026-09-27[&location=sangonera]
@@ -29,8 +30,12 @@ const dayStartMs = (dateStr) => madridTime(Date.parse(`${dateStr}T12:00:00Z`), '
  * Agregación pura, sin red: fácil de probar. `rows` son filas de
  * `orders` ya filtradas por fecha/sede/no-cancelados.
  */
-export function aggregateBilling(rows) {
+export function aggregateBilling(allRows) {
+  /* Los cancelados no facturan: van a su propio bloque con el motivo */
+  const rows = allRows.filter((o) => o.status !== 'cancelado')
+  const cancelled = allRows.filter((o) => o.status === 'cancelado')
   const summary = { orders: 0, revenue: 0, subtotal: 0, discount: 0, deliveryFee: 0, collected: 0, pending: 0 }
+  const products = new Map()
   const byDay = new Map()
   const byLocation = new Map()
   const byMode = { pickup: bucket(), delivery: bucket() }
@@ -53,6 +58,15 @@ export function aggregateBilling(rows) {
 
     if (!byLocation.has(o.location_id)) byLocation.set(o.location_id, bucket())
     add(byLocation.get(o.location_id), total)
+
+    for (const it of o.items || []) {
+      const key = it.id || it.name
+      if (!key) continue
+      const p = products.get(key) || { id: key, name: it.name || key, qty: 0, revenue: 0 }
+      p.qty += Number(it.qty) || 0
+      p.revenue += Number(it.total) || 0
+      products.set(key, p)
+    }
 
     if (byMode[o.mode]) add(byMode[o.mode], total)
     if (byChannel[o.channel]) add(byChannel[o.channel], total)
@@ -80,10 +94,27 @@ export function aggregateBilling(rows) {
     byMode: { pickup: rounded(byMode.pickup), delivery: rounded(byMode.delivery) },
     byChannel: { web: rounded(byChannel.web), mostrador: rounded(byChannel.mostrador), telefono: rounded(byChannel.telefono) },
     byPayment: { efectivo: rounded(byPayment.efectivo), tarjeta: rounded(byPayment.tarjeta) },
+    topProducts: [...products.values()]
+      .sort((a, b) => b.qty - a.qty || b.revenue - a.revenue)
+      .slice(0, 15)
+      .map((p) => ({ ...p, revenue: round(p.revenue) })),
+    cancellations: {
+      orders: cancelled.length,
+      lost: round(cancelled.reduce((n, o) => n + (Number(o.total) || 0), 0)),
+      byReason: Object.entries(cancelled.reduce((acc, o) => {
+        const k = o.cancel_reason || 'sin-motivo'
+        acc[k] = (acc[k] || 0) + 1
+        return acc
+      }, {})).map(([reason, orders]) => ({ reason, orders })).sort((a, b) => b.orders - a.orders),
+    },
   }
 }
 
 export default async function handler(req, res) {
+  /* /api/cash (cierre de caja) llega aquí con `?resource=cash` por una
+     reescritura de vercel.json: Vercel Hobby admite solo 12 funciones. */
+  if (req.query?.resource === 'cash') return cashHandler(req, res)
+
   if (!isConfigured()) {
     return res.status(503).json({ error: 'El sistema todavía no está conectado a la base de datos.' })
   }
@@ -104,22 +135,41 @@ export default async function handler(req, res) {
 
   const locationId = req.query?.location && getLocation(req.query.location) ? req.query.location : null
 
-  let query = db()
-    .from('orders')
-    .select('created_at, location_id, mode, channel, payment_status, payment_method, subtotal, discount, delivery_fee, total')
-    .gte('created_at', new Date(dayStartMs(from)).toISOString())
-    .lt('created_at', new Date(dayStartMs(to) + 24 * 3600 * 1000).toISOString())
-    .neq('status', 'cancelado')
-    .order('created_at', { ascending: true })
-    .limit(10000)
-  if (locationId) query = query.eq('location_id', locationId)
-
-  const { data, error } = await query
+  const BASE = 'created_at, status, location_id, mode, channel, payment_status, payment_method, subtotal, discount, delivery_fee, total, items'
+  const run = (columns) => {
+    let query = db()
+      .from('orders')
+      .select(columns)
+      .gte('created_at', new Date(dayStartMs(from)).toISOString())
+      .lt('created_at', new Date(dayStartMs(to) + 24 * 3600 * 1000).toISOString())
+      .order('created_at', { ascending: true })
+      .limit(10000)
+    if (locationId) query = query.eq('location_id', locationId)
+    return query
+  }
+  let { data, error } = await run(`${BASE}, cancel_reason`)
+  /* Sin la columna del motivo (supabase/fase2.sql): se sigue sin él */
+  if (error?.code === '42703') ({ data, error } = await run(BASE))
   if (error) {
     console.error('Error calculando la facturación:', error)
     return res.status(500).json({ error: 'No hemos podido calcular la facturación.' })
   }
 
+  /* Cierres de caja del rango (si la tabla existe): para ver descuadres */
+  let closings = []
+  let cq = db().from('cash_closings').select('*').gte('day', from).lte('day', to).order('day', { ascending: false })
+  if (locationId) cq = cq.eq('location_id', locationId)
+  const { data: cash, error: cashError } = await cq
+  if (!cashError) {
+    closings = cash.map((c) => ({
+      day: c.day,
+      locationId: c.location_id,
+      name: getLocation(c.location_id)?.name || c.location_id,
+      diff: round(Number(c.counted_cash) - Number(c.expected_cash) + Number(c.counted_card) - Number(c.expected_card)),
+      note: c.note,
+    }))
+  }
+
   res.setHeader('Cache-Control', 'no-store')
-  return res.status(200).json({ from, to, location: locationId, ...aggregateBilling(data) })
+  return res.status(200).json({ from, to, location: locationId, ...aggregateBilling(data), closings })
 }

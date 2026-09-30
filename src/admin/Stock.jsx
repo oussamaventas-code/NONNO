@@ -104,8 +104,8 @@ export default function Stock({ locationIds, onError }) {
               key={id}
               onClick={() => setLocId(id)}
               className={[
-                'rounded-full border px-4 py-2 text-sm font-semibold',
-                locId === id ? 'border-carbon bg-carbon text-crema' : 'border-carbon/15 text-carbon/60',
+                'ptab',
+                locId === id ? 'is-on' : '',
               ].join(' ')}
             >
               {getLocation(id).name}
@@ -117,7 +117,7 @@ export default function Stock({ locationIds, onError }) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="mono text-tomate">STOCK DE HOY</p>
-          <h2 className="font-sans font-extrabold uppercase text-xl text-carbon mt-1 first-letter:uppercase">{dateLabel}</h2>
+          <h2 className="font-sans font-extrabold uppercase text-xl text-tomate mt-1 first-letter:uppercase">{dateLabel}</h2>
           {!loading && (
             <p className="mono normal-case text-carbon/55 mt-1">
               {summary.counted} de {items.length} contados
@@ -127,7 +127,7 @@ export default function Stock({ locationIds, onError }) {
         </div>
         <button
           onClick={() => setManaging((m) => !m)}
-          className="mono normal-case flex items-center gap-1.5 rounded-full border border-carbon/15 px-4 py-2 text-carbon/70 hover:border-carbon/40"
+          className="ptab"
         >
           {managing ? <><Check className="w-3.5 h-3.5" /> Listo</> : <><Pencil className="w-3.5 h-3.5" /> Editar productos</>}
         </button>
@@ -142,12 +142,12 @@ export default function Stock({ locationIds, onError }) {
           {/* Recuento */}
           <ul className="flex flex-col gap-2">
             {summary.rows.length === 0 && (
-              <li className="rounded-card border border-dashed border-carbon/15 p-6 text-center text-carbon/55">
+              <li className="rounded-lg border border-dashed border-tomate/50 p-6 text-center text-carbon/55">
                 No hay productos. Pulsa "Editar productos" para añadirlos.
               </li>
             )}
             {summary.rows.map((r) => (
-              <li key={r.id} className="rounded-card border border-carbon/10 bg-crema p-4 flex flex-wrap items-center gap-3">
+              <li key={r.id} className="pcard p-4 flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[9rem]">
                   <p className="font-sans font-bold text-carbon">{r.name}</p>
                   <p className="mono normal-case text-carbon/50">objetivo {formatQty(r.target, r.unit)}</p>
@@ -173,7 +173,7 @@ export default function Stock({ locationIds, onError }) {
           </ul>
 
           {/* Lista de la compra */}
-          <aside className="rounded-card bg-carbon text-crema p-5 lg:sticky lg:top-6">
+          <aside className="rounded-lg border border-tomate bg-forno text-masa shadow-island p-5 lg:sticky lg:top-6">
             <p className="font-sans font-extrabold uppercase flex items-center gap-2">
               <ClipboardList className="w-5 h-5 text-horno" /> Lista de la compra
             </p>
@@ -188,7 +188,7 @@ export default function Stock({ locationIds, onError }) {
                 <ul className="mt-4 flex flex-col gap-1">
                   {summary.shopping.map((r) => (
                     <li key={r.id}>
-                      <label className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-crema/5 cursor-pointer">
+                      <label className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-crema/5 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={r.bought}
@@ -204,10 +204,10 @@ export default function Stock({ locationIds, onError }) {
                   ))}
                 </ul>
                 <div className="mt-4 flex gap-2">
-                  <button onClick={printList} className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-crema text-carbon px-4 py-2.5 text-sm font-semibold">
+                  <button onClick={printList} className="flex-1 flex items-center justify-center gap-1.5 rounded-md bg-masa text-carbon px-4 py-2.5 text-sm font-semibold uppercase tracking-wide">
                     <Printer className="w-4 h-4" /> Imprimir
                   </button>
-                  <button onClick={copyList} className="flex-1 flex items-center justify-center gap-1.5 rounded-full border border-crema/25 px-4 py-2.5 text-sm font-semibold">
+                  <button onClick={copyList} className="flex-1 flex items-center justify-center gap-1.5 rounded-md border border-masa/40 px-4 py-2.5 text-sm font-semibold uppercase tracking-wide">
                     {copied ? <><Check className="w-4 h-4" /> Copiada</> : <><Copy className="w-4 h-4" /> Copiar</>}
                   </button>
                 </div>
@@ -244,8 +244,8 @@ function CountInput({ value, unit, label, onCommit }) {
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
         placeholder="—"
         className={[
-          'w-24 rounded-xl border bg-white/70 px-3 py-2.5 text-right text-lg font-semibold text-carbon outline-none',
-          invalid ? 'border-tomate' : 'border-carbon/15 focus:border-tomate',
+          'pfield !w-24 !px-3 text-right !text-lg font-semibold',
+          invalid ? '!border-tomate !bg-tomate/10' : '',
         ].join(' ')}
       />
       <span className="mono normal-case text-carbon/55 w-14">{unit}</span>
@@ -291,7 +291,7 @@ function ItemManager({ locId, items, onChange, onError }) {
       ) : (
         <button
           onClick={() => setAdding(true)}
-          className="mt-2 self-start flex items-center gap-1.5 rounded-full bg-carbon text-crema px-4 py-2.5 text-sm font-semibold"
+          className="mt-2 self-start flex items-center gap-1.5 rounded-md bg-carbon text-crema px-4 py-2.5 text-sm font-semibold"
         >
           <Plus className="w-4 h-4" /> Añadir producto
         </button>
@@ -320,25 +320,25 @@ function ItemRow({ item, onSave, onDelete, onError, isNew = false }) {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-card border border-carbon/10 bg-crema p-3 flex flex-wrap items-end gap-2">
+    <form onSubmit={submit} className="pcard p-3 flex flex-wrap items-end gap-2">
       <label className="flex-1 min-w-[10rem]">
         <span className="mono normal-case text-xs text-carbon/50">Producto</span>
         <input value={name} onChange={(e) => setName(e.target.value)} autoFocus={isNew} maxLength={60}
-          className="mt-1 w-full rounded-xl border border-carbon/15 bg-white/70 px-3 py-2 text-sm outline-none focus:border-tomate" />
+          className="mt-1 pfield !py-2 text-sm" />
       </label>
       <label className="w-24">
         <span className="mono normal-case text-xs text-carbon/50">Objetivo</span>
         <input value={target} onChange={(e) => setTarget(e.target.value)} inputMode="decimal"
-          className="mt-1 w-full rounded-xl border border-carbon/15 bg-white/70 px-3 py-2 text-sm text-right outline-none focus:border-tomate" />
+          className="mt-1 pfield !py-2 text-sm text-right" />
       </label>
       <label className="w-28">
         <span className="mono normal-case text-xs text-carbon/50">Unidad</span>
         <input value={unit} onChange={(e) => setUnit(e.target.value)} list="stock-units" maxLength={12}
-          className="mt-1 w-full rounded-xl border border-carbon/15 bg-white/70 px-3 py-2 text-sm outline-none focus:border-tomate" />
+          className="mt-1 pfield !py-2 text-sm" />
       </label>
       <datalist id="stock-units">{UNITS.map((u) => <option key={u} value={u} />)}</datalist>
       <button type="submit" disabled={!dirty || saving}
-        className="rounded-full bg-albahaca text-crema px-4 py-2 text-sm font-semibold disabled:opacity-30">
+        className="rounded-md bg-albahaca text-crema px-4 py-2 text-sm font-semibold disabled:opacity-30">
         {saving ? '…' : 'Guardar'}
       </button>
       <button type="button" onClick={onDelete} aria-label={isNew ? 'Cancelar' : `Quitar ${item.name}`}

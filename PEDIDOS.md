@@ -96,6 +96,10 @@ Para que no falle durante el servicio:
 - El móvil tiene que estar **encendido, cargando y con cobertura o wifi**.
 - En Ajustes → Batería, quita la **optimización de batería** a la app, o Android la dormirá.
 
+**Sin Android: Twilio (de pago).** Si en Vercel están `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` y `TWILIO_FROM` (número de Twilio o remitente `NONNO`), los SMS salen por Twilio en vez de por el móvil. Unos 0,09 $ por SMS en España. La cuenta de prueba de Twilio solo envía a números verificados en su panel.
+
+**Probar:** en el panel, menú ⚙ → "Probar los SMS a clientes": escribe tu móvil y pulsa Enviar.
+
 **Si el móvil está apagado o sin cobertura**, el pedido entra igual: solo no sale el SMS. En el panel aparece "No salió el SMS" con un botón para **reintentar**; si no, se llama al cliente. Sin estas variables configuradas, la web funciona igual pero no manda SMS.
 
 ---

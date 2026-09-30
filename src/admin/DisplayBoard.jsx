@@ -95,54 +95,56 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
   const location = getLocation(locationId)
 
   return (
-    <div className="h-screen overflow-hidden bg-forno text-crema flex flex-col cursor-none select-none">
-      <header className="flex items-center justify-between px-[3vw] py-[2vh] border-b border-crema/10">
+    <div className="h-screen overflow-hidden bg-masa text-carbon flex flex-col cursor-none select-none">
+      <header className="flex items-center justify-between px-[3vw] py-[2vh] border-b-2 border-tomate">
         <div>
-          <p className="font-sans font-extrabold uppercase tracking-tight text-[2.2vw] leading-none">
-            LA PIZZA DE <em className="font-serif italic font-semibold text-horno">NONNO</em>
+          <p className="font-sans font-extrabold uppercase tracking-tight text-[2.2vw] leading-none text-tomate">
+            LA PIZZA DE <em className="font-serif italic font-semibold">NONNO</em>
           </p>
-          <p className="mono text-crema/50 text-[1vw] mt-1">{location?.name.toUpperCase()}</p>
+          <p className="mono text-carbon/60 text-[1vw] mt-1">{location?.name.toUpperCase()}</p>
         </div>
-        <p className="font-mono font-bold text-[3vw] leading-none text-crema/90">{hourOf(now)}</p>
+        <p className="font-mono font-bold text-[3vw] leading-none text-tomate">{hourOf(now)}</p>
       </header>
+
+      <div className="checker" aria-hidden="true" />
 
       <main className="flex-1 min-h-0 grid grid-cols-[1.15fr_1fr]">
         {/* En preparación */}
         <section className="min-h-0 px-[3vw] py-[3vh] flex flex-col">
-          <h2 className="flex items-center gap-[1vw] font-sans font-extrabold uppercase text-[2.4vw] text-horno">
-            <span className="inline-block w-[1vw] h-[1vw] rounded-full bg-horno animate-pulse-dot" />
+          <h2 className="flex items-center gap-[1vw] font-sans font-extrabold uppercase text-[2.4vw] text-tomate">
+            <span className="inline-block w-[1vw] h-[1vw] rounded-full bg-tomate animate-pulse-dot" />
             En preparación
           </h2>
           {preparing.length === 0 ? (
-            <p className="mt-[4vh] font-serif italic text-[2vw] text-crema/40">Ahora mismo no hay pedidos en el horno.</p>
+            <p className="mt-[4vh] font-serif italic text-[2vw] text-tomate/70">Ahora mismo no hay pedidos en el horno.</p>
           ) : (
             <ul className="mt-[3vh] grid grid-cols-3 gap-[1.2vw] content-start">
               {preparing.slice(0, MAX_PREP).map((o) => {
                 const { prefix, number } = splitRef(o.ref)
                 return (
-                  <li key={o.id} className="rounded-[1.5vw] bg-crema/5 border border-crema/10 px-[1.2vw] py-[1.5vh]">
-                    <p className={['font-mono font-bold leading-none', number.length > 4 ? 'text-[2.4vw]' : 'text-[3.4vw]'].join(' ')}>
-                      <span className="text-[1.1vw] text-crema/40 align-top mr-[0.3vw]">{prefix}</span>{number}
+                  <li key={o.id} className="rounded-lg border border-tomate bg-crema shadow-[0.25vw_0.25vw_0_0_rgb(226_62_87)] px-[1.2vw] py-[1.5vh]">
+                    <p className={['font-mono font-bold leading-none text-tomate', number.length > 4 ? 'text-[2.4vw]' : 'text-[3.4vw]'].join(' ')}>
+                      <span className="text-[1.1vw] text-tomate/60 align-top mr-[0.3vw]">{prefix}</span>{number}
                     </p>
-                    <p className="mt-[0.8vh] text-[1.2vw] text-crema/70 truncate">{o.name}</p>
-                    {o.readyAt && <p className="mono normal-case text-[1vw] text-horno/90">hacia las {hourOf(o.readyAt)}</p>}
+                    <p className="mt-[0.8vh] text-[1.2vw] text-carbon/70 truncate">{o.name}</p>
+                    {o.readyAt && <p className="mono normal-case text-[1vw] text-tomate">hacia las {hourOf(o.readyAt)}</p>}
                   </li>
                 )
               })}
             </ul>
           )}
           {preparing.length > MAX_PREP && (
-            <p className="mt-[2vh] mono normal-case text-[1.2vw] text-crema/50">y {preparing.length - MAX_PREP} más en el horno…</p>
+            <p className="mt-[2vh] mono normal-case text-[1.2vw] text-carbon/60">y {preparing.length - MAX_PREP} más en el horno…</p>
           )}
         </section>
 
         {/* Listos */}
-        <section className="min-h-0 bg-albahaca px-[3vw] py-[3vh] flex flex-col">
+        <section className="min-h-0 bg-tomate text-masa px-[3vw] py-[3vh] flex flex-col">
           <h2 className="font-sans font-extrabold uppercase text-[2.4vw] leading-none">
-            ¡Listo! <span className="text-crema/80">Recoge tu pedido</span>
+            ¡Listo! <span className="text-queso">Recoge tu pedido</span>
           </h2>
           {ready.length === 0 ? (
-            <p className="mt-[4vh] font-serif italic text-[2vw] text-crema/60">Enseguida saldrán los primeros.</p>
+            <p className="mt-[4vh] font-serif italic text-[2vw] text-masa/80">Enseguida saldrán los primeros.</p>
           ) : (
             <ul className="mt-[3vh] grid grid-cols-2 gap-[1.2vw] content-start">
               {ready.slice(0, MAX_READY).map((o) => {
@@ -152,12 +154,12 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
                   <li
                     key={o.id}
                     className={[
-                      'rounded-[1.5vw] bg-crema text-carbon px-[1.4vw] py-[1.8vh] transition-all',
-                      isNew ? 'ring-[0.4vw] ring-horno animate-pulse' : '',
+                      'rounded-lg border-2 border-masa bg-crema text-carbon px-[1.4vw] py-[1.8vh] shadow-[0.35vw_0.35vw_0_0_rgb(140_25_45)] transition-all',
+                      isNew ? 'ring-[0.4vw] ring-queso animate-pulse' : '',
                     ].join(' ')}
                   >
-                    <p className={['font-mono font-bold leading-none', number.length > 4 ? 'text-[3.2vw]' : 'text-[4.4vw]'].join(' ')}>
-                      <span className="text-[1.3vw] text-carbon/40 align-top mr-[0.3vw]">{prefix}</span>{number}
+                    <p className={['font-mono font-bold leading-none text-tomate', number.length > 4 ? 'text-[3.2vw]' : 'text-[4.4vw]'].join(' ')}>
+                      <span className="text-[1.3vw] text-tomate/60 align-top mr-[0.3vw]">{prefix}</span>{number}
                     </p>
                     <p className="mt-[0.8vh] text-[1.5vw] font-semibold truncate">{o.name}</p>
                   </li>
@@ -166,15 +168,15 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
             </ul>
           )}
           {ready.length > MAX_READY && (
-            <p className="mt-[2vh] mono normal-case text-[1.2vw] text-crema/80">y {ready.length - MAX_READY} más listos en el mostrador</p>
+            <p className="mt-[2vh] mono normal-case text-[1.2vw] text-masa/90">y {ready.length - MAX_READY} más listos en el mostrador</p>
           )}
         </section>
       </main>
 
-      <footer className="flex items-center justify-between px-[3vw] py-[1.5vh] border-t border-crema/10 text-[1vw] text-crema/50">
+      <footer className="flex items-center justify-between px-[3vw] py-[1.5vh] border-t-2 border-tomate text-[1vw] text-carbon/60">
         <p>Tu número de pedido está en tu ticket y en el SMS de confirmación.</p>
         {offline && (
-          <p className="flex items-center gap-[0.5vw] text-horno">
+          <p className="flex items-center gap-[0.5vw] text-tomate">
             <WifiOff className="w-[1.1vw] h-[1.1vw]" /> Sin conexión: mostrando la última información
           </p>
         )}
@@ -184,7 +186,7 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
       {!started && (
         <button
           onClick={start}
-          className="cursor-pointer fixed bottom-[8vh] right-[3vw] flex items-center gap-2 rounded-full bg-crema text-carbon px-5 py-3 text-sm font-semibold shadow-float"
+          className="cursor-pointer fixed bottom-[8vh] right-[3vw] flex items-center gap-2 rounded-md border border-tomate bg-masa text-tomate px-5 py-3 text-sm font-semibold uppercase tracking-wide shadow-island"
         >
           <Maximize className="w-4 h-4" /> Pantalla completa y sonido
         </button>

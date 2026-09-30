@@ -31,7 +31,7 @@ export default function SmsStatus({ order, onUpdated, onError }) {
 
   if (failed.length) {
     return (
-      <p className="flex flex-wrap items-center gap-2 rounded-xl bg-tomate/10 px-3 py-2 text-sm text-tomate">
+      <p className="flex flex-wrap items-center gap-2 rounded-md bg-tomate/10 px-3 py-2 text-sm text-tomate">
         <MessageSquareWarning className="w-4 h-4 flex-shrink-0" />
         No salió el SMS de {failed.map(([k]) => LABEL[k]).join(' y ')} ({failed[0][1].error}).
         <button onClick={() => retry(failed[0][0])} disabled={busy} className="font-semibold underline disabled:opacity-50">

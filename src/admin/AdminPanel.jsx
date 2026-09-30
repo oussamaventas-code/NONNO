@@ -1,26 +1,47 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, RefreshCw, LogOut, Pizza, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro, BookOpen } from 'lucide-react'
+import { Bell, BellOff, RefreshCw, LogOut, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro, BookOpen, Settings, Maximize, Undo2, Wallet, LayoutDashboard } from 'lucide-react'
 import Counter from './Counter'
 import Routes from './Routes'
 import Stock from './Stock'
 import Carta from './Carta'
+import CashClose from './CashClose'
+import TodayBoard from './TodayBoard'
 import { useMenuOverrides } from '../hooks/useMenuOverrides'
 import Billing from './Billing'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
 import { printTicket } from './printTicket'
-import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus } from './api'
+import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus, testSms } from './api'
 import { useOrderAlert } from './useOrderAlert'
-import OrderCard from './OrderCard'
+import KitchenBoard from './KitchenBoard'
 import { price } from '../lib/format'
 import { LOCATIONS } from '../data/locations'
 
-const FILTERS = [
-  { id: 'activos', label: 'ACTIVOS' },
-  { id: 'nuevo', label: 'NUEVOS' },
-  { id: 'horno', label: 'EN EL HORNO' },
-  { id: 'listo', label: 'LISTOS' },
-  { id: 'todos', label: 'TODOS' },
+/* Pestañas del panel y qué equipo ve cuáles. Cada ordenador o tablet
+   se configura una vez (menú ⚙ → Este equipo) y solo enseña lo suyo:
+   la cocina no necesita el TPV, ni el mostrador el tablero del horno. */
+const ALL_TABS = [
+  /* Solo dirección: las dos sedes de un vistazo */
+  { id: 'hoy', label: 'Hoy', Icon: LayoutDashboard },
+  { id: 'cocina', label: 'Cocina', Icon: ChefHat },
+  { id: 'mostrador', label: 'Mostrador', Icon: Store },
+  { id: 'reparto', label: 'Reparto', Icon: Truck },
+  { id: 'stock', label: 'Stock', Icon: ClipboardList },
+  { id: 'caja', label: 'Caja', Icon: Wallet },
+  { id: 'carta', label: 'Carta', Icon: BookOpen },
+  /* Solo dirección: es dinero, no algo que vea el mostrador de un local. */
+  { id: 'facturacion', label: 'Facturación', Icon: Euro },
 ]
+
+const DEVICE_MODES = [
+  { id: 'completo', label: 'Todo', hint: 'Enseña todas las pestañas.', tabs: null },
+  { id: 'cocina', label: 'Cocina', hint: 'Solo el tablero del horno y el stock.', tabs: ['cocina', 'stock'] },
+  { id: 'mostrador', label: 'Mostrador', hint: 'TPV, reparto, caja, carta y facturación.', tabs: ['mostrador', 'reparto', 'caja', 'carta', 'facturacion'] },
+]
+
+/* Cada cuánto vuelve a sonar un pedido nuevo que nadie ha marcado como visto */
+const REPEAT_ALARM_MS = 10000
+/* Tiempo para deshacer un cambio de estado */
+const UNDO_MS = 10000
 
 /* 4 s: lo bastante rápido para que cocina y mostrador no se
    desincronicen sin machacar la API. Se refuerza con una recarga
@@ -28,6 +49,7 @@ const FILTERS = [
 const POLL_MS = 4000
 
 const PREF_VIEW = 'nonno.panel.view'
+const PREF_DEVICE = 'nonno.panel.device'
 const PREF_AUTOPRINT = 'nonno.panel.autoprint'
 const readPref = (key, fallback) => {
   try {
@@ -71,7 +93,6 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const [orders, setOrders] = useState(() => readPref(cacheKey(scope), { orders: [] }).orders)
   const [offlineSince, setOfflineSince] = useState(null)
   const [queue, setQueue] = useState(readQueue)
-  const [filter, setFilter] = useState('activos')
   /* Solo lo usa la dirección: las sedes no eligen, ven la suya y ya. */
   const [sedeVista, setSedeVista] = useState('todas')
   const [error, setError] = useState(null)
@@ -85,10 +106,13 @@ export default function AdminPanel({ scope, onSignedOut }) {
      preferencia es del navegador, no de la sesión: si en ese mismo
      equipo entra luego una sede sin permiso de ver facturación, no
      se queda ahí abierta. */
-  const [view, setView] = useState(() => {
-    const saved = readPref(PREF_VIEW, 'cocina')
-    return saved === 'facturacion' && !esDireccion ? 'cocina' : saved
-  })
+  const [viewPref, setView] = useState(() => readPref(PREF_VIEW, esDireccion ? 'hoy' : 'cocina'))
+  const [deviceMode, setDeviceMode] = useState(() => readPref(PREF_DEVICE, 'completo'))
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [confirmClose, setConfirmClose] = useState(null)
+  const [undo, setUndo] = useState(null)
+  const [testPhone, setTestPhone] = useState('')
+  const [testResult, setTestResult] = useState(null)
   const [autoPrint, setAutoPrint] = useState(() => readPref(PREF_AUTOPRINT, false))
 
   /* Carta corregida (precios, ocultos, agotados): el mostrador vende con ella.
@@ -98,17 +122,17 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const refreshMenu = useCallback(() => setMenuTick((n) => n + 1), [])
   void menuVersion
 
-  const { play } = useOrderAlert()
+  const { play, unlock, ready: soundReady } = useOrderAlert()
   const knownIds = useRef(new Set())
   const firstLoad = useRef(true)
   const printedKeys = useRef(new Set())
   const autoPrintOn = useRef(false)
-  autoPrintOn.current = autoPrint && view === 'cocina'
 
   /* ── Carga y sondeo ──────────────────────────────────────────── */
   const load = useCallback(async () => {
     try {
-      const { orders: list } = await fetchOrders(80)
+      /* La dirección ve las dos sedes: necesita más margen */
+      const { orders: list } = await fetchOrders(esDireccion ? 160 : 80)
       setError(null)
 
       const fresh = list.filter((o) => !knownIds.current.has(o.id))
@@ -268,11 +292,17 @@ export default function AdminPanel({ scope, onSignedOut }) {
   }
 
   /* ── Acciones sobre un pedido ────────────────────────────────── */
-  const handleStatus = async (id, status, extra = {}) => {
+  const handleStatus = async (id, status, extra = {}, { silent = false } = {}) => {
     setBusyId(id)
+    const before = orders.find((o) => o.id === id)
     try {
       const { order } = await updateOrder(id, status ? { status, ...extra } : extra)
       setOrders((prev) => prev.map((o) => (o.id === id ? order : o)))
+      /* Solo se puede deshacer el avance en el horno: entregar o cancelar
+         reparte puntos del Club Nonno y no se revierte con un toque. */
+      if (!silent && before && status && ['horno', 'listo'].includes(status) && ['nuevo', 'horno'].includes(before.status)) {
+        setUndo({ id, ref: order.ref, from: before.status, to: status, label: status === 'horno' ? 'EN EL HORNO' : 'LISTO', at: Date.now() })
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -291,6 +321,18 @@ export default function AdminPanel({ scope, onSignedOut }) {
   }
 
   const changeView = (next) => { setView(next); writePref(PREF_VIEW, next) }
+  const changeDevice = (next) => { setDeviceMode(next); writePref(PREF_DEVICE, next) }
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) document.exitFullscreen?.()
+    else document.documentElement.requestFullscreen?.().catch(() => {})
+    setMenuOpen(false)
+  }
+  const undoLast = () => {
+    if (!undo) return
+    const { id, from } = undo
+    setUndo(null)
+    handleStatus(id, from, {}, { silent: true })
+  }
   const toggleAutoPrint = () => {
     setAutoPrint((on) => { writePref(PREF_AUTOPRINT, !on); return !on })
   }
@@ -314,16 +356,44 @@ export default function AdminPanel({ scope, onSignedOut }) {
     : sedeVista !== 'todas' ? [sedeVista]
       : LOCATIONS.map((l) => l.id)
 
-  const visible = porSede.filter((o) => {
-    if (filter === 'todos') return true
-    if (filter === 'activos') return !['entregado', 'cancelado'].includes(o.status)
-    return o.status === filter
-  })
-  /* Pendientes en el orden en que tienen que salir del horno. */
-  if (filter !== 'todos') {
-    const when = (o) => Date.parse(o.ready_at || o.created_at)
-    visible.sort((a, b) => when(a) - when(b))
-  }
+  /* Pestañas de este equipo, y la vista efectiva (si la guardada ya no
+     le toca a este equipo, se cae a la primera que sí). */
+  const modeTabs = DEVICE_MODES.find((m) => m.id === deviceMode)?.tabs
+  const tabs = ALL_TABS.filter((t) => (!modeTabs || modeTabs.includes(t.id)) && (!['facturacion', 'hoy'].includes(t.id) || esDireccion))
+  const view = tabs.some((t) => t.id === viewPref) ? viewPref : tabs[0].id
+  autoPrintOn.current = autoPrint && view === 'cocina'
+
+  /* Estado de la tienda de cada sede que este panel gestiona */
+  const storeList = (esDireccion ? LOCATIONS.map((l) => l.id) : [scope]).map((id) => ({
+    id,
+    name: LOCATIONS.find((l) => l.id === id)?.name || id,
+    abierta: storeStatuses[id]?.is_open === true,
+  }))
+
+  /* Pedidos nuevos que nadie ha visto todavía: suenan hasta que se marquen */
+  /* Un pedido programado para dentro de mucho no suena hasta que se acerca su hora */
+  const farOff = (o) => o.scheduled_for && o.ready_at && Date.parse(o.ready_at) - Date.now() > 45 * 60000
+  const unseen = porSede.filter((o) => o.status === 'nuevo' && !o.seen_at && !farOff(o) && Date.now() - Date.parse(o.created_at) < 3600000)
+  const unseenCount = unseen.length
+
+  /* La alarma se repite hasta que alguien marque el pedido como visto
+     (el equipo de mostrador no la repite: ahí se atiende al cliente). */
+  useEffect(() => {
+    if (!unseenCount || deviceMode === 'mostrador') return undefined
+    const timer = setInterval(play, REPEAT_ALARM_MS)
+    return () => clearInterval(timer)
+  }, [unseenCount, deviceMode, play])
+
+  useEffect(() => {
+    document.title = unseenCount ? `(${unseenCount}) Nuevo pedido · Nonno` : 'Panel de cocina · Nonno'
+  }, [unseenCount])
+
+  /* El aviso de deshacer se apaga solo */
+  useEffect(() => {
+    if (!undo) return undefined
+    const timer = setTimeout(() => setUndo(null), UNDO_MS)
+    return () => clearTimeout(timer)
+  }, [undo])
 
   const today = porSede.filter(
     (o) => new Date(o.created_at).toDateString() === new Date().toDateString()
@@ -335,17 +405,14 @@ export default function AdminPanel({ scope, onSignedOut }) {
   return (
     <div className="min-h-screen bg-masa">
       {/* Cinta de sede: imposible confundir de cocina */}
-      {sede && (
-        <div className={`${sede.banda} ${sede.texto} py-2 text-center`}>
-          <p className="mono normal-case tracking-[0.2em] font-bold">
-            {{ mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO', facturacion: 'FACTURACIÓN' }[view] || 'COCINA'} · {sede.nombre.toUpperCase()}
-          </p>
-        </div>
-      )}
+      <p className={`${sede?.banda || 'bg-tomate'} ${sede?.texto || 'text-crema'} text-center font-sans font-medium uppercase text-[0.72rem] sm:text-sm h-9 leading-9 px-3 truncate`}>
+        {{ hoy: 'HOY', mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO', caja: 'CIERRE DE CAJA', carta: 'CARTA', facturacion: 'FACTURACIÓN' }[view] || 'COCINA'} · {sede ? sede.nombre : 'TODAS LAS SEDES'}
+      </p>
+      <div className="checker" aria-hidden="true" />
 
       {/* Plan B visible: nadie trabaja creyendo que el panel está al día */}
       {offlineSince && (
-        <div className="bg-carbon text-crema px-4 py-3 text-center" role="alert">
+        <div className="bg-forno text-masa px-4 py-3 text-center" role="alert">
           <p className="font-sans font-bold text-sm">
             SIN CONEXIÓN CON EL SERVIDOR desde las {new Date(offlineSince).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
           </p>
@@ -356,7 +423,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
         </div>
       )}
       {queue.length > 0 && (
-        <div className="bg-horno text-crema px-4 py-2 text-sm">
+        <div className="bg-queso text-carbon border-y border-tomate px-4 py-2 text-sm">
           <p className="font-semibold text-center">
             {queue.filter((e) => !e.error).length > 0 && `${queue.filter((e) => !e.error).length} pedido(s) del mostrador esperando a enviarse. `}
           </p>
@@ -374,178 +441,246 @@ export default function AdminPanel({ scope, onSignedOut }) {
         </div>
       )}
 
-      <header className="sticky top-0 z-30 bg-crema/95 backdrop-blur-md border-b border-carbon/10">
-        <div className="shell py-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <p className="font-sans font-extrabold uppercase text-sm tracking-tight text-carbon">
-                LA PIZZA DE <em className="font-serif italic font-semibold">NONNO</em>
-              </p>
-              <p className="mono text-carbon/45 mt-0.5">
-                {sede ? sede.nombre.toUpperCase() : 'TODAS LAS SEDES'}
-              </p>
+      <header className="sticky top-0 z-30 bg-masa border-b border-tomate">
+        <div className="shell py-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo-nonno.png"
+                alt=""
+                width="56"
+                height="56"
+                className="h-11 w-11 rounded-full object-cover border border-tomate"
+              />
+              <div className="hidden sm:block">
+                <p className="font-sans font-extrabold uppercase text-base tracking-tight text-tomate leading-none">
+                  LA PIZZA DE <em className="font-serif italic font-semibold">NONNO</em>
+                </p>
+                <p className="mono text-carbon/55 mt-1.5">
+                  {sede ? sede.nombre.toUpperCase() : 'TODAS LAS SEDES'}
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex flex-wrap rounded-3xl border border-carbon/15 p-1" role="tablist" aria-label="Vista del panel">
-                {[
-                  { id: 'cocina', label: 'Cocina', Icon: ChefHat },
-                  { id: 'mostrador', label: 'Mostrador', Icon: Store },
-                  { id: 'reparto', label: 'Reparto', Icon: Truck },
-                  { id: 'stock', label: 'Stock', Icon: ClipboardList },
-                  { id: 'carta', label: 'Carta', Icon: BookOpen },
-                  /* Solo dirección: es dinero, no algo que vea el mostrador de un local. */
-                  ...(esDireccion ? [{ id: 'facturacion', label: 'Facturación', Icon: Euro }] : []),
-                ].map(({ id, label, Icon }) => (
+            {tabs.length > 1 && (
+              <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Vista del panel">
+                {tabs.map(({ id, label, Icon }) => (
                   <button
                     key={id}
                     role="tab"
                     aria-selected={view === id}
                     onClick={() => changeView(id)}
-                    className={[
-                      'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors',
-                      view === id ? 'bg-carbon text-crema' : 'text-carbon/60',
-                    ].join(' ')}
+                    className="ptab"
                   >
                     <Icon className="w-4 h-4" /> {label}
+                    {id === 'cocina' && pendientes > 0 && (
+                      <span className="rounded-full bg-queso px-1.5 text-[0.7rem] leading-5 text-carbon">{pendientes}</span>
+                    )}
                   </button>
                 ))}
               </div>
+            )}
 
-              {view === 'cocina' && (
-                <button
-                  onClick={toggleAutoPrint}
-                  aria-pressed={autoPrint}
-                  title="Imprime la comanda de cada pedido nuevo o modificado en la impresora de este equipo"
-                  className={[
-                    'mono normal-case flex items-center gap-1.5 rounded-full px-3 py-2 border transition-colors',
-                    autoPrint ? 'bg-albahaca text-crema border-albahaca' : 'border-carbon/15 text-carbon/70',
-                  ].join(' ')}
-                >
-                  <Printer className="w-3.5 h-3.5" /> {autoPrint ? 'Comandas automáticas' : 'Comandas manuales'}
-                </button>
-              )}
-
-              <button
-                onClick={load}
-                className="mono normal-case flex items-center gap-1.5 rounded-full border border-carbon/15 px-3 py-2 text-carbon/70 hover:border-carbon/40 transition-colors"
-              >
-                <RefreshCw className="w-3.5 h-3.5" /> Actualizar
-              </button>
-
-              {pushState !== 'activo' && pushState !== 'no-disponible' && (
-                <button
-                  onClick={enablePush}
-                  className="mono normal-case flex items-center gap-1.5 rounded-full bg-carbon px-3 py-2 text-crema"
-                >
-                  <BellOff className="w-3.5 h-3.5" /> Activar avisos
-                </button>
-              )}
-              {pushState === 'activo' && (
-                <span className="mono normal-case flex items-center gap-1.5 rounded-full border border-albahaca/40 px-3 py-2 text-albahaca">
-                  <Bell className="w-3.5 h-3.5" /> Avisos activos
-                </span>
-              )}
-
-              <button
-                onClick={handleLogout}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-carbon/50 hover:bg-carbon/5 transition-colors"
-                aria-label="Salir"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center gap-5 flex-wrap">
-            <span className="mono normal-case text-carbon/60">
-              <strong className="text-tomate">{pendientes}</strong> sin atender
-            </span>
-            <span className="mono normal-case text-carbon/60">
-              <strong className="text-carbon">{today.length}</strong> pedidos hoy
-            </span>
-            <span className="mono normal-case text-carbon/60">
-              <strong className="text-carbon">{price(facturado)}</strong> hoy
-            </span>
-          </div>
-
-          {/* Apertura de la tienda: el interruptor que de verdad abre o
-              cierra los pedidos, no solo un adorno visual. */}
-          <div className="mt-4 flex items-center gap-2 flex-wrap">
-            {(esDireccion ? LOCATIONS.map((l) => l.id) : [scope]).map((locId) => {
-              const loc = LOCATIONS.find((l) => l.id === locId)
-              const abierta = storeStatuses[locId]?.is_open === true
-              const busy = togglingStore === locId
-              return (
-                <button
-                  key={locId}
-                  onClick={() => toggleStore(locId, !abierta)}
-                  disabled={busy}
-                  className={[
-                    'mono normal-case flex items-center gap-1.5 rounded-full px-3 py-2 border transition-colors disabled:opacity-50',
-                    abierta ? 'bg-albahaca text-crema border-albahaca' : 'bg-tomate/10 text-tomate border-tomate/30',
-                  ].join(' ')}
-                >
-                  <Power className="w-3.5 h-3.5" />
-                  {esDireccion ? `${loc?.name.toUpperCase()} · ` : ''}
-                  {abierta ? 'ABIERTA — TOCA PARA CERRAR' : 'CERRADA — TOCA PARA ABRIR'}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Cambiar de sede solo lo puede hacer la dirección */}
-          {esDireccion && (
-            <div className="mt-4 hide-scrollbar flex gap-2 overflow-x-auto border-b border-carbon/10 pb-3">
-              {[{ id: 'todas', label: 'TODAS LAS SEDES' },
-                ...LOCATIONS.map((l) => ({ id: l.id, label: l.name.toUpperCase() }))
-              ].map((s) => (
+            <div className="flex items-center gap-2">
+              {/* Estado de la tienda: siempre a la vista, se cambia desde el menú */}
+              {storeList.map((s) => (
                 <button
                   key={s.id}
-                  onClick={() => setSedeVista(s.id)}
+                  onClick={() => setMenuOpen(true)}
                   className={[
-                    'flex-shrink-0 rounded-full px-4 py-2 min-h-[40px] font-sans font-bold uppercase text-[0.7rem] tracking-wide border transition-colors',
-                    sedeVista === s.id
-                      ? 'bg-tomate text-crema border-tomate'
-                      : 'bg-transparent text-carbon/60 border-carbon/15 hover:border-carbon/40',
+                    'ptab soft',
+                    s.abierta ? '!bg-albahaca !border-albahaca !text-masa' : '!border-tomate !text-tomate bg-tomate/10',
                   ].join(' ')}
+                  title="Abrir o cerrar la tienda (menú ⚙)"
                 >
-                  {s.label}
+                  <Power className="w-3.5 h-3.5" />
+                  {esDireccion ? `${s.name} · ` : ''}{s.abierta ? 'ABIERTA' : 'CERRADA'}
                 </button>
               ))}
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-expanded={menuOpen}
+                aria-label="Menú del panel"
+                className="w-10 h-10 rounded-md border border-tomate/60 flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {(esDireccion || view === 'mostrador') && (
+            <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+              {esDireccion ? (
+                <div className="hide-scrollbar flex gap-2 overflow-x-auto">
+                  {[{ id: 'todas', label: 'TODAS LAS SEDES' },
+                    ...LOCATIONS.map((l) => ({ id: l.id, label: l.name.toUpperCase() })),
+                  ].map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setSedeVista(s.id)}
+                      className={['ptab soft', sedeVista === s.id ? 'is-on' : ''].join(' ')}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              ) : <span />}
+              <span className="mono normal-case text-carbon/60">
+                <strong className="text-carbon">{today.length}</strong> pedidos hoy · <strong className="text-carbon">{price(facturado)}</strong>
+              </span>
             </div>
           )}
-
-          {view === 'cocina' && <div className="mt-4 hide-scrollbar flex gap-2 overflow-x-auto">
-            {FILTERS.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={[
-                  'flex-shrink-0 rounded-full px-4 py-2 min-h-[40px] font-sans font-bold uppercase text-[0.7rem] tracking-wide border transition-colors',
-                  filter === f.id
-                    ? 'bg-carbon text-crema border-carbon'
-                    : 'bg-transparent text-carbon/60 border-carbon/15 hover:border-carbon/40',
-                ].join(' ')}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>}
         </div>
+
+        {/* Menú del panel: lo que se toca poco vive aquí, no en la cabecera */}
+        {menuOpen && (
+          <>
+            <button className="fixed inset-0 z-40 cursor-default" aria-label="Cerrar menú" onClick={() => { setMenuOpen(false); setConfirmClose(null) }} />
+            <div className="absolute right-3 sm:right-8 top-full z-50 mt-2 w-[min(22rem,calc(100vw-1.5rem))] pframe shadow-ember">
+              <div className="pframe-in p-4 flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
+                <div>
+                  <p className="mono text-tomate mb-2">TIENDA</p>
+                  <div className="flex flex-col gap-2">
+                    {storeList.map((s) => (
+                      <div key={s.id}>
+                        {confirmClose === s.id ? (
+                          <div className="rounded-md border border-tomate bg-tomate/10 p-3">
+                            <p className="text-sm font-bold text-tomate">¿Cerrar {s.name}? La web dejará de aceptar pedidos.</p>
+                            <div className="mt-2 flex gap-2">
+                              <button onClick={() => { toggleStore(s.id, false); setConfirmClose(null) }} className="ptab soft !bg-tomate !border-tomate !text-masa flex-1">Sí, cerrar</button>
+                              <button onClick={() => setConfirmClose(null)} className="ptab soft flex-1">No</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => (s.abierta ? setConfirmClose(s.id) : toggleStore(s.id, true))}
+                            disabled={togglingStore === s.id}
+                            className={['ptab w-full justify-start disabled:opacity-50', s.abierta ? '!bg-albahaca !border-albahaca !text-masa' : ''].join(' ')}
+                          >
+                            <Power className="w-4 h-4" />
+                            {s.name} · {s.abierta ? 'ABIERTA (tocar para cerrar)' : 'CERRADA (tocar para abrir)'}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mono text-tomate mb-2">ESTE EQUIPO</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {DEVICE_MODES.map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => changeDevice(m.id)}
+                        aria-pressed={deviceMode === m.id}
+                        className="ptab soft"
+                        title={m.hint}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mono normal-case text-carbon/50 mt-1.5">{DEVICE_MODES.find((m) => m.id === deviceMode)?.hint}</p>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <p className="mono text-tomate">AJUSTES</p>
+                  <button
+                    onClick={toggleAutoPrint}
+                    aria-pressed={autoPrint}
+                    title="Imprime la comanda de cada pedido nuevo o modificado en la impresora de este equipo"
+                    className={['ptab w-full justify-start', autoPrint ? '!bg-albahaca !border-albahaca !text-masa' : ''].join(' ')}
+                  >
+                    <Printer className="w-4 h-4" /> {autoPrint ? 'Comandas automáticas: SÍ' : 'Comandas automáticas: NO'}
+                  </button>
+                  {pushState === 'activo' ? (
+                    <span className="ptab w-full justify-start !border-albahaca !text-albahaca pointer-events-none">
+                      <Bell className="w-4 h-4" /> Avisos del navegador activos
+                    </span>
+                  ) : pushState !== 'no-disponible' && (
+                    <button onClick={enablePush} className="ptab w-full justify-start">
+                      <BellOff className="w-4 h-4" /> Activar avisos del navegador
+                    </button>
+                  )}
+                  {/* SMS de prueba: para comprobar al abrir que los avisos salen */}
+                  <div className="rounded-md border border-tomate/40 p-2.5">
+                    <p className="mono normal-case text-carbon/60 mb-1.5">Probar los SMS a clientes</p>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        value={testPhone}
+                        onChange={(e) => { setTestPhone(e.target.value); setTestResult(null) }}
+                        placeholder="Tu móvil"
+                        aria-label="Móvil para el SMS de prueba"
+                        className="pfield !py-2 text-sm"
+                      />
+                      <button
+                        onClick={async () => {
+                          setTestResult({ sending: true })
+                          try { setTestResult(await testSms(testPhone)) } catch (err) { setTestResult({ ok: false, error: err.message }) }
+                        }}
+                        disabled={!testPhone.trim() || testResult?.sending}
+                        className="ptab soft disabled:opacity-50"
+                      >
+                        Enviar
+                      </button>
+                    </div>
+                    {testResult && !testResult.sending && (
+                      <p className={['mt-1.5 text-xs font-semibold', testResult.ok ? 'text-albahaca' : 'text-tomate'].join(' ')}>
+                        {testResult.ok
+                          ? `Enviado por ${testResult.provider === 'twilio' ? 'Twilio' : 'el Android del local'}. Mira el móvil.`
+                          : testResult.error || (testResult.skipped === 'no-es-movil' ? 'Ese número no es un móvil.' : 'No ha salido.')}
+                      </p>
+                    )}
+                    {testResult?.sending && <p className="mt-1.5 text-xs text-carbon/60">Enviando…</p>}
+                  </div>
+                  <button onClick={toggleFullscreen} className="ptab w-full justify-start">
+                    <Maximize className="w-4 h-4" /> Pantalla completa
+                  </button>
+                  <button onClick={() => { load(); setMenuOpen(false) }} className="ptab w-full justify-start">
+                    <RefreshCw className="w-4 h-4" /> Actualizar ahora
+                  </button>
+                  <button onClick={handleLogout} className="ptab w-full justify-start">
+                    <LogOut className="w-4 h-4" /> Salir
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </header>
 
       <main className="shell py-8">
+        {/* Sin un toque, el navegador no deja sonar la alarma de pedido nuevo */}
+        {!soundReady && ['cocina', 'mostrador', 'hoy'].includes(view) && (
+          <button
+            onClick={() => { unlock(); play() }}
+            className="mb-6 w-full flex items-center justify-center gap-2 rounded-md border-2 border-tomate bg-queso px-4 py-3 font-sans font-extrabold uppercase text-sm tracking-wide text-carbon animate-pulse"
+          >
+            <Bell className="w-5 h-5 text-tomate" /> Toca aquí para activar el sonido de los pedidos nuevos
+          </button>
+        )}
         {error && (
-          <p className="mb-6 rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">
+          <p className="palert mb-6">
             {error}
           </p>
         )}
 
-        {view === 'facturacion' && esDireccion ? (
+        {view === 'hoy' && esDireccion ? (
+          <TodayBoard
+            orders={orders}
+            storeStatuses={storeStatuses}
+            onOpenSede={(id) => { setSedeVista(id); changeView('cocina') }}
+            onError={setError}
+          />
+        ) : view === 'facturacion' && esDireccion ? (
           <Billing locationId={sedeVista === 'todas' ? null : sedeVista} onError={setError} />
         ) : view === 'stock' ? (
           <Stock locationIds={locationIds} onError={setError} />
+        ) : view === 'caja' ? (
+          <CashClose locationIds={locationIds} onError={setError} />
         ) : view === 'carta' ? (
           <Carta locationIds={locationIds} esDireccion={esDireccion} onError={setError} onChanged={refreshMenu} />
         ) : loading ? (
@@ -563,30 +698,32 @@ export default function AdminPanel({ scope, onSignedOut }) {
             onSaved={upsertOrder}
             onError={setError}
           />
-        ) : visible.length === 0 ? (
-          <div className="py-20 text-center">
-            <span className="inline-flex w-16 h-16 rounded-full bg-carbon/5 items-center justify-center text-carbon/25 mb-4">
-              <Pizza className="w-7 h-7" strokeWidth={1.5} />
-            </span>
-            <p className="font-serif italic text-lg text-carbon/60">
-              {filter === 'activos' ? 'Ningún pedido pendiente ahora mismo.' : 'Nada por aquí.'}
-            </p>
-            <p className="mono text-carbon/35 mt-2">EL PANEL SE ACTUALIZA SOLO</p>
-          </div>
         ) : (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {visible.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                busy={busyId === order.id}
-                onStatus={handleStatus}
-                onUpdated={upsertOrder}
-              />
-            ))}
-          </div>
+          <KitchenBoard
+            orders={porSede}
+            busyId={busyId}
+            onStatus={handleStatus}
+            onUpdated={upsertOrder}
+          />
         )}
       </main>
+
+      {/* Deshacer: unos segundos para corregir un toque equivocado */}
+      {undo && (
+        <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 w-[min(28rem,calc(100vw-1.5rem))]" role="status">
+          <div className="pframe !bg-forno shadow-ember">
+            <div className="pframe-in !border-masa/40 flex items-center justify-between gap-3 px-4 py-3 text-masa">
+              <p className="text-sm font-semibold">
+                <span className="font-mono">{undo.ref}</span> → {undo.label}
+                {undo.to === 'listo' && <span className="block mono normal-case text-masa/60">El cliente ya tiene el SMS de “listo”.</span>}
+              </p>
+              <button onClick={undoLast} className="ptab soft !bg-masa !border-masa !text-tomate">
+                <Undo2 className="w-4 h-4" /> DESHACER
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

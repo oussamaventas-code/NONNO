@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
-import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Store, Phone, Printer } from 'lucide-react'
-import { CATEGORIES, productsByCategory, getProduct, getExtra, priceOf } from '../data/menu'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Store, Phone, Printer, Search, Star, CalendarClock } from 'lucide-react'
+import { CATEGORIES, productsByCategory, visibleProducts, getProduct, priceOf, isSoldOut } from '../data/menu'
+import { plain } from '../lib/plain'
 import { getLocation } from '../data/locations'
 import { buildLine, lineTotal } from '../lib/pricing'
 import { orderTotals } from '../lib/orderTotals'
-import { ovenUnits, hourOf } from '../lib/kitchenSlots'
+import { ovenUnits, hourOf, madridTime } from '../lib/kitchenSlots'
 import { price } from '../lib/format'
 import { deliveryTiers, deliveryProblem } from '../lib/delivery'
 import DeliveryPicker from '../components/DeliveryPicker'
+import ProductImage from '../components/ProductImage'
+import ToppingPicker from '../components/ToppingPicker'
 import { createOrder, editOrder, fetchSlots, fetchCustomer } from './api'
 import { phoneKey } from '../lib/customerLookup'
 import { enqueue, isConnectionError, newClientKey } from './offlineQueue'
@@ -70,7 +73,10 @@ function customerFromOrder(order) {
   }
 }
 
-export default function OrderEditor({ order, locationIds, defaultLocationId, defaultChannel = 'mostrador', onClose, onSaved }) {
+/* "HH:MM" (hora de Madrid) dentro de `minutes` minutos, redondeado al cuarto de hora */
+const laterTimeIn = (minutes) => hourOf(Math.ceil((Date.now() + minutes * 60000) / 900000) * 900000)
+
+export default function OrderEditor({ order, orders = [], locationIds, defaultLocationId, defaultChannel = 'mostrador', onClose, onSaved }) {
   const editing = Boolean(order)
   const [locId, setLocId] = useState(order?.location_id || defaultLocationId)
   const location = getLocation(locId)
@@ -82,7 +88,19 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
   const [paidNow, setPaidNow] = useState(false)
   const [method, setMethod] = useState('efectivo')
 
-  const [cat, setCat] = useState(CATEGORIES[0].id)
+  /* Lo más pedido: sale de los pedidos que el mostrador ya tiene cargados */
+  const topIds = useMemo(() => {
+    const count = new Map()
+    orders.forEach((o) => (o.items || []).forEach((i) => count.set(i.id, (count.get(i.id) || 0) + (Number(i.qty) || 1))))
+    return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id)
+      .filter((id) => getProduct(id)).slice(0, 8)
+  }, [orders])
+  const hasTop = topIds.length >= 3 && !order
+  const [cat, setCat] = useState(hasTop ? 'top' : CATEGORIES[0].id)
+  const [query, setQuery] = useState('')
+  /* Pedido para ahora o programado para una hora (solo pedidos nuevos) */
+  const [when, setWhen] = useState('now')
+  const [laterTime, setLaterTime] = useState('')
   const [openLine, setOpenLine] = useState(null)
   const [eta, setEta] = useState(null)
   const [error, setError] = useState(null)
@@ -100,7 +118,11 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
   const trip = mode === 'delivery' && totals.delivery?.ok ? totals.delivery : null
   const canDeliver = Boolean(location?.services.delivery)
 
+  /* Instante de la hora programada (hoy, hora de Madrid), o null si es para ahora */
+  const scheduledMs = !editing && when === 'later' && /^[0-9]{2}:[0-9]{2}$/.test(laterTime) ? madridTime(Date.now(), laterTime) : null
+
   useEffect(() => {
+    if (when === 'later') return undefined
     let cancelled = false
     const timer = setTimeout(() => {
       fetchSlots(locId, pizzas)
@@ -108,7 +130,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
         .catch(() => { if (!cancelled) setEta(null) })
     }, 300)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [locId, pizzas])
+  }, [locId, pizzas, when])
 
   const patchCustomer = (patch) => { setCustomer((c) => ({ ...c, ...patch })); setError(null) }
 
@@ -182,6 +204,10 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
 
   const problem = () => {
     if (!lines.length) return 'Añade al menos un producto.'
+    if (!editing && when === 'later') {
+      if (!scheduledMs) return 'Elige la hora a la que lo quieren.'
+      if (scheduledMs < Date.now() + 5 * 60000) return 'Esa hora ya ha pasado o es dentro de menos de 5 minutos. Elige una posterior o pon “Lo antes posible”.'
+    }
     if (!customer.name.trim()) return 'Falta el nombre del cliente.'
     if (channel === 'telefono' && !customer.phone.trim()) return 'En pedidos por teléfono hace falta el teléfono.'
     if (mode === 'delivery') {
@@ -204,6 +230,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
     paymentStatus: paidNow ? 'pagado' : 'pendiente',
     paymentMethod: method,
     clientKey: clientKey.current,
+    ...(scheduledMs ? { scheduledFor: new Date(scheduledMs).toISOString() } : {}),
   })
 
   const save = async () => {
@@ -265,17 +292,23 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
     onSaved(local, { isNew: true })
   }
 
+  const q = plain(query.trim())
+  const shown = q
+    ? visibleProducts().filter((p) => plain(p.name).includes(q) || (p.ingredients || []).some((i) => plain(i).includes(q)))
+    : cat === 'top' ? topIds.map(getProduct) : productsByCategory(cat)
+  const tabs = [...(hasTop ? [{ id: 'top', label: 'Más pedidos' }] : []), ...CATEGORIES]
+
   return (
     <div className="fixed inset-0 z-50 bg-masa flex flex-col" role="dialog" aria-modal="true" aria-labelledby="editor-title">
       {/* Cabecera */}
-      <div className="flex items-center justify-between gap-3 border-b border-carbon/10 bg-crema px-4 sm:px-6 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-tomate bg-masa px-4 sm:px-6 py-3">
         <div>
-          <h2 id="editor-title" className="font-sans font-extrabold uppercase text-lg text-carbon">
+          <h2 id="editor-title" className="font-sans font-extrabold uppercase text-lg text-tomate">
             {editing ? `Editar ${order.ref}` : 'Nuevo pedido'}
           </h2>
           <p className="mono normal-case text-carbon/50">{location?.name}</p>
         </div>
-        <button onClick={onClose} className="w-11 h-11 rounded-full flex items-center justify-center text-carbon/60 hover:bg-carbon/5" aria-label="Cerrar sin guardar">
+        <button onClick={onClose} className="w-11 h-11 rounded-md border border-tomate/50 flex items-center justify-center text-tomate hover:bg-tomate/10" aria-label="Cerrar sin guardar">
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -283,37 +316,78 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
       <div className="flex-1 min-h-0 grid lg:grid-cols-[1fr_26rem]">
         {/* ── Carta ─────────────────────────────────────────────── */}
         <section className="min-h-0 overflow-y-auto p-4 sm:p-6">
+          <label className="mb-3 flex items-center gap-2 rounded-md border border-tomate/50 bg-crema px-3.5 focus-within:border-tomate focus-within:shadow-island">
+            <Search className="w-5 h-5 text-tomate flex-shrink-0" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar pizza o ingrediente…"
+              aria-label="Buscar en la carta"
+              className="w-full bg-transparent py-3 text-base text-carbon outline-none placeholder:text-carbon/40"
+            />
+            {query && (
+              <button onClick={() => setQuery('')} className="text-tomate" aria-label="Borrar búsqueda"><X className="w-4 h-4" /></button>
+            )}
+          </label>
           <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-3">
-            {CATEGORIES.map((c) => (
+            {tabs.map((c) => (
               <button
                 key={c.id}
-                onClick={() => setCat(c.id)}
+                onClick={() => { setCat(c.id); setQuery('') }}
                 className={[
-                  'flex-shrink-0 rounded-full px-4 py-2 min-h-[44px] font-sans font-bold uppercase text-[0.72rem] border transition-colors',
-                  cat === c.id ? 'bg-carbon text-crema border-carbon' : 'text-carbon/60 border-carbon/15 hover:border-carbon/40',
+                  'ptab',
+                  !q && cat === c.id ? 'is-on' : '',
                 ].join(' ')}
               >
+                {c.id === 'top' && <Star className="w-4 h-4" />}
                 {c.label}
               </button>
             ))}
           </div>
 
-          <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
-            {productsByCategory(cat).map((p) => (
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+            {shown.length === 0 && (
+              <p className="col-span-full py-10 text-center font-serif italic font-semibold text-xl text-tomate">No hay nada con “{query}”.</p>
+            )}
+            {shown.map((p) => {
+              const agotado = isSoldOut(p.id, locId)
+              return (
               <button
                 key={p.id}
                 onClick={() => addProduct(p.id)}
-                className="rounded-2xl border border-carbon/12 bg-crema p-3 text-left min-h-[4.5rem] hover:border-tomate active:scale-[0.98] transition-all"
+                disabled={agotado}
+                className={[
+                  'pcard overflow-hidden text-left flex flex-col transition-transform',
+                  agotado ? 'opacity-45 grayscale cursor-not-allowed' : 'active:translate-x-px active:translate-y-px hover:-translate-y-0.5',
+                ].join(' ')}
               >
-                <span className="block font-sans font-bold text-sm text-carbon leading-tight">{p.name}</span>
-                <span className="block mono normal-case text-carbon/55 mt-1">{price(priceOf(p))}</span>
+                <span className="relative block aspect-[4/3] border-b border-tomate">
+                  <ProductImage
+                    image={p.image}
+                    category={p.category}
+                    alt=""
+                    width={400}
+                    className="absolute inset-0 w-full h-full !bg-queso/50"
+                    iconClassName="w-10 h-10"
+                  />
+                  <span className="absolute bottom-1.5 right-1.5 rounded-md bg-tomate px-2 py-1 font-mono text-xs font-bold leading-none text-masa">
+                    {agotado ? 'AGOTADO' : price(priceOf(p))}
+                  </span>
+                </span>
+                <span className="block p-2.5">
+                  <span className="block font-sans font-extrabold uppercase text-sm text-tomate leading-tight">{p.name}</span>
+                  <span className="mt-1 block text-xs leading-snug text-carbon/70 line-clamp-2">
+                    {p.ingredients?.length ? p.ingredients.join(' · ') : p.description}
+                  </span>
+                </span>
               </button>
-            ))}
+              )
+            })}
           </div>
         </section>
 
         {/* ── Ticket ────────────────────────────────────────────── */}
-        <aside className="min-h-0 overflow-y-auto border-t lg:border-t-0 lg:border-l border-carbon/10 bg-crema p-4 sm:p-5 flex flex-col gap-5">
+        <aside className="min-h-0 overflow-y-auto border-t lg:border-t-0 lg:border-l border-tomate/25 bg-crema p-4 sm:p-5 flex flex-col gap-5">
           {!editing && locationIds.length > 1 && (
             <div className="flex gap-2">
               {locationIds.map((id) => (
@@ -321,8 +395,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                   key={id}
                   onClick={() => { setLocId(id); if (!getLocation(id).services.delivery) setMode('pickup') }}
                   className={[
-                    'flex-1 rounded-xl border px-3 py-2 text-sm font-semibold',
-                    locId === id ? 'border-tomate bg-tomate/5 text-carbon' : 'border-carbon/12 text-carbon/60',
+                    'ptab flex-1',
+                    locId === id ? 'is-on' : '',
                   ].join(' ')}
                 >
                   {getLocation(id).name}
@@ -341,8 +415,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                   key={id}
                   onClick={() => setChannel(id)}
                   className={[
-                    'flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold',
-                    channel === id ? 'border-carbon bg-carbon text-crema' : 'border-carbon/12 text-carbon/60',
+                    'ptab',
+                    channel === id ? 'is-on' : '',
                   ].join(' ')}
                 >
                   <Icon className="w-4 h-4" /> {label}
@@ -353,16 +427,24 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
 
           {/* Líneas */}
           <div>
-            <p className="mono text-carbon/50 mb-2">PEDIDO</p>
+            <p className="mono text-tomate mb-2">PEDIDO</p>
             {lines.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-carbon/15 px-4 py-6 text-center text-sm text-carbon/45">
+              <p className="rounded-md border border-dashed border-tomate/50 px-4 py-6 text-center text-sm text-carbon/45">
                 Toca productos de la carta para añadirlos.
               </p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {lines.map((l) => (
-                  <li key={l.id} className="rounded-2xl border border-carbon/10 bg-white/60">
-                    <div className="flex items-start gap-2 p-3">
+                  <li key={l.id} className="rounded-md border border-tomate/25 bg-masa">
+                    <div className="flex items-start gap-2.5 p-3">
+                      <ProductImage
+                        image={getProduct(l.productId)?.image}
+                        category={getProduct(l.productId)?.category}
+                        alt=""
+                        width={120}
+                        className="w-12 h-12 flex-shrink-0 rounded-md border border-tomate/40 !bg-queso/50"
+                        iconClassName="w-5 h-5"
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="font-sans font-bold text-sm text-carbon">{l.name}</p>
                         {l.sizeLabel && getProduct(l.productId)?.portions && (
@@ -374,19 +456,19 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                       </div>
                       <span className="mono text-carbon/70 whitespace-nowrap">{price(lineTotal(l))}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-2 border-t border-carbon/8 px-2 py-1.5">
+                    <div className="flex items-center justify-between gap-2 border-t border-tomate/25 px-2 py-1.5">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => setQty(l.id, l.qty - 1)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-carbon/5" aria-label="Quitar una">
+                        <button onClick={() => setQty(l.id, l.qty - 1)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-tomate/10" aria-label="Quitar una">
                           {l.qty === 1 ? <Trash2 className="w-4 h-4 text-tomate" /> : <Minus className="w-4 h-4" />}
                         </button>
                         <span className="w-6 text-center font-bold text-carbon">{l.qty}</span>
-                        <button onClick={() => setQty(l.id, l.qty + 1)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-carbon/5" aria-label="Añadir una">
+                        <button onClick={() => setQty(l.id, l.qty + 1)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-tomate/10" aria-label="Añadir una">
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
                       <button
                         onClick={() => setOpenLine(openLine === l.id ? null : l.id)}
-                        className="mono normal-case flex items-center gap-1.5 rounded-full px-3 py-1.5 text-carbon/70 hover:bg-carbon/5"
+                        className="mono normal-case flex items-center gap-1.5 rounded-md px-3 py-1.5 text-carbon/70 hover:bg-tomate/10"
                       >
                         <SlidersHorizontal className="w-3.5 h-3.5" /> {openLine === l.id ? 'Cerrar' : 'Ajustar'}
                       </button>
@@ -400,7 +482,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
 
           {/* Cliente */}
           <div className="flex flex-col gap-3">
-            <p className="mono text-carbon/50">CLIENTE</p>
+            <p className="mono text-tomate">CLIENTE</p>
             <Input label="Nombre" value={customer.name} onChange={(v) => patchCustomer({ name: v })} />
             <Input
               label={channel === 'mostrador' && mode === 'pickup' ? 'Teléfono (opcional)' : 'Teléfono'}
@@ -428,8 +510,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                   key={m.id}
                   onClick={() => setMode(m.id)}
                   className={[
-                    'rounded-xl border px-3 py-2.5 text-sm font-semibold',
-                    mode === m.id ? 'border-tomate bg-tomate/5 text-carbon' : 'border-carbon/12 text-carbon/60',
+                    'ptab',
+                    mode === m.id ? 'is-on' : '',
                   ].join(' ')}
                 >
                   {m.label}
@@ -440,11 +522,47 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
             {mode === 'delivery' && (
               <DeliveryPicker locationId={locId} value={customer} onChange={patchCustomer} compact />
             )}
+            {!editing && (
+              <div>
+                <p className="mono normal-case text-carbon/50 text-xs mb-1">¿Para cuándo?</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setWhen('now')}
+                    className={['ptab', when === 'now' ? 'is-on' : ''].join(' ')}
+                  >
+                    <Clock className="w-4 h-4" /> Lo antes posible
+                  </button>
+                  <button
+                    onClick={() => { setWhen('later'); if (!laterTime) setLaterTime(laterTimeIn(60)) }}
+                    className={['ptab', when === 'later' ? 'is-on' : ''].join(' ')}
+                  >
+                    <CalendarClock className="w-4 h-4" /> Para una hora
+                  </button>
+                </div>
+                {when === 'later' && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <input
+                      type="time"
+                      step="900"
+                      value={laterTime}
+                      onChange={(e) => { setLaterTime(e.target.value); setError(null) }}
+                      aria-label="Hora a la que lo quieren"
+                      className="pfield !w-auto !py-2 text-lg font-bold"
+                    />
+                    {[30, 60, 120].map((m) => (
+                      <button key={m} onClick={() => setLaterTime(laterTimeIn(m))} className="ptab soft">
+                        {m === 30 ? '30 min' : `${m / 60} h`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <Input label="Notas (opcional)" value={customer.notes} onChange={(v) => patchCustomer({ notes: v })} />
           </div>
 
           {/* Totales y hora */}
-          <div className="rounded-2xl bg-carbon/5 p-4 flex flex-col gap-1.5 text-sm">
+          <div className="rounded-md border border-tomate/40 bg-queso/40 p-4 flex flex-col gap-1.5 text-sm">
             {(totals.discount > 0 || totals.deliveryFee > 0 || totals.pointsDiscount > 0) && (
               <Row label="Subtotal" value={price(totals.subtotal)} />
             )}
@@ -458,7 +576,13 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
               <span className="mono text-carbon/60">TOTAL</span>
               <span className="font-serif italic font-semibold text-3xl text-carbon">{price(totals.total)}</span>
             </div>
-            {eta && (
+            {scheduledMs && (
+              <p className="mt-1 flex items-center gap-1.5 font-semibold text-tomate">
+                <CalendarClock className="w-4 h-4" />
+                {trip ? 'Llega' : 'Listo'} a las {hourOf(scheduledMs)} · {pizzas} al horno
+              </p>
+            )}
+            {!scheduledMs && eta && (
               <p className={['mt-1 flex items-center gap-1.5 font-semibold', eta.ok ? 'text-carbon' : 'text-tomate'].join(' ')}>
                 <Clock className="w-4 h-4" />
                 {eta.ok
@@ -483,8 +607,8 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
                       key={m}
                       onClick={() => setMethod(m)}
                       className={[
-                        'rounded-xl border px-3 py-2 text-sm font-semibold capitalize',
-                        method === m ? 'border-carbon bg-carbon text-crema' : 'border-carbon/12 text-carbon/60',
+                        'rounded-md border px-3 py-2 text-sm font-semibold capitalize',
+                        method === m ? 'border-tomate bg-tomate text-masa' : 'border-tomate/50 text-tomate',
                       ].join(' ')}
                     >
                       {m}
@@ -496,11 +620,11 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
           )}
 
           {error && (
-            <p className="rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">{error}</p>
+            <p className="rounded-md border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">{error}</p>
           )}
 
           {offline && (
-            <div className="rounded-2xl border-2 border-horno bg-horno/10 p-4">
+            <div className="rounded-md border-2 border-horno bg-horno/10 p-4">
               <p className="text-sm font-semibold text-carbon">Plan B: trabajar sin conexión</p>
               <p className="mt-1 text-sm text-carbon/70">
                 Se imprime la comanda para cocina y el pedido se guarda en este equipo. Se enviará solo al sistema en cuanto vuelva la conexión.
@@ -514,7 +638,7 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
 
           <button
             onClick={save}
-            disabled={saving || eta?.ok === false}
+            disabled={saving || (!scheduledMs && eta?.ok === false)}
             className="btn w-full bg-tomate text-crema disabled:opacity-50"
           >
             <span className="btn-layer bg-horno" />
@@ -533,17 +657,17 @@ export default function OrderEditor({ order, locationIds, defaultLocationId, def
 function LineOptions({ line, onChange }) {
   const product = getProduct(line.productId)
   const toggle = (list, value) => (list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
-  const chip = (active, tone) => [
-    'rounded-full border px-3 py-1.5 text-xs transition-colors',
-    active ? tone : 'border-carbon/12 text-carbon/60',
-  ].join(' ')
 
   return (
-    <div className="border-t border-carbon/8 p-3 flex flex-col gap-3">
+    <div className="border-t border-tomate/25 p-3 flex flex-col gap-4">
       {product.portions?.length > 1 && (
         <div className="flex gap-2">
           {product.portions.map((p) => (
-            <button key={p.id} onClick={() => onChange({ portionId: p.id })} className={chip(line.portionId === p.id, 'border-tomate bg-tomate/10 text-carbon font-semibold')}>
+            <button
+              key={p.id}
+              onClick={() => onChange({ portionId: p.id })}
+              className={['ptab soft flex-1', line.portionId === p.id ? 'is-on' : ''].join(' ')}
+            >
               {p.label} · {price(p.price)}
             </button>
           ))}
@@ -552,12 +676,19 @@ function LineOptions({ line, onChange }) {
 
       {product.ingredients?.length > 0 && (
         <div>
-          <p className="text-[0.7rem] font-bold uppercase text-carbon/45 mb-1.5">Quitar (toca para quitar)</p>
+          <p className="mono text-tomate mb-2">QUITAR</p>
           <div className="flex flex-wrap gap-1.5">
             {product.ingredients.map((ing) => {
               const off = line.removed.includes(ing)
               return (
-                <button key={ing} onClick={() => onChange({ removed: toggle(line.removed, ing) })} className={chip(off, 'border-tomate bg-tomate/10 text-tomate font-bold line-through')}>
+                <button
+                  key={ing}
+                  onClick={() => onChange({ removed: toggle(line.removed, ing) })}
+                  className={[
+                    'rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors',
+                    off ? 'border-tomate bg-tomate/10 text-tomate line-through' : 'border-tomate/40 text-carbon/75',
+                  ].join(' ')}
+                >
                   {ing}
                 </button>
               )
@@ -567,20 +698,12 @@ function LineOptions({ line, onChange }) {
       )}
 
       {product.extras?.length > 0 && (
-        <div>
-          <p className="text-[0.7rem] font-bold uppercase text-carbon/45 mb-1.5">Toppings</p>
-          <div className="flex flex-wrap gap-1.5">
-            {product.extras.map((id) => {
-              const extra = getExtra(id)
-              const on = line.extraIds.includes(id)
-              return (
-                <button key={id} onClick={() => onChange({ extraIds: toggle(line.extraIds, id) })} className={chip(on, 'border-albahaca bg-albahaca/10 text-albahaca font-semibold')}>
-                  {extra.label} +{price(extra.price)}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <ToppingPicker
+          size="sm"
+          extraIds={product.extras}
+          selected={line.extraIds}
+          onToggle={(id) => onChange({ extraIds: toggle(line.extraIds, id) })}
+        />
       )}
 
       <NoteInput value={line.note} onCommit={(note) => onChange({ note })} />
@@ -600,7 +723,7 @@ function NoteInput({ value, onCommit }) {
       onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
       placeholder='Nota para cocina: "bien hecha", "cortada"…'
       maxLength={140}
-      className="w-full rounded-xl border border-carbon/12 bg-white/70 px-3 py-2 text-sm outline-none focus:border-tomate"
+      className="pfield !py-2 text-sm"
     />
   )
 }
@@ -612,7 +735,7 @@ const itemsText = (o) => (o.items || []).map((i) => `${i.qty}× ${i.name}`).join
 function KnownCustomer({ known, canUseAddress, dropped, onRepeat, onAddress }) {
   const [last, ...older] = known.orders
   return (
-    <div className="rounded-xl border border-albahaca/40 bg-albahaca/5 p-3 text-sm">
+    <div className="rounded-md border border-tomate bg-queso/50 p-3 text-sm">
       <p className="font-bold text-carbon">
         {known.name || 'Cliente conocido'}
         <span className="mono normal-case text-carbon/55 font-normal"> · {known.count} pedido{known.count === 1 ? '' : 's'}</span>
@@ -621,11 +744,11 @@ function KnownCustomer({ known, canUseAddress, dropped, onRepeat, onAddress }) {
         Último ({shortDate(last.created_at)}, {price(last.total)}): {itemsText(last)}
       </p>
       <div className="flex flex-wrap gap-2 mt-2">
-        <button type="button" onClick={() => onRepeat(last)} className="rounded-full bg-albahaca px-3 py-1.5 text-xs font-bold text-crema">
+        <button type="button" onClick={() => onRepeat(last)} className="rounded-md bg-tomate px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-masa">
           Repetir último pedido
         </button>
         {canUseAddress && (
-          <button type="button" onClick={onAddress} className="rounded-full border border-carbon/20 px-3 py-1.5 text-xs font-semibold text-carbon/75">
+          <button type="button" onClick={onAddress} className="rounded-md border border-tomate/60 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-tomate">
             Usar su dirección
           </button>
         )}
@@ -637,7 +760,7 @@ function KnownCustomer({ known, canUseAddress, dropped, onRepeat, onAddress }) {
             {older.map((o) => (
               <li key={o.ref} className="flex items-center gap-2 text-xs text-carbon/70">
                 <span className="flex-1">{shortDate(o.created_at)} · {price(o.total)} · {itemsText(o)}</span>
-                <button type="button" onClick={() => onRepeat(o)} className="rounded-full border border-carbon/20 px-2.5 py-1 font-semibold">Repetir</button>
+                <button type="button" onClick={() => onRepeat(o)} className="rounded-md border border-tomate/60 px-2.5 py-1 font-semibold text-tomate">Repetir</button>
               </li>
             ))}
           </ul>
@@ -660,7 +783,7 @@ function Input({ label, value, onChange, type = 'text' }) {
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-xl border border-carbon/12 bg-white/70 px-3 py-2.5 text-sm text-carbon outline-none focus:border-tomate"
+        className="mt-1 pfield !py-2 text-sm"
       />
     </label>
   )

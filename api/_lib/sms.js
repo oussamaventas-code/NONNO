@@ -1,5 +1,14 @@
 import { getLocation } from '../../src/data/locations.js'
 import { hourOf } from '../../src/lib/kitchenSlots.js'
+import { trackToken, trackPath } from '../../src/lib/tracking.js'
+
+/* Enlace para seguir el pedido. Solo si SITE_URL está puesto en Vercel
+   (p. ej. https://lapizzadenonno.es): sin él, el SMS va como antes. */
+const trackLink = (order) => {
+  const base = String(process.env.SITE_URL || '').replace(/\/+$/, '')
+  const token = trackToken(order)
+  return base && token ? ` Sigue tu pedido: ${base}${trackPath(token)}` : ''
+}
 
 /* ═══════════════════════════════════════════════════════════════
    SMS AL CLIENTE — desde un móvil Android del local
@@ -20,8 +29,19 @@ import { hourOf } from '../../src/lib/kitchenSlots.js'
 
 const DEFAULT_URL = 'https://api.sms-gate.app/3rdparty/v1/messages'
 
-export const smsConfigured = () =>
+/* ALTERNATIVA DE PAGO: Twilio (no necesita ningún móvil en el local).
+   Si están sus tres variables, se usa Twilio en vez del Android:
+     TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
+     TWILIO_FROM  → número de Twilio (+1…) o nombre de remitente (NONNO) */
+const twilioConfigured = () =>
+  Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM)
+const gatewayConfigured = () =>
   Boolean(process.env.SMS_GATEWAY_USER && process.env.SMS_GATEWAY_PASSWORD)
+
+export const smsConfigured = () => twilioConfigured() || gatewayConfigured()
+
+/** Qué vía de envío está activa, para enseñarlo en el panel */
+export const smsProvider = () => (twilioConfigured() ? 'twilio' : gatewayConfigured() ? 'android' : null)
 
 /** Móvil español en formato +34XXXXXXXXX, o null si no es un móvil (los fijos no reciben SMS). */
 export function mobileNumber(raw) {
@@ -47,7 +67,9 @@ export function smsText(kind, order) {
     const when = delivery
       ? (order.eta_at ? `Entrega hacia las ${hourOf(order.eta_at)}` : 'Te avisamos cuando salga')
       : (order.ready_at ? `Recogida en ${location?.name} a las ${hourOf(order.ready_at)}` : `Recogida en ${location?.name}`)
-    return plain(`La Pizza de Nonno: pedido ${order.ref} recibido. ${when}. Total ${euros(order.total)}.${tail}`)
+    const link = trackLink(order)
+    /* Con enlace se quita el teléfono de dudas: está en la página */
+    return plain(`La Pizza de Nonno: pedido ${order.ref} recibido. ${when}. Total ${euros(order.total)}.${link || tail}`)
   }
   if (kind === 'listo') {
     return plain(delivery
@@ -70,6 +92,8 @@ export async function sendSms(phone, text) {
   const to = mobileNumber(phone)
   if (!to) return { ok: false, at, skipped: 'no-es-movil' }
 
+  if (twilioConfigured()) return sendTwilio(to, text, at)
+
   try {
     const auth = Buffer.from(`${process.env.SMS_GATEWAY_USER}:${process.env.SMS_GATEWAY_PASSWORD}`).toString('base64')
     const res = await fetch(process.env.SMS_GATEWAY_URL || DEFAULT_URL, {
@@ -83,6 +107,27 @@ export async function sendSms(phone, text) {
     return { ok: true, at }
   } catch (err) {
     return { ok: false, at, error: err?.name === 'TimeoutError' ? 'sin respuesta del movil' : 'sin conexion con la pasarela' }
+  }
+}
+
+async function sendTwilio(to, text, at) {
+  const sid = process.env.TWILIO_ACCOUNT_SID
+  try {
+    const auth = Buffer.from(`${sid}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Authorization: `Basic ${auth}` },
+      body: new URLSearchParams({ To: to, From: process.env.TWILIO_FROM, Body: text }),
+      signal: AbortSignal.timeout(5000),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      /* El motivo exacto de Twilio (número sin verificar en la prueba, país no permitido…) */
+      return { ok: false, at, error: `twilio ${data.code || res.status}: ${String(data.message || '').slice(0, 120)}` }
+    }
+    return { ok: true, at }
+  } catch (err) {
+    return { ok: false, at, error: err?.name === 'TimeoutError' ? 'twilio no responde' : 'sin conexion con twilio' }
   }
 }
 

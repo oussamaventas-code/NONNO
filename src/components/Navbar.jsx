@@ -1,10 +1,13 @@
-import { Menu as MenuIcon, UserRound, Moon, Sun } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Menu as MenuIcon, UserRound, MapPin, Flame, Moon, Sun } from 'lucide-react'
+import { readLastOrder, LAST_ORDER_EVENT } from '../lib/lastOrder'
+import { trackPath } from '../lib/tracking'
 import { useTheme } from '../hooks/useTheme'
 import { NAV_LINKS } from '../data/site'
 import { ANNOUNCE } from '../data/content'
-import { useCart, useActions } from '../store/StoreContext'
+import { useCart, useActions, useSelectedLocation } from '../store/StoreContext'
 import { useAccount } from '../store/AccountContext'
-import { followLink, navigate } from '../lib/router'
+import { followLink, navigate, usePath } from '../lib/router'
 
 /**
  * Cabecera de diner: barra de aviso, enlaces a la izquierda, logo en
@@ -13,7 +16,18 @@ import { followLink, navigate } from '../lib/router'
  */
 export default function Navbar() {
   const { count } = useCart()
-  const { openCart, toggleMobileNav } = useActions()
+  const { openCart, toggleMobileNav, openLocationPrompt } = useActions()
+  const { location } = useSelectedLocation()
+  const path = usePath()
+
+  /* Pedido en marcha desde este navegador: acceso directo a su seguimiento */
+  const [lastOrder, setLastOrder] = useState(readLastOrder)
+  useEffect(() => {
+    const update = () => setLastOrder(readLastOrder())
+    window.addEventListener(LAST_ORDER_EVENT, update)
+    return () => window.removeEventListener(LAST_ORDER_EVENT, update)
+  }, [])
+  const showTrack = lastOrder && !path.startsWith('/p/')
   const { status, points, openAccount } = useAccount()
   const { dark, toggle } = useTheme()
 
@@ -88,6 +102,31 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {showTrack && (
+        <button
+          onClick={() => navigate(trackPath(lastOrder.token))}
+          className="w-full flex items-center justify-center gap-2 bg-forno text-masa h-10 px-3 font-sans font-semibold uppercase text-[0.8rem] sm:text-sm tracking-wide hover:bg-tomate transition-colors"
+        >
+          <Flame className="w-4 h-4 text-queso" /> Tu pedido {lastOrder.ref} · <span className="underline underline-offset-2">ver cómo va</span>
+        </button>
+      )}
+
+      {/* Sede elegida, siempre a la vista y a un toque de cambiarla */}
+      <button
+        onClick={openLocationPrompt}
+        className="w-full flex items-center justify-center gap-1.5 border-b border-tomate/40 bg-crema h-9 px-3 font-sans text-[0.8rem] sm:text-sm text-carbon/80 hover:bg-queso/60 transition-colors"
+      >
+        <MapPin className="w-4 h-4 text-tomate flex-shrink-0" />
+        {location ? (
+          <span className="truncate">
+            Pides en <strong className="font-bold uppercase text-tomate">{location.name}</strong>
+            <span className="ml-2 underline underline-offset-2 text-carbon/55">cambiar</span>
+          </span>
+        ) : (
+          <span className="font-bold uppercase text-tomate">Elige tu Nonno para pedir →</span>
+        )}
+      </button>
     </header>
   )
 }
