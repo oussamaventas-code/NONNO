@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Menu as MenuIcon, UserRound, MapPin, Flame } from 'lucide-react'
+import { UserRound, MapPin, Flame } from 'lucide-react'
 import { readLastOrder, LAST_ORDER_EVENT } from '../lib/lastOrder'
 import { trackPath } from '../lib/tracking'
 import { NAV_LINKS } from '../data/site'
 import { ANNOUNCE } from '../data/content'
-import { useCart, useActions, useSelectedLocation } from '../store/StoreContext'
+import { useCart, useActions, useSelectedLocation, useStore } from '../store/StoreContext'
 import { useAccount } from '../store/AccountContext'
 import { followLink, navigate, usePath } from '../lib/router'
 
@@ -15,8 +15,10 @@ import { followLink, navigate, usePath } from '../lib/router'
  */
 export default function Navbar() {
   const { count } = useCart()
-  const { openCart, toggleMobileNav, openLocationPrompt } = useActions()
-  const { location } = useSelectedLocation()
+  const { order } = useStore()
+  const { openCart } = useActions()
+  const { location, modes } = useSelectedLocation()
+  const modeLabel = modes.find((m) => m.id === order.mode)?.label
   const path = usePath()
 
   /* Pedido en marcha desde este navegador: acceso directo a su seguimiento */
@@ -29,6 +31,44 @@ export default function Navbar() {
   const showTrack = lastOrder && !path.startsWith('/p/')
   const { status, points, openAccount } = useAccount()
 
+  /* Entrada y elección: cabecera mínima (logo y cuenta), sin menú ni carrito */
+  if (path === '/' || path === '/pedir') {
+    return (
+      <header className="relative z-[90] bg-masa">
+        <div className="border-b border-tomate">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center h-14 px-4 sm:px-7">
+            <span />
+            {path === '/pedir' ? (
+              <button onClick={() => navigate('/')} aria-label="Ir al inicio — La Pizza de Nonno">
+                <img src="/logo-nonno.png" alt="La Pizza de Nonno" width="44" height="44" className="h-11 w-11 rounded-full object-cover border border-tomate" />
+              </button>
+            ) : <span />}
+            <div className="justify-self-end">
+              {status !== 'loading' && (
+                <button
+                  onClick={openAccount}
+                  className="inline-flex items-center gap-1.5 font-sans font-semibold uppercase text-base text-tomate hover:text-forno transition-colors"
+                  aria-label={status === 'member' ? `Mi cuenta, ${points} puntos` : 'Mi cuenta: Club Nonno'}
+                >
+                  <UserRound className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2} />
+                  <span className="hidden sm:inline">{status === 'member' ? `${points} pts` : 'Mi cuenta'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+        {showTrack && (
+          <button
+            onClick={() => navigate(trackPath(lastOrder.token))}
+            className="w-full flex items-center justify-center gap-2 bg-forno text-masa h-10 px-3 font-sans font-semibold uppercase text-[0.8rem] sm:text-sm tracking-wide hover:bg-tomate transition-colors"
+          >
+            <Flame className="w-4 h-4 text-queso" /> Tu pedido {lastOrder.ref} · <span className="underline underline-offset-2">ver cómo va</span>
+          </button>
+        )}
+      </header>
+    )
+  }
+
   return (
     <header className="relative z-[90] bg-masa">
       <p className="bg-tomate text-masa text-center font-sans font-medium uppercase text-[0.72rem] sm:text-sm h-9 leading-9 px-3 truncate">
@@ -39,23 +79,17 @@ export default function Navbar() {
         <div className="grid grid-cols-[1fr_auto_1fr] items-center h-[4.5rem] sm:h-[5.9rem] px-4 sm:px-7">
           {/* Izquierda: enlaces (desktop) / menú (móvil) */}
           <nav className="hidden md:flex items-center" aria-label="Navegación principal">
-            {NAV_LINKS.map((link) => (
+            {NAV_LINKS.filter((l) => l.href).map((link) => (
               <button
                 key={link.label}
                 onClick={() => followLink(link)}
-                className="w-[8.25rem] h-[3.4rem] text-left font-sans font-semibold uppercase text-base text-neon hover:text-forno transition-colors"
+                className="w-[8.25rem] h-[3.4rem] text-left font-sans font-semibold uppercase text-base text-tomate hover:text-forno transition-colors"
               >
                 {link.label}
               </button>
             ))}
           </nav>
-          <button
-            onClick={() => toggleMobileNav(true)}
-            className="md:hidden justify-self-start inline-flex items-center justify-center w-11 h-11 text-neon"
-            aria-label="Abrir menú de navegación"
-          >
-            <MenuIcon className="w-7 h-7" strokeWidth={2} />
-          </button>
+          <span className="md:hidden" />
 
           {/* Centro: logo */}
           <button onClick={() => navigate('/')} aria-label="Ir al inicio — La Pizza de Nonno">
@@ -73,7 +107,7 @@ export default function Navbar() {
             {status !== 'loading' && (
               <button
                 onClick={openAccount}
-                className="inline-flex items-center gap-1.5 font-sans font-semibold uppercase text-base text-neon hover:text-forno transition-colors"
+                className="inline-flex items-center gap-1.5 font-sans font-semibold uppercase text-base text-tomate hover:text-forno transition-colors"
                 aria-label={status === 'member' ? `Mi cuenta, ${points} puntos` : 'Mi cuenta: Club Nonno'}
               >
                 <UserRound className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2} />
@@ -87,7 +121,7 @@ export default function Navbar() {
               aria-label={`Pide ya${count > 0 ? `, ${count} producto${count > 1 ? 's' : ''} en el carrito` : ''}`}
             >
               PIDE YA
-              {count > 0 && <span className="rounded-full bg-masa text-neon px-1.5 text-xs leading-5">{count}</span>}
+              {count > 0 && <span className="rounded-full bg-masa text-tomate px-1.5 text-xs leading-5">{count}</span>}
             </button>
           </div>
         </div>
@@ -104,17 +138,17 @@ export default function Navbar() {
 
       {/* Sede elegida, siempre a la vista y a un toque de cambiarla */}
       <button
-        onClick={openLocationPrompt}
+        onClick={() => navigate('/pedir')}
         className="w-full flex items-center justify-center gap-1.5 border-b border-tomate/40 bg-crema h-9 px-3 font-sans text-[0.8rem] sm:text-sm text-carbon/80 hover:bg-queso/60 transition-colors"
       >
-        <MapPin className="w-4 h-4 text-neon flex-shrink-0" />
+        <MapPin className="w-4 h-4 text-tomate flex-shrink-0" />
         {location ? (
           <span className="truncate">
-            Pides en <strong className="font-bold uppercase text-neon">{location.name}</strong>
+            Pides en <strong className="font-bold uppercase text-tomate">{location.name}</strong>{modeLabel && <> · <strong className="font-bold uppercase text-tomate">{modeLabel}</strong></>}
             <span className="ml-2 underline underline-offset-2 text-carbon/55">cambiar</span>
           </span>
         ) : (
-          <span className="font-bold uppercase text-neon">Elige tu Nonno para pedir →</span>
+          <span className="font-bold uppercase text-tomate">Elige cómo quieres pedir →</span>
         )}
       </button>
     </header>

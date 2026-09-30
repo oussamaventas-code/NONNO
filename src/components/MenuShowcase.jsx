@@ -40,7 +40,7 @@ export default function MenuShowcase() {
   return (
     <section id="menu" ref={rootRef} className="bg-masa pt-24 sm:pt-32 pb-28 sm:pb-32 overflow-hidden">
       <div className="px-5">
-        <h2 className="showcase-in mx-auto max-w-[70rem] text-center font-display font-bold text-neon text-[clamp(2rem,3.6vw,3.25rem)] leading-none">
+        <h2 className="showcase-in mx-auto max-w-[70rem] text-center font-display font-bold text-tomate text-[clamp(2rem,3.6vw,3.25rem)] leading-none">
           {MENU_INTRO}
         </h2>
 
@@ -55,7 +55,7 @@ export default function MenuShowcase() {
                 onClick={() => setTabId(t.id)}
                 className={[
                   'inline-flex items-center gap-2 font-sans font-medium uppercase text-lg sm:text-xl transition-colors',
-                  on ? 'text-neon' : 'text-neon/70 hover:text-neon',
+                  on ? 'text-tomate' : 'text-tomate/70 hover:text-tomate',
                 ].join(' ')}
               >
                 {on && <Star className="w-4 h-4 fill-tomate" strokeWidth={0} />}
@@ -65,7 +65,7 @@ export default function MenuShowcase() {
           })}
         </div>
 
-        <div className="showcase-in mx-auto mt-10 max-w-[46rem] text-center font-sans font-medium text-neon flex flex-col gap-4">
+        <div className="showcase-in mx-auto mt-10 max-w-[46rem] text-center font-sans font-medium text-tomate flex flex-col gap-4">
           {tab.text.map((p) => <p key={p}>{p}</p>)}
         </div>
       </div>
@@ -92,10 +92,10 @@ export default function MenuShowcase() {
                     className="h-full w-full transition-transform duration-700 ease-magnetic group-hover:scale-105"
                   />
                   {/* Pegatina de precio */}
-                  <span className="absolute top-3 right-3 flex items-center justify-center w-[4.5rem] h-[4.5rem] sm:w-20 sm:h-20 rounded-full bg-queso border border-tomate outline outline-1 outline-offset-[-5px] outline-tomate rotate-12 font-display font-bold text-neon text-base sm:text-lg leading-none shadow-[2px_2px_0_0_rgb(var(--c-tomate))]">
+                  <span className="absolute top-3 right-3 flex items-center justify-center w-[4.5rem] h-[4.5rem] sm:w-20 sm:h-20 rounded-full bg-queso border border-tomate outline outline-1 outline-offset-[-5px] outline-tomate rotate-12 font-display font-bold text-tomate text-base sm:text-lg leading-none shadow-[2px_2px_0_0_rgb(var(--c-tomate))]">
                     {price(priceOf(p))}
                   </span>
-                  <span className="absolute left-2 bottom-2 rounded-md bg-masa/95 border border-tomate px-3 py-1.5 font-display italic font-bold text-neon text-base sm:text-lg">
+                  <span className="absolute left-2 bottom-2 rounded-md bg-masa/95 border border-tomate px-3 py-1.5 font-display italic font-bold text-tomate text-base sm:text-lg">
                     {p.name}
                   </span>
                 </span>

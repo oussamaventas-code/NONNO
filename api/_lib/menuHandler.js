@@ -2,7 +2,7 @@ import { db, isConfigured } from './supabase.js'
 import { requireSession, SCOPE_ALL } from './auth.js'
 import { readMenuOverrides, loadMenu } from './menu.js'
 import { getLocation } from '../../src/data/locations.js'
-import { PRODUCTS } from '../../src/data/menu.js'
+import { PRODUCTS, ingredientCatalog } from '../../src/data/menu.js'
 
 /* ═══════════════════════════════════════════════════════════════
    Carta editable.
@@ -12,10 +12,12 @@ import { PRODUCTS } from '../../src/data/menu.js'
         { action: 'price',   productId, price? , portionPrices? }   solo dirección
         { action: 'hidden',  productId, hidden }                    solo dirección
         { action: 'soldOut', location, productId, soldOut }         cada sede la suya
+        { action: 'ingredientOut', location, ingredient, soldOut }  cada sede el suyo
    ═══════════════════════════════════════════════════════════════ */
 
 const trim = (v, max) => String(v ?? '').trim().slice(0, max)
 const KNOWN = new Set(PRODUCTS.map((p) => p.id))
+const KNOWN_INGREDIENTS = new Set(ingredientCatalog().map((i) => i.key))
 
 /** Precio válido (0–999,99) o null si viene vacío. undefined = no válido. */
 function parsePrice(v) {
@@ -41,6 +43,25 @@ export default async function handler(req, res) {
       const session = requireSession(req, res)
       if (!session) return
       const { action } = req.body || {}
+
+      /* Ingrediente agotado: las pizzas que lo llevan se descartan solas */
+      if (action === 'ingredientOut') {
+        const locationId = trim(req.body?.location, 40)
+        const key = trim(req.body?.ingredient, 80)
+        if (!getLocation(locationId)) return res.status(400).json({ error: 'Sede no válida.' })
+        if (!KNOWN_INGREDIENTS.has(key)) return res.status(400).json({ error: 'Ese ingrediente no existe.' })
+        if (session.scope !== SCOPE_ALL && session.scope !== locationId) {
+          return res.status(403).json({ error: 'No puedes cambiar la carta de otra sede.' })
+        }
+        const q = req.body?.soldOut
+          ? db().from('menu_ingredient_soldout').upsert({ location_id: locationId, ingredient_key: key, updated_at: new Date().toISOString() })
+          : db().from('menu_ingredient_soldout').delete().eq('location_id', locationId).eq('ingredient_key', key)
+        const { error } = await q
+        if (error) throw error
+        await loadMenu({ force: true })
+        return res.status(200).json(await readMenuOverrides())
+      }
+
       const productId = trim(req.body?.productId, 60)
       if (!KNOWN.has(productId)) return res.status(400).json({ error: 'Ese producto no existe.' })
 

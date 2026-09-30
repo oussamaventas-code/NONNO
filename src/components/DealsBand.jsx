@@ -27,10 +27,10 @@ export default function DealsBand() {
               {deal.packs.map((pack) => (
                 /* La sombra va en el <li>: la máscara del troquel la recortaría */
                 <li key={pack.qty} className="drop-shadow-[3px_3px_0_rgb(29,43,79)]">
-                  <div className="ticket-cut bg-masa text-neon rounded-md px-2 py-5 sm:py-6 text-center">
+                  <div className="ticket-cut bg-masa text-tomate rounded-md px-2 py-5 sm:py-6 text-center">
                     <p className="font-sans font-bold uppercase text-xs sm:text-sm tracking-wider">{pack.qty} pizzas</p>
                     <p className="mt-1 font-display font-bold text-3xl sm:text-5xl leading-none">{price(pack.price)}</p>
-                    <p className="mt-2 font-sans text-xs sm:text-sm text-neon/75">{price(pack.price / pack.qty)} cada una</p>
+                    <p className="mt-2 font-sans text-xs sm:text-sm text-tomate/75">{price(pack.price / pack.qty)} cada una</p>
                   </div>
                 </li>
               ))}
@@ -42,7 +42,7 @@ export default function DealsBand() {
       <p className="mt-8 mx-auto max-w-2xl px-5 text-center font-sans text-sm text-masa/85">{DEALS_BAND.note}</p>
       <div className="mt-10 flex justify-center">
         <button onClick={() => navigate('/carta')} className="btn-retro border-masa bg-tomate shadow-[3px_3px_0_0_rgb(var(--c-masa))]">
-          <span className="min-w-[13.9rem] bg-masa border-masa text-neon">Pedir para recoger</span>
+          <span className="min-w-[13.9rem] bg-masa border-masa text-tomate">Pedir para recoger</span>
         </button>
       </div>
 

@@ -47,7 +47,7 @@ export default function KitchenFeed() {
             const Icon = ICONS[item.icon] || Flame
             return (
               <div key={item.id} className="kitchen-ticket ticket bg-crema text-carbon flex items-center gap-3 pl-4 pr-5 py-3 max-w-md ml-auto">
-                <span className="w-8 h-8 rounded-full bg-tomate/10 text-neon flex items-center justify-center flex-shrink-0">
+                <span className="w-8 h-8 rounded-full bg-tomate/10 text-tomate flex items-center justify-center flex-shrink-0">
                   <Icon className="w-4 h-4" strokeWidth={1.75} />
                 </span>
                 <p className="flex-1 text-sm normal-case">{item.text}</p>

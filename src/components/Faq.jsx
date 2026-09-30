@@ -52,9 +52,9 @@ export default function Faq() {
   return (
     <section className="section bg-masa">
       <div className="shell max-w-3xl mx-auto" ref={rootRef}>
-        <p className="mono text-neon mb-4 text-center">PREGUNTAS FRECUENTES</p>
+        <p className="mono text-tomate mb-4 text-center">PREGUNTAS FRECUENTES</p>
         <h2 className="font-sans font-extrabold uppercase text-display-sm text-carbon leading-[0.95] text-center">
-          ¿ALGUNA <em className="font-serif italic font-semibold text-neon ">DUDA</em>?
+          ¿ALGUNA <em className="font-serif italic font-semibold text-tomate ">DUDA</em>?
         </h2>
 
         <div className="mt-12 flex flex-col divide-y divide-carbon/10 border-t border-b border-carbon/10">

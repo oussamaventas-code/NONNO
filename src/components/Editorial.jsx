@@ -15,7 +15,7 @@ function Word({ children, highlight }) {
       <span
         className={[
           'editorial-word inline-block',
-          highlight ? 'font-serif italic font-semibold text-neon ' : '',
+          highlight ? 'font-serif italic font-semibold text-tomate ' : '',
         ].join(' ')}
       >
         {children}

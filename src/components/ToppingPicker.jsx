@@ -21,8 +21,9 @@ export const TOPPING_GROUPS = [
  * @param {string[]} extraIds  toppings disponibles para el producto
  * @param {string[]} selected  toppings marcados
  * @param {'lg'|'sm'} size     'lg' en la web (dedo en el móvil), 'sm' en el mostrador
+ * @param {string[]} disabledIds  toppings agotados: se ven tachados y no se pueden añadir
  */
-export default function ToppingPicker({ extraIds = [], selected, onToggle, size = 'lg', title = 'TOPPINGS' }) {
+export default function ToppingPicker({ extraIds = [], selected, onToggle, size = 'lg', title = 'TOPPINGS', disabledIds = [] }) {
   const extras = extraIds.map(getExtra).filter(Boolean)
   const groups = TOPPING_GROUPS
     .map((g) => ({ ...g, items: extras.filter((e) => e.group === g.id) }))
@@ -35,12 +36,12 @@ export default function ToppingPicker({ extraIds = [], selected, onToggle, size 
   const prices = new Set(extras.map((e) => e.price))
   const uniform = prices.size === 1 ? [...prices][0] : null
   const lg = size === 'lg'
-  const picked = extras.filter((e) => selected.includes(e.id))
+  const picked = extras.filter((e) => selected.includes(e.id) && !disabledIds.includes(e.id))
 
   return (
     <div>
       <div className="flex items-baseline justify-between mb-2">
-        <p className="mono text-neon">{title}</p>
+        <p className="mono text-tomate">{title}</p>
         {uniform != null && <p className="mono normal-case text-carbon/55">+{price(uniform)} cada uno</p>}
       </div>
 
@@ -58,7 +59,7 @@ export default function ToppingPicker({ extraIds = [], selected, onToggle, size 
               className={[
                 'relative flex flex-col items-center gap-1 rounded-md border px-1 font-semibold uppercase tracking-wide transition-colors',
                 lg ? 'py-2.5 text-[0.7rem]' : 'py-2 text-[0.65rem]',
-                active ? 'border-tomate bg-tomate text-masa' : 'border-tomate/40 text-neon hover:bg-tomate/10',
+                active ? 'border-tomate bg-tomate text-masa' : 'border-tomate/40 text-tomate hover:bg-tomate/10',
               ].join(' ')}
             >
               <g.Icon className={lg ? 'w-6 h-6' : 'w-5 h-5'} strokeWidth={1.75} />
@@ -66,7 +67,7 @@ export default function ToppingPicker({ extraIds = [], selected, onToggle, size 
               {n > 0 && (
                 <span className={[
                   'absolute -top-1.5 -right-1.5 min-w-[1.15rem] h-[1.15rem] px-1 rounded-full text-[0.65rem] leading-[1.15rem] text-center font-bold',
-                  active ? 'bg-masa text-neon' : 'bg-tomate text-masa',
+                  active ? 'bg-masa text-tomate' : 'bg-tomate text-masa',
                 ].join(' ')}>{n}</span>
               )}
             </button>
@@ -76,22 +77,26 @@ export default function ToppingPicker({ extraIds = [], selected, onToggle, size 
 
       <div className="mt-2.5 flex flex-wrap gap-1.5">
         {group.items.map((extra) => {
-          const on = selected.includes(extra.id)
+          const out = disabledIds.includes(extra.id)
+          const on = !out && selected.includes(extra.id)
           return (
             <button
               key={extra.id}
               type="button"
-              onClick={() => onToggle(extra.id)}
+              onClick={() => !out && onToggle(extra.id)}
+              disabled={out}
               aria-pressed={on}
               className={[
                 'inline-flex items-center gap-1 rounded-md border font-semibold transition-colors',
                 lg ? 'px-3 py-2 min-h-[40px] text-sm' : 'px-2.5 py-1.5 text-xs',
-                on ? 'border-tomate bg-tomate text-masa' : 'border-tomate/40 bg-masa text-carbon hover:border-tomate',
+                out ? 'border-tomate/25 bg-masa text-carbon/40 line-through cursor-not-allowed'
+                  : on ? 'border-tomate bg-tomate text-masa' : 'border-tomate/40 bg-masa text-carbon hover:border-tomate',
               ].join(' ')}
             >
               {on && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
               {extra.label}
-              {uniform == null && <span className="opacity-70">+{price(extra.price)}</span>}
+              {out ? <span className="inline-block opacity-80">agotado</span>
+                : uniform == null && <span className="opacity-70">+{price(extra.price)}</span>}
             </button>
           )
         })}

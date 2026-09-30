@@ -41,28 +41,27 @@ export default function Menu() {
   }, { dependencies: [active], scope: gridRef })
 
   return (
-    <section id="menu" ref={rootRef} className="bg-masa pt-16 sm:pt-20 pb-24 sm:pb-32">
+    <section id="menu" ref={rootRef} className="bg-masa pt-6 sm:pt-10 pb-28 sm:pb-32">
       <div className="shell">
-        <h1 className="menu-heading text-center font-display font-bold text-neon text-[clamp(2.5rem,4.45vw,4rem)] leading-none">
-          La carta
-        </h1>
-        <p className="menu-heading mt-6 mx-auto max-w-2xl text-center font-sans font-medium text-lg text-neon">
-          {MENU_INTRO} Toca un plato para personalizarlo y añadirlo a tu pedido.
-        </p>
+        <h1 className="sr-only">La carta</h1>
 
         {/* Pestañas: sticky bajo la cabecera */}
-        <div className="sticky top-0 z-30 mt-10 -mx-5 sm:mx-0 px-5 py-3 bg-masa/95 backdrop-blur-sm">
+        <div className="sticky top-0 z-30 -mx-5 sm:mx-0 px-5 py-2 border-b border-tomate/30 bg-masa/95 backdrop-blur-sm">
           <div className="hide-scrollbar flex sm:justify-center gap-6 sm:gap-10 overflow-x-auto">
             {CATEGORIES.map((cat) => {
               const on = active === cat.id
               return (
                 <button
                   key={cat.id}
-                  onClick={() => setActive(cat.id)}
+                  onClick={(e) => {
+                    setActive(cat.id)
+                    /* La pestaña elegida se centra: nunca queda medio cortada */
+                    e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' })
+                  }}
                   aria-pressed={on}
                   className={[
                     'flex-shrink-0 inline-flex items-center gap-1.5 py-2 font-sans font-bold uppercase tracking-[0.12em] text-[0.8rem] transition-colors border-b-2',
-                    on ? 'text-neon border-tomate' : 'text-neon/45 border-transparent hover:text-neon/80',
+                    on ? 'text-tomate border-tomate' : 'text-tomate/45 border-transparent hover:text-tomate/80',
                   ].join(' ')}
                 >
                   {on && <Star className="w-3.5 h-3.5 fill-tomate" strokeWidth={0} />}
@@ -74,23 +73,23 @@ export default function Menu() {
         </div>
 
         {CATEGORY_BLURBS[active] && (
-          <p className="mt-6 mx-auto max-w-2xl text-center font-sans font-medium text-neon/90 leading-relaxed">
+          <p className="menu-heading mt-4 mx-auto max-w-2xl text-center font-sans font-medium text-sm text-tomate/90 leading-snug">
             {CATEGORY_BLURBS[active]}
           </p>
         )}
 
         {deal && (
-          <div className="frame mt-10 mx-auto max-w-3xl">
-          <div className="frame-in p-5 sm:p-7 text-center">
-            <p className="font-display font-extrabold text-2xl text-neon">
+          <div className="frame mt-4 mx-auto max-w-3xl">
+          <div className="frame-in p-3 sm:p-6 text-center">
+            <p className="font-display font-extrabold text-xl sm:text-2xl text-tomate leading-tight">
               Llévatelas por <em className="italic">menos</em>
             </p>
-            <p className="mt-1 font-sans text-sm text-neon/75">Solo para recoger en el local · se aplica sola al hacer el pedido</p>
-            <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-4">
+            <p className="mt-0.5 font-sans text-xs sm:text-sm text-tomate/75">Solo para recoger en el local · se aplica sola al hacer el pedido</p>
+            <div className="mt-3 grid grid-cols-3 gap-2 sm:gap-4">
               {deal.packs.map((p) => (
-                <div key={p.qty} className="rounded-lg border-2 border-dashed border-tomate/50 px-2 py-3">
-                  <p className="font-display font-extrabold text-lg min-[400px]:text-xl sm:text-3xl text-forno">{price(p.price)}</p>
-                  <p className="font-sans font-bold uppercase tracking-wider text-[0.7rem] text-neon mt-1">{p.qty} {deal.label}</p>
+                <div key={p.qty} className="rounded-lg border-2 border-dashed border-tomate/50 px-2 py-2 sm:py-3">
+                  <p className="font-display font-extrabold text-lg sm:text-3xl text-forno">{price(p.price)}</p>
+                  <p className="font-sans font-bold uppercase tracking-wider text-[0.65rem] sm:text-[0.7rem] text-tomate mt-0.5">{p.qty} {deal.label}</p>
                 </div>
               ))}
             </div>
@@ -101,12 +100,16 @@ export default function Menu() {
         <div
           ref={gridRef}
           key={active}
-          className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
+          className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-8"
         >
           {products.map((p) => (
             <ProductCard key={p.id} product={p} onOpen={openProduct} />
           ))}
         </div>
+
+        <p className="mt-10 mx-auto max-w-2xl text-center font-sans font-medium text-sm text-tomate/75 leading-snug">
+          {MENU_INTRO} Toca un plato para personalizarlo y añadirlo a tu pedido.
+        </p>
       </div>
     </section>
   )

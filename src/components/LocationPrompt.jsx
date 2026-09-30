@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { X, Star, MapPin, Package, Truck, Clock } from 'lucide-react'
 import { LOCATIONS } from '../data/locations'
 import { useStore, useActions } from '../store/StoreContext'
@@ -9,10 +9,8 @@ import { decimal } from '../lib/format'
 import { img } from '../data/images'
 import { revealFrom, useGSAP, EASE } from '../lib/motion'
 
-/* A los 2 s de entrar, si el cliente aún no tiene sede, se le pregunta
-   desde qué Nonno pide. Si lo cierra sin elegir, no se le vuelve a
-   insistir en esa visita: ya se le preguntará al añadir algo. */
-const WELCOME_DELAY_MS = 2000
+/* La sede y el modo se eligen ahora en la pantalla /pedir; este diálogo
+   solo se abre si se intenta añadir algo sin sede elegida. */
 const DISMISSED_KEY = 'nonno.sede.preguntada'
 
 /**
@@ -21,24 +19,12 @@ const DISMISSED_KEY = 'nonno.sede.preguntada'
  * cliente intenta añadir un producto sin sede elegida.
  */
 export default function LocationPrompt() {
-  const { ui, locationId } = useStore()
+  const { ui } = useStore()
   const { setLocation, openLocationPrompt, closeLocationPrompt } = useActions()
   const { isOpen: storeOpen } = useStoreStatus()
   const open = ui.locationPrompt
   const panelRef = useRef(null)
   const dialogRef = useRef(null)
-
-  /* Bienvenida: solo si no hay sede guardada y no se ha cerrado ya en esta visita */
-  useEffect(() => {
-    if (locationId) return undefined
-    let dismissed = false
-    try { dismissed = sessionStorage.getItem(DISMISSED_KEY) === '1' } catch { /* modo privado */ }
-    if (dismissed) return undefined
-    const timer = setTimeout(openLocationPrompt, WELCOME_DELAY_MS)
-    return () => clearTimeout(timer)
-    // Solo al cargar la web
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const close = () => {
     try { sessionStorage.setItem(DISMISSED_KEY, '1') } catch { /* modo privado */ }
@@ -69,7 +55,7 @@ export default function LocationPrompt() {
         <div className="frame-in px-5 pt-6 pb-5 sm:px-7 sm:pt-7">
           <button
             onClick={close}
-            className="absolute top-3 right-3 w-10 h-10 rounded-md border border-tomate/50 flex items-center justify-center text-neon hover:bg-tomate/10 transition-colors"
+            className="absolute top-3 right-3 w-10 h-10 rounded-md border border-tomate/50 flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors"
             aria-label="Cerrar"
           >
             <X className="w-5 h-5" />
@@ -83,7 +69,7 @@ export default function LocationPrompt() {
               height="64"
               className="mx-auto h-16 w-16 rounded-full object-cover border border-tomate"
             />
-            <h3 id="location-prompt-title" className="mt-3 font-display italic font-bold text-3xl sm:text-4xl text-neon leading-none">
+            <h3 id="location-prompt-title" className="mt-3 font-display italic font-bold text-3xl sm:text-4xl text-tomate leading-none">
               ¿Desde qué Nonno pides?
             </h3>
             <p className="mt-2 text-sm text-carbon/70">Elige tu pizzería y te enseñamos su carta, sus horarios y si te la llevamos a casa.</p>
@@ -107,7 +93,7 @@ export default function LocationPrompt() {
                     />
                     <span className="flex-1 min-w-0">
                       <span className="flex items-center gap-2 flex-wrap">
-                        <span className="font-sans font-extrabold uppercase text-lg text-neon leading-tight">{loc.name}</span>
+                        <span className="font-sans font-extrabold uppercase text-lg text-tomate leading-tight">{loc.name}</span>
                         <span className={[
                           'rounded-md px-1.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide',
                           abierta ? 'bg-albahaca text-masa' : 'bg-forno/10 text-carbon/60',
@@ -116,15 +102,15 @@ export default function LocationPrompt() {
                         </span>
                       </span>
                       <span className="mt-1 flex items-start gap-1 text-xs text-carbon/70">
-                        <MapPin className="w-3.5 h-3.5 mt-px flex-shrink-0 text-neon" /> {loc.address}
+                        <MapPin className="w-3.5 h-3.5 mt-px flex-shrink-0 text-tomate" /> {loc.address}
                       </span>
                       <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-carbon/80">
                         {loc.rating != null && (
                           <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-horno text-horno" /> {decimal(loc.rating)}</span>
                         )}
-                        {loc.services.pickup && <span className="flex items-center gap-1"><Package className="w-3.5 h-3.5 text-neon" /> Recoger</span>}
-                        {loc.services.delivery && <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5 text-neon" /> A domicilio</span>}
-                        {loc.kitchen && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-neon" /> {loc.kitchen.open}–{loc.kitchen.close}</span>}
+                        {loc.services.pickup && <span className="flex items-center gap-1"><Package className="w-3.5 h-3.5 text-tomate" /> Recoger</span>}
+                        {loc.services.delivery && <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5 text-tomate" /> A domicilio</span>}
+                        {loc.kitchen && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-tomate" /> {loc.kitchen.open}–{loc.kitchen.close}</span>}
                       </span>
                     </span>
                     <span className="hidden sm:flex self-center rounded-md bg-tomate px-3 py-2 font-sans font-bold uppercase text-xs tracking-wide text-masa group-hover:bg-forno transition-colors">
@@ -136,7 +122,7 @@ export default function LocationPrompt() {
             })}
           </div>
 
-          <button onClick={close} className="mt-4 w-full text-center text-sm font-semibold text-carbon/55 underline underline-offset-4 hover:text-neon">
+          <button onClick={close} className="mt-4 w-full text-center text-sm font-semibold text-carbon/55 underline underline-offset-4 hover:text-tomate">
             Solo quiero ver la carta
           </button>
         </div>

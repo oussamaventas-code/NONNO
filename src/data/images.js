@@ -53,8 +53,8 @@ export const PHOTO = {
   slicePull: '1520201163981-8cc95007dd2a', // porción levantada con queso
 
   // Sedes
-  venueSangonera: '1574071318508-1cdbab80d002',
-  venueSantoAngel: '1590534247854-e97d5e3feef6',
+  venueSangonera: 'own:local-sangonera',
+  venueSantoAngel: 'own:local-santo-angel',
 
   // Pizzas
   margherita: 'own:margarita',

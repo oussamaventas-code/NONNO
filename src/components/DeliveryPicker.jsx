@@ -115,7 +115,7 @@ export default function DeliveryPicker({ locationId, value, onChange, invalid, c
       )}
 
       {quote && !quote.ok && (
-        <p className="flex items-start gap-2 rounded-2xl bg-tomate/10 px-4 py-3 text-sm text-neon">
+        <p className="flex items-start gap-2 rounded-2xl bg-tomate/10 px-4 py-3 text-sm text-tomate">
           <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" /> {deliveryProblem(quote)}
         </p>
       )}
@@ -153,7 +153,7 @@ export default function DeliveryPicker({ locationId, value, onChange, invalid, c
       )}
 
       {invalid && !quote?.ok && !showManual && (
-        <p className="text-xs text-neon">Comprueba la dirección o usa tu ubicación.</p>
+        <p className="text-xs text-tomate">Comprueba la dirección o usa tu ubicación.</p>
       )}
     </div>
   )

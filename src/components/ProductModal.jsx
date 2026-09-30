@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Minus, Plus, Leaf, Flame as FlameIcon, Check } from 'lucide-react'
-import { getProduct, isPizza, isSoldOut, PIZZA_SIZE } from '../data/menu'
+import { getProduct, isPizza, isSoldOut, isExtraOut, missingIngredients, PIZZA_SIZE } from '../data/menu'
 import ProductImage from './ProductImage'
 import ToppingPicker from './ToppingPicker'
 import { unitPrice } from '../lib/pricing'
@@ -26,6 +26,9 @@ export default function ProductModal() {
   const product = productId ? getProduct(productId) : null
   const isDesktop = useIsDesktop()
   const soldOut = Boolean(product) && isSoldOut(product.id, locationId)
+  const missing = product ? missingIngredients(product.id, locationId) : []
+  /* Toppings agotados en esta sede: no se pueden añadir, y si ya estaban marcados no cuentan */
+  const outExtras = product ? (product.extras || []).filter((id) => isExtraOut(id, locationId)) : []
 
   const panelRef = useRef(null)
   const dialogRef = useRef(null)
@@ -53,7 +56,7 @@ export default function ProductModal() {
   useEffect(() => {
     if (locationId && pendingAdd.current && product) {
       pendingAdd.current = false
-      const ok = addToCart({ productId, portionId, extraIds, removed, qty, note })
+      const ok = addToCart({ productId, portionId, extraIds: extraIds.filter((id) => !outExtras.includes(id)), removed, qty, note })
       if (ok) closeProduct()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,7 +83,7 @@ export default function ProductModal() {
   const toggleIngredient = (ing) =>
     setRemoved((prev) => (prev.includes(ing) ? prev.filter((i) => i !== ing) : [...prev, ing]))
 
-  const total = unitPrice(product, { extraIds, portionId }) * qty
+  const total = unitPrice(product, { extraIds: extraIds.filter((id) => !outExtras.includes(id)), portionId }) * qty
 
   const handleAdd = () => {
     if (!locationId) {
@@ -88,7 +91,7 @@ export default function ProductModal() {
       openLocationPrompt()
       return
     }
-    const ok = addToCart({ productId, portionId, extraIds, removed, qty, note })
+    const ok = addToCart({ productId, portionId, extraIds: extraIds.filter((id) => !outExtras.includes(id)), removed, qty, note })
     if (ok) closeProduct()
   }
 
@@ -110,7 +113,7 @@ export default function ProductModal() {
       >
         <button
           onClick={closeProduct}
-          className="absolute top-3 right-3 z-10 w-10 h-10 rounded-md border border-tomate bg-masa text-neon flex items-center justify-center hover:bg-queso transition-colors"
+          className="absolute top-3 right-3 z-10 w-10 h-10 rounded-md border border-tomate bg-masa text-tomate flex items-center justify-center hover:bg-queso transition-colors"
           aria-label="Cerrar"
         >
           <X className="w-5 h-5" />
@@ -132,11 +135,11 @@ export default function ProductModal() {
         </div>
 
         <div className="px-6 sm:px-8 pb-8 -mt-6 relative">
-          {product.badge && <span className="mono normal-case text-neon">{product.badge}</span>}
-          <h2 id="product-modal-title" className="font-sans font-extrabold uppercase text-2xl sm:text-3xl text-neon flex items-center gap-2 mt-1">
+          {product.badge && <span className="mono normal-case text-tomate">{product.badge}</span>}
+          <h2 id="product-modal-title" className="font-sans font-extrabold uppercase text-2xl sm:text-3xl text-tomate flex items-center gap-2 mt-1">
             {product.name}
             {product.vegetarian && <Leaf className="w-4 h-4 text-albahaca" strokeWidth={2} />}
-            {product.spicy && <FlameIcon className="w-4 h-4 text-neon" strokeWidth={2} />}
+            {product.spicy && <FlameIcon className="w-4 h-4 text-tomate" strokeWidth={2} />}
           </h2>
           <p className="mt-1 text-carbon/70">{product.description}</p>
 
@@ -167,11 +170,11 @@ export default function ProductModal() {
           {product.ingredients?.length > 0 && (
             <div className="mt-6">
               <div className="flex items-baseline justify-between gap-3 mb-2">
-                <p className="mono text-neon">¿QUITAR ALGO? <span className="normal-case text-carbon/50">toca para quitar</span></p>
+                <p className="mono text-tomate">¿QUITAR ALGO? <span className="normal-case text-carbon/50">toca para quitar</span></p>
                 {removed.length > 0 && (
                   <button
                     onClick={() => setRemoved([])}
-                    className="mono normal-case text-neon hover:text-horno transition-colors"
+                    className="mono normal-case text-tomate hover:text-horno transition-colors"
                   >
                     Restaurar todos
                   </button>
@@ -190,13 +193,13 @@ export default function ProductModal() {
                       className={[
                         'group flex items-center gap-1.5 rounded-md border px-3 py-2 min-h-[40px] text-sm font-semibold transition-all duration-300 ease-magnetic',
                         off
-                          ? 'border-tomate bg-tomate/10 text-neon line-through'
+                          ? 'border-tomate bg-tomate/10 text-tomate line-through'
                           : 'border-tomate/40 bg-masa text-carbon',
                       ].join(' ')}
                     >
                       {off
                         ? <X className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
-                        : <Check className="w-3.5 h-3.5 flex-shrink-0 text-neon" strokeWidth={2.5} />}
+                        : <Check className="w-3.5 h-3.5 flex-shrink-0 text-tomate" strokeWidth={2.5} />}
                       {ing}
                     </button>
                   )
@@ -204,7 +207,7 @@ export default function ProductModal() {
               </div>
 
               {removed.length > 0 && (
-                <p className="mt-3 rounded-md border border-tomate bg-tomate/10 px-4 py-2 text-sm font-bold uppercase text-neon">
+                <p className="mt-3 rounded-md border border-tomate bg-tomate/10 px-4 py-2 text-sm font-bold uppercase text-tomate">
                   Sin {removed.join(', sin ')}
                 </p>
               )}
@@ -213,12 +216,12 @@ export default function ProductModal() {
 
           {product.extras?.length > 0 && (
             <div className="mt-7">
-              <ToppingPicker extraIds={product.extras} selected={extraIds} onToggle={toggleExtra} title="¿AÑADIR ALGO?" />
+              <ToppingPicker extraIds={product.extras} selected={extraIds} onToggle={toggleExtra} title="¿AÑADIR ALGO?" disabledIds={outExtras} />
             </div>
           )}
 
           <div className="mt-7">
-            <label htmlFor="product-note" className="mono text-neon mb-2 block">
+            <label htmlFor="product-note" className="mono text-tomate mb-2 block">
               NOTA (OPCIONAL)
             </label>
             <input
@@ -240,7 +243,7 @@ export default function ProductModal() {
             <div className="flex items-center gap-1 rounded-md border border-tomate/50 p-1">
               <button
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="w-10 h-10 rounded-md flex items-center justify-center text-neon hover:bg-tomate/10 transition-colors disabled:opacity-30"
+                className="w-10 h-10 rounded-md flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors disabled:opacity-30"
                 disabled={qty <= 1}
                 aria-label="Quitar unidad"
               >
@@ -249,7 +252,7 @@ export default function ProductModal() {
               <span className="w-8 text-center font-sans font-bold text-carbon">{qty}</span>
               <button
                 onClick={() => setQty((q) => q + 1)}
-                className="w-10 h-10 rounded-md flex items-center justify-center text-neon hover:bg-tomate/10 transition-colors"
+                className="w-10 h-10 rounded-md flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors"
                 aria-label="Añadir unidad"
               >
                 <Plus className="w-4 h-4" />
@@ -258,7 +261,7 @@ export default function ProductModal() {
 
             <button onClick={handleAdd} disabled={soldOut} className="btn flex-1 bg-tomate text-masa px-4 sm:px-6 disabled:opacity-50 disabled:pointer-events-none">
               <span className="btn-layer bg-forno" />
-              <span className="btn-label">{soldOut ? 'AGOTADO HOY EN ESTA SEDE' : `AÑADIR · ${price(total)}`}</span>
+              <span className="btn-label">{soldOut ? (missing.length ? `SIN ${missing[0].toUpperCase()} HOY EN ESTA SEDE` : 'AGOTADO HOY EN ESTA SEDE') : `AÑADIR · ${price(total)}`}</span>
             </button>
         </div>
       </div>

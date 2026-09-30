@@ -89,7 +89,16 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, account.status])
 
+  /* Con la sede ya elegida (paso previo de la web) se salta el paso "sede" */
+  useEffect(() => {
+    if (open && step === 1 && locationId) setCheckoutStep(2)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, step, locationId])
+
   if (!open || isEmpty) return null
+
+  const first = locationId ? 2 : 1
+  const stepLabel = { 1: 'SEDE', 2: 'MODO', 3: 'DATOS', 4: 'RESUMEN' }[step]
 
   const baseTotals = orderTotals({
     lines, mode: order.mode, locationId, where: { coords: customer.coords, tier: customer.tier },
@@ -105,7 +114,7 @@ export default function Checkout() {
   const tiers = deliveryTiers(locationId)
   const readyAt = eta?.ok ? Date.parse(eta.readyAt) : null
 
-  const goTo = (n) => setCheckoutStep(Math.min(4, Math.max(1, n)))
+  const goTo = (n) => setCheckoutStep(Math.min(4, Math.max(first, n)))
 
   const canNext = () => {
     if (blocked) return false
@@ -169,7 +178,7 @@ export default function Checkout() {
       >
         <div className="sticky top-0 bg-crema/95 backdrop-blur-md z-10 px-6 sm:px-8 pt-6 pb-4 border-b border-carbon/8">
           <div className="flex items-center justify-between">
-            {step > 1 && order.status === 'idle' ? (
+            {step > first && order.status === 'idle' ? (
               <button onClick={() => goTo(step - 1)} className="w-9 h-9 rounded-full flex items-center justify-center text-carbon/60 hover:bg-carbon/5" aria-label="Paso anterior">
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -182,7 +191,7 @@ export default function Checkout() {
 
           {order.status === 'idle' && (
             <div className="mt-4 flex items-center gap-1.5">
-              {STEPS.map((s) => (
+              {STEPS.filter((s) => s.id >= first).map((s) => (
                 <div key={s.id} className={['h-1 flex-1 rounded-full transition-colors', s.id <= step ? 'bg-tomate' : 'bg-carbon/10'].join(' ')} />
               ))}
             </div>
@@ -191,12 +200,12 @@ export default function Checkout() {
 
         <div ref={bodyRef} className="px-6 sm:px-8 py-7">
           {order.status === 'idle' && locationClosed && (
-            <p className="mb-6 rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-neon">
+            <p className="mb-6 rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">
               {location?.name} está cerrado ahora mismo. No se pueden hacer pedidos hasta que vuelva a abrir.
             </p>
           )}
           {order.status === 'idle' && !locationClosed && slotFull && (
-            <p className="mb-6 rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-neon">
+            <p className="mb-6 rounded-2xl border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm text-tomate">
               {eta.message}
             </p>
           )}
@@ -209,6 +218,10 @@ export default function Checkout() {
             order.result?.fallback
               ? <OrderFallback result={order.result} locationId={locationId} onRetry={handleSubmit} retrying={submitting} onDone={resetOrder} />
               : <OrderError message={order.result?.message} onRetry={() => setOrderStatus('idle')} />
+          )}
+
+          {order.status === 'idle' && (
+            <p className="mono text-tomate mb-2">{String(step - first + 1).padStart(2, '0')} / {stepLabel}</p>
           )}
 
           {order.status === 'idle' && step === 1 && (
@@ -261,7 +274,6 @@ export default function Checkout() {
 function StepLocation({ locationId, onPick }) {
   return (
     <div>
-      <p className="mono text-neon mb-2">01 / SEDE</p>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">¿Desde qué Nonno pedimos?</h3>
       <div className="flex flex-col gap-3">
         {LOCATIONS.map((loc) => {
@@ -282,7 +294,7 @@ function StepLocation({ locationId, onPick }) {
                 <span className="block font-sans font-bold text-sm text-carbon">{loc.name}</span>
                 <span className="block mono normal-case text-carbon/45 mt-0.5">{loc.tagline}</span>
               </span>
-              {active && <Check className="w-5 h-5 text-neon flex-shrink-0" />}
+              {active && <Check className="w-5 h-5 text-tomate flex-shrink-0" />}
             </button>
           )
         })}
@@ -305,7 +317,6 @@ function StepMode({ modes, value, onPick, location, pickupSaving, tiers, readyAt
   }
   return (
     <div>
-      <p className="mono text-neon mb-2">02 / MODO</p>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">¿Cómo quieres tu pizza?</h3>
       <div className="grid grid-cols-2 gap-3">
         {modes.map((m) => {
@@ -320,7 +331,7 @@ function StepMode({ modes, value, onPick, location, pickupSaving, tiers, readyAt
                 active ? 'border-tomate bg-tomate/5' : 'border-carbon/12 hover:border-carbon/30',
               ].join(' ')}
             >
-              <Icon className={['w-6 h-6', active ? 'text-neon' : 'text-carbon/50'].join(' ')} />
+              <Icon className={['w-6 h-6', active ? 'text-tomate' : 'text-carbon/50'].join(' ')} />
               <span className="font-sans font-bold text-sm text-carbon">{m.label}</span>
               <span className="text-xs text-carbon/45">{m.hint}</span>
               {when && (
@@ -361,13 +372,12 @@ function StepCustomer({ customer, mode, locationId, errors, onChange }) {
           errors[key] ? 'border-tomate' : 'border-carbon/12 focus:border-tomate',
         ].join(' ')}
       />
-      {errors[key] && <p className="mt-1 text-xs text-neon">Este campo es necesario.</p>}
+      {errors[key] && <p className="mt-1 text-xs text-tomate">Este campo es necesario.</p>}
     </div>
   )
 
   return (
     <div>
-      <p className="mono text-neon mb-2">03 / DATOS</p>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">¿A nombre de quién?</h3>
       <div className="flex flex-col gap-5">
         {field('name', 'NOMBRE', 'Tu nombre')}
@@ -408,7 +418,7 @@ function ClubBox({ account, totals, redeem, redeemMax, onRedeem }) {
     return (
       <button
         onClick={account.openAccount}
-        className="mb-6 w-full text-left rounded-md border border-dashed border-tomate bg-tomate/5 px-4 py-3 text-sm text-neon"
+        className="mb-6 w-full text-left rounded-md border border-dashed border-tomate bg-tomate/5 px-4 py-3 text-sm text-tomate"
       >
         <span className="font-semibold">Con este pedido ganarías {earn} puntos del {LOYALTY.name}.</span>{' '}
         <span className="underline underline-offset-4">Entra con tu móvil</span>
@@ -419,7 +429,7 @@ function ClubBox({ account, totals, redeem, redeemMax, onRedeem }) {
   const step = LOYALTY.redeemStep
   return (
     <div className="mb-6 rounded-md border border-tomate bg-tomate/5 px-4 py-3">
-      <p className="flex items-center gap-2 text-sm font-semibold text-neon">
+      <p className="flex items-center gap-2 text-sm font-semibold text-tomate">
         <Star className="w-4 h-4 fill-tomate" strokeWidth={0} />
         Tienes {account.points} puntos · con este pedido ganas {earn}
       </p>
@@ -429,7 +439,7 @@ function ClubBox({ account, totals, redeem, redeemMax, onRedeem }) {
             {redeem > 0 ? `Usas ${redeem} puntos: −${price(totals.pointsDiscount)}` : `Puedes usar hasta ${redeemMax} puntos`}
           </span>
           <span className="flex items-center gap-2">
-            <button onClick={() => onRedeem(Math.max(0, redeem - step))} disabled={redeem <= 0} className="w-8 h-8 rounded-full border border-tomate text-neon flex items-center justify-center disabled:opacity-30" aria-label="Usar menos puntos">
+            <button onClick={() => onRedeem(Math.max(0, redeem - step))} disabled={redeem <= 0} className="w-8 h-8 rounded-full border border-tomate text-tomate flex items-center justify-center disabled:opacity-30" aria-label="Usar menos puntos">
               <Minus className="w-4 h-4" />
             </button>
             <button onClick={() => onRedeem(Math.min(redeemMax, redeem + step))} disabled={redeem >= redeemMax} className="w-8 h-8 rounded-full bg-tomate text-masa flex items-center justify-center disabled:opacity-30" aria-label="Usar más puntos">
@@ -450,7 +460,6 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
   const arrival = readyAt && (trip ? readyAt + trip.minutes * 60000 : readyAt)
   return (
     <div>
-      <p className="mono text-neon mb-2">04 / RESUMEN</p>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">Todo listo para confirmar</h3>
 
       <div className="rounded-2xl border border-carbon/10 divide-y divide-carbon/8">
@@ -465,7 +474,7 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
         {arrival && (
           <div className="p-4 flex items-center justify-between">
             <span className="mono text-carbon/45">{mode === 'delivery' ? 'LLEGA HACIA LAS' : 'LISTA A LAS'}</span>
-            <span className="font-sans font-extrabold text-lg text-neon">{hourOf(arrival)}</span>
+            <span className="font-sans font-extrabold text-lg text-tomate">{hourOf(arrival)}</span>
           </div>
         )}
         <div className="p-4 flex items-center justify-between">
@@ -488,7 +497,7 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
             <span className="text-carbon/70">
               {l.qty}× {l.name}
               {l.removed?.length > 0 && (
-                <span className="block text-neon font-semibold">
+                <span className="block text-tomate font-semibold">
                   Sin {l.removed.join(', sin ')}
                 </span>
               )}
@@ -560,7 +569,7 @@ function OrderSuccess({ result, onClose }) {
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon">Perfecto. Ya está en tu pedido.</h3>
       <p className="mt-2 text-carbon/55">{result?.message}</p>
       {result?.arrivalAt && (
-        <p className="mt-4 font-sans font-extrabold uppercase text-lg text-neon">
+        <p className="mt-4 font-sans font-extrabold uppercase text-lg text-tomate">
           {result.payload?.mode === 'delivery' ? 'Llega hacia las ' : 'Lista para recoger a las '}
           {hourOf(result.arrivalAt)}
         </p>
@@ -617,7 +626,7 @@ function OrderFallback({ result, locationId, onRetry, retrying, onDone }) {
             <span className="btn-label"><Phone className="w-4 h-4" /> LLAMAR AL {p}</span>
           </a>
         ))}
-        <button onClick={onRetry} disabled={retrying} className="mono normal-case mt-1 text-carbon/60 hover:text-neon disabled:opacity-50">
+        <button onClick={onRetry} disabled={retrying} className="mono normal-case mt-1 text-carbon/60 hover:text-tomate disabled:opacity-50">
           {retrying ? 'Reintentando…' : 'Volver a intentarlo por la web'}
         </button>
         <button onClick={onDone} className="mono normal-case text-carbon/40 hover:text-carbon">
@@ -632,7 +641,7 @@ function OrderFallback({ result, locationId, onRetry, retrying, onDone }) {
 function OrderError({ message, onRetry }) {
   return (
     <div className="text-center py-6">
-      <span className="inline-flex w-16 h-16 rounded-full bg-tomate/10 text-neon items-center justify-center mb-5">
+      <span className="inline-flex w-16 h-16 rounded-full bg-tomate/10 text-tomate items-center justify-center mb-5">
         <X className="w-7 h-7" strokeWidth={1.5} />
       </span>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon">{message || 'No hemos podido actualizar tu pedido.'}</h3>

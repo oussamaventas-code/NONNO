@@ -11,12 +11,13 @@ import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto'
    ADMIN_PASSWORD_SANTO_ANGEL  → solo Santo Ángel
    ADMIN_PASSWORD              → las dos (dirección)
 
-   La cookie es httpOnly y dura 30 días: el ordenador del local no
-   tiene que volver a entrar cada mañana.
+   La cookie es httpOnly y dura 7 días: el ordenador del local no
+   tiene que volver a entrar cada mañana. Los intentos de contraseña
+   están limitados (api/session.js + api/_lib/limiter.js).
    ═══════════════════════════════════════════════════════════════ */
 
 const COOKIE = 'nonno_panel'
-const MAX_AGE = 60 * 60 * 24 * 30 // 30 días
+const MAX_AGE = 60 * 60 * 24 * 7 // 7 días
 
 /** 'all' ve todo; si no, el id de la sede que puede ver. */
 export const SCOPE_ALL = 'all'
@@ -27,8 +28,13 @@ const PASSWORDS = [
   { env: 'ADMIN_PASSWORD', scope: SCOPE_ALL },
 ]
 
+/* Mejor con ADMIN_SESSION_SECRET (cadena larga y aleatoria). Si falta se
+   deriva de las contraseñas configuradas, así también funciona cuando
+   solo hay contraseñas por sede. Cambiar el secreto (o las contraseñas)
+   cierra todas las sesiones abiertas. */
 const secret = () =>
-  process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || ''
+  process.env.ADMIN_SESSION_SECRET ||
+  PASSWORDS.map(({ env }) => process.env[env] || '').join('|').replace(/^\|*$/, '')
 
 const sign = (value) =>
   createHmac('sha256', secret()).update(value).digest('base64url')
