@@ -10,15 +10,20 @@ import { PHOTO, img, srcSet } from '../data/images'
 export default function Entrada() {
   return (
     <section className="relative isolate overflow-hidden bg-masa min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-center text-center px-5 py-10">
-      {/* Fachada del local de fondo, oscurecida para que el texto se lea */}
-      <img
-        src={img(PHOTO.venueSangonera, 1200)}
-        srcSet={srcSet(PHOTO.venueSangonera)}
-        sizes="100vw"
-        alt=""
-        fetchPriority="high"
-        className="absolute inset-0 -z-20 h-full w-full object-cover object-[50%_15%]"
-      />
+      {/* Fachadas de las dos sedes de fondo (una sobre otra en el móvil, lado a lado en pantallas grandes) */}
+      <div className="absolute inset-0 -z-20 grid grid-rows-2 lg:grid-rows-1 lg:grid-cols-2" aria-hidden="true">
+        {[PHOTO.venueSangonera, PHOTO.venueSantoAngel].map((photo, i) => (
+          <img
+            key={photo}
+            src={img(photo, 1200)}
+            srcSet={srcSet(photo)}
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            alt=""
+            fetchPriority={i === 0 ? 'high' : undefined}
+            className="h-full w-full object-cover object-[50%_12%]"
+          />
+        ))}
+      </div>
       <div className="absolute inset-0 -z-10 bg-masa/70" aria-hidden="true" />
       <img
         src="/logo-nonno.png"

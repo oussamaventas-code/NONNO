@@ -54,7 +54,7 @@ export const PHOTO = {
 
   // Sedes
   venueSangonera: 'own:local-sangonera',
-  venueSantoAngel: '1590534247854-e97d5e3feef6',
+  venueSantoAngel: 'own:local-santo-angel',
 
   // Pizzas
   margherita: 'own:margarita',
