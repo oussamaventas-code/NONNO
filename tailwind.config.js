@@ -51,6 +51,10 @@ export default {
         ember: '6px 6px 0 0 rgb(226 62 87)'
       },
       keyframes: {
+        globo: {
+          '0%, 100%': { transform: 'rotate(-4deg) scale(1)' },
+          '50%': { transform: 'rotate(-1deg) scale(1.05)' }
+        },
         pulseDot: {
           '0%, 100%': { opacity: '1', transform: 'scale(1)' },
           '50%': { opacity: '0.35', transform: 'scale(0.82)' }
@@ -65,6 +69,7 @@ export default {
         }
       },
       animation: {
+        'globo': 'globo 3.2s ease-in-out infinite',
         'pulse-dot': 'pulseDot 2s ease-in-out infinite',
         'ember': 'emberGlow 4s ease-in-out infinite',
         'marquee': 'marquee 40s linear infinite',
