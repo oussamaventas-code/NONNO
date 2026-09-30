@@ -24,7 +24,17 @@ create table if not exists public.menu_soldout (
   primary key (location_id, product_id)
 );
 
+-- Ingrediente agotado en una sede: las pizzas que lo llevan se descartan
+-- solas en esa sede. Una fila = agotado. Se borra al reponer.
+create table if not exists public.menu_ingredient_soldout (
+  location_id    text not null,
+  ingredient_key text not null,
+  updated_at     timestamptz not null default now(),
+  primary key (location_id, ingredient_key)
+);
+
 -- Igual que el resto: RLS activado y sin políticas públicas. Todo
 -- pasa por el servidor, que usa la clave de servicio.
 alter table public.menu_overrides enable row level security;
 alter table public.menu_soldout   enable row level security;
+alter table public.menu_ingredient_soldout enable row level security;

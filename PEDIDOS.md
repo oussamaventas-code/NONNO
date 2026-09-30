@@ -164,9 +164,11 @@ Cambia la carta sin tocar código:
 - **Ocultar** (solo dirección): quita el producto de la web en todas las sedes. Sigue ahí para volver a mostrarlo.
 - **Marcar agotado** (cada local el suyo): en la web sale "Agotado hoy" y no se puede añadir. El mostrador sí puede seguir vendiéndolo. Hay que quitarlo a mano al reponer.
 
+- **Ingredientes** (cada local el suyo): en la pestaña *Ingredientes* de la Carta, marca **Sin stock** en lo que se ha acabado (por ejemplo, el jamón cocido). Las pizzas que lo llevan quedan **descartadas solas** en esa sede: la web pone "Sin jamón cocido", no deja añadirlas y el servidor las rechaza. El topping equivalente también sale tachado. En *Productos* ves cuáles se han descartado y por qué. Al reponer el ingrediente, vuelven solas. El mostrador sigue pudiendo venderlas.
+
 La web lo recoge en menos de un minuto. El servidor aplica los precios nuevos al momento a cada pedido, así que un cliente con la web abierta desde antes nunca paga un precio viejo. Un producto agotado u oculto que ya estuviera en su carrito le sale como error al pedir, con el nombre del producto.
 
-**Para activarlo** (una sola vez): en Supabase → SQL Editor → New query, pega el contenido de [`supabase/carta.sql`](supabase/carta.sql) y pulsa **Run**. Sin ese paso la pestaña avisa de que no puede guardar y la web sigue con la carta de siempre.
+**Para activarlo** (una sola vez): en Supabase → SQL Editor → New query, pega el contenido de [`supabase/carta.sql`](supabase/carta.sql) y pulsa **Run**. Sin ese paso la pestaña avisa de que no puede guardar y la web sigue con la carta de siempre. Si ya lo ejecutaste antes de que existieran los ingredientes, **vuelve a ejecutarlo**: solo añade la tabla que falta y no toca lo que ya tienes.
 
 ## Crear pedidos: clientes que ya han pedido
 

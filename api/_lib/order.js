@@ -3,7 +3,7 @@ import { orderTotals } from '../../src/lib/orderTotals.js'
 import { getLocation } from '../../src/data/locations.js'
 import { ovenUnits } from '../../src/lib/kitchenSlots.js'
 import { deliveryProblem } from '../../src/lib/delivery.js'
-import { isOrderable } from '../../src/data/menu.js'
+import { isOrderable, isExtraOut, getExtra } from '../../src/data/menu.js'
 
 /* ═══════════════════════════════════════════════════════════════
    Saneado y validación del pedido que llega desde el navegador.
@@ -155,6 +155,10 @@ export function validateOrder({ order, unknownProduct, delivery }) {
   if (order.channel === 'web') {
     const blocked = order.items.find((i) => !isOrderable(i.id, order.location_id))
     if (blocked) return `${blocked.name} está agotado ahora mismo en esta sede. Quítalo del pedido para continuar.`
+    for (const item of order.items) {
+      const out = (item.extraIds || []).find((id) => isExtraOut(id, order.location_id))
+      if (out) return `${getExtra(out)?.label || 'Un ingrediente extra'} está agotado ahora mismo en esta sede. Quítalo de ${item.name} para continuar.`
+    }
   }
   if (!location) return 'Falta la sede.'
   if (!order.customer_name) return 'Falta el nombre.'

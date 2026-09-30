@@ -424,7 +424,7 @@ export const PICKUP_DEALS = [
    selectores de abajo devuelven siempre la carta ya corregida, así
    que la web, el carrito y el servidor cuentan con los mismos precios.
    Sin correcciones (base de datos sin conectar) es la carta de siempre. */
-let overrides = { prices: {}, hidden: [], soldOut: {} }
+let overrides = { prices: {}, hidden: [], soldOut: {}, ingredients: {} }
 let effective = PRODUCTS
 
 const applyPrices = (product, o) => {
@@ -440,12 +440,13 @@ const applyPrices = (product, o) => {
   return next
 }
 
-/** Sustituye las correcciones: { prices: {id: {price, portionPrices}}, hidden: [id], soldOut: {sede: [id]} } */
+/** Sustituye las correcciones: { prices: {id: {price, portionPrices}}, hidden: [id], soldOut: {sede: [id]}, ingredients: {sede: [claveIngrediente]} } */
 export function setMenuOverrides(next) {
   overrides = {
     prices: next?.prices || {},
     hidden: Array.isArray(next?.hidden) ? next.hidden : [],
     soldOut: next?.soldOut || {},
+    ingredients: next?.ingredients || {},
   }
   effective = PRODUCTS.map((p) => applyPrices(p, overrides.prices[p.id]))
 }
@@ -455,9 +456,70 @@ export const getMenuOverrides = () => overrides
 /** Producto oculto de la carta (no se vende en la web). */
 export const isHidden = (id) => overrides.hidden.includes(id)
 
-/** Producto agotado en esa sede. Sin sede elegida no se puede saber: no cuenta. */
-export const isSoldOut = (id, locationId) =>
+/* ── INGREDIENTES ───────────────────────────────────────────────
+   Cada local puede marcar un ingrediente como agotado. Las pizzas que
+   lo llevan se descartan solas en esa sede (no hace falta ir una a una)
+   y el topping equivalente deja de poder añadirse. La clave es el
+   nombre sin tildes ni mayúsculas, y sin el "Extra " de los toppings,
+   así "Extra mozzarella" y "Mozzarella" son el mismo ingrediente. */
+export const ingredientKey = (label) =>
+  String(label ?? '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().trim().replace(/\s+/g, ' ')
+    .replace(/^extra /, '')
+
+let catalog = null
+
+/** Todos los ingredientes de la carta: [{ key, label, group }]. */
+export function ingredientCatalog() {
+  if (catalog) return catalog
+  const map = new Map()
+  for (const e of EXTRAS) {
+    const key = ingredientKey(e.label)
+    if (!map.has(key)) map.set(key, { key, label: e.label.replace(/^Extra /, '').replace(/^./, (c) => c.toUpperCase()), group: e.group })
+  }
+  for (const p of PRODUCTS) {
+    for (const name of p.ingredients || []) {
+      const key = ingredientKey(name)
+      if (key && !map.has(key)) map.set(key, { key, label: name, group: 'Base y otros de las pizzas' })
+    }
+  }
+  catalog = [...map.values()]
+  return catalog
+}
+
+/** Productos de la carta que llevan ese ingrediente. */
+export const productsUsing = (key) =>
+  PRODUCTS.filter((p) => (p.ingredients || []).some((i) => ingredientKey(i) === key))
+
+/** Ingredientes agotados en esa sede (claves). */
+export const ingredientsOut = (locationId) =>
+  (locationId && overrides.ingredients[locationId]) || []
+
+export const isIngredientOut = (key, locationId) => ingredientsOut(locationId).includes(key)
+
+/** Nombres de los ingredientes agotados que lleva el producto en esa sede. */
+export function missingIngredients(productId, locationId) {
+  const out = ingredientsOut(locationId)
+  if (!out.length) return []
+  const product = PRODUCTS.find((p) => p.id === productId)
+  return (product?.ingredients || []).filter((i) => out.includes(ingredientKey(i)))
+}
+
+/** ¿El topping (extra) lleva un ingrediente agotado en esa sede? */
+export const isExtraOut = (extraId, locationId) => {
+  const extra = EXTRAS.find((e) => e.id === extraId)
+  return Boolean(extra) && isIngredientOut(ingredientKey(extra.label), locationId)
+}
+
+/** Agotado a mano por el local en esa sede (sin contar ingredientes). */
+export const isManuallySoldOut = (id, locationId) =>
   Boolean(locationId && overrides.soldOut[locationId]?.includes(id))
+
+/** Producto agotado en esa sede: a mano, o porque le falta un ingrediente.
+    Sin sede elegida no se puede saber: no cuenta. */
+export const isSoldOut = (id, locationId) =>
+  isManuallySoldOut(id, locationId) || missingIngredients(id, locationId).length > 0
 
 /** ¿Se puede pedir en la web ahora mismo? */
 export const isOrderable = (id, locationId) => !isHidden(id) && !isSoldOut(id, locationId)

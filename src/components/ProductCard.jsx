@@ -1,6 +1,6 @@
 import { Plus, Leaf, Flame as FlameIcon } from 'lucide-react'
 import { price } from '../lib/format'
-import { priceOf, isSoldOut } from '../data/menu'
+import { priceOf, isSoldOut, missingIngredients } from '../data/menu'
 import { useStore } from '../store/StoreContext'
 import ProductImage from './ProductImage'
 
@@ -12,6 +12,7 @@ import ProductImage from './ProductImage'
 export default function ProductCard({ product, onOpen }) {
   const { locationId } = useStore()
   const soldOut = isSoldOut(product.id, locationId)
+  const missing = missingIngredients(product.id, locationId)
   const halfPortion = product.portions?.find((p) => p.id === 'media')
 
   return (
@@ -32,7 +33,7 @@ export default function ProductCard({ product, onOpen }) {
         />
         {soldOut && (
           <span className="absolute inset-0 flex items-center justify-center bg-forno/55">
-            <span className="rounded-md bg-masa text-tomate font-sans font-extrabold uppercase tracking-wider text-sm px-3 py-1.5">Agotado hoy</span>
+            <span className="rounded-md bg-masa text-tomate font-sans font-extrabold uppercase tracking-wider text-sm px-3 py-1.5">{missing.length ? `Sin ${missing[0]}` : 'Agotado hoy'}</span>
           </span>
         )}
         {product.badge && (

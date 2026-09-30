@@ -1,4 +1,4 @@
-/* Traduce las filas de las tablas menu_overrides y menu_soldout al
+/* Traduce las filas de las tablas menu_overrides, menu_soldout y menu_ingredient_soldout al
    formato que entiende src/data/menu.js (setMenuOverrides). Sin
    dependencias, para poder usarlo igual en el servidor y en pruebas. */
 
@@ -7,7 +7,7 @@ const money = (v) => {
   return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null
 }
 
-export function overridesFromRows(overrideRows = [], soldOutRows = []) {
+export function overridesFromRows(overrideRows = [], soldOutRows = [], ingredientRows = []) {
   const prices = {}
   const hidden = []
   for (const r of overrideRows) {
@@ -25,5 +25,7 @@ export function overridesFromRows(overrideRows = [], soldOutRows = []) {
   }
   const soldOut = {}
   for (const r of soldOutRows) (soldOut[r.location_id] ||= []).push(r.product_id)
-  return { prices, hidden, soldOut }
+  const ingredients = {}
+  for (const r of ingredientRows) (ingredients[r.location_id] ||= []).push(r.ingredient_key)
+  return { prices, hidden, soldOut, ingredients }
 }
