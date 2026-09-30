@@ -89,7 +89,16 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, account.status])
 
+  /* Con la sede ya elegida (paso previo de la web) se salta el paso "sede" */
+  useEffect(() => {
+    if (open && step === 1 && locationId) setCheckoutStep(2)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, step, locationId])
+
   if (!open || isEmpty) return null
+
+  const first = locationId ? 2 : 1
+  const stepLabel = { 1: 'SEDE', 2: 'MODO', 3: 'DATOS', 4: 'RESUMEN' }[step]
 
   const baseTotals = orderTotals({
     lines, mode: order.mode, locationId, where: { coords: customer.coords, tier: customer.tier },
@@ -105,7 +114,7 @@ export default function Checkout() {
   const tiers = deliveryTiers(locationId)
   const readyAt = eta?.ok ? Date.parse(eta.readyAt) : null
 
-  const goTo = (n) => setCheckoutStep(Math.min(4, Math.max(1, n)))
+  const goTo = (n) => setCheckoutStep(Math.min(4, Math.max(first, n)))
 
   const canNext = () => {
     if (blocked) return false
@@ -169,7 +178,7 @@ export default function Checkout() {
       >
         <div className="sticky top-0 bg-crema/95 backdrop-blur-md z-10 px-6 sm:px-8 pt-6 pb-4 border-b border-carbon/8">
           <div className="flex items-center justify-between">
-            {step > 1 && order.status === 'idle' ? (
+            {step > first && order.status === 'idle' ? (
               <button onClick={() => goTo(step - 1)} className="w-9 h-9 rounded-full flex items-center justify-center text-carbon/60 hover:bg-carbon/5" aria-label="Paso anterior">
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -182,7 +191,7 @@ export default function Checkout() {
 
           {order.status === 'idle' && (
             <div className="mt-4 flex items-center gap-1.5">
-              {STEPS.map((s) => (
+              {STEPS.filter((s) => s.id >= first).map((s) => (
                 <div key={s.id} className={['h-1 flex-1 rounded-full transition-colors', s.id <= step ? 'bg-tomate' : 'bg-carbon/10'].join(' ')} />
               ))}
             </div>
@@ -209,6 +218,10 @@ export default function Checkout() {
             order.result?.fallback
               ? <OrderFallback result={order.result} locationId={locationId} onRetry={handleSubmit} retrying={submitting} onDone={resetOrder} />
               : <OrderError message={order.result?.message} onRetry={() => setOrderStatus('idle')} />
+          )}
+
+          {order.status === 'idle' && (
+            <p className="mono text-tomate mb-2">{String(step - first + 1).padStart(2, '0')} / {stepLabel}</p>
           )}
 
           {order.status === 'idle' && step === 1 && (
@@ -261,7 +274,6 @@ export default function Checkout() {
 function StepLocation({ locationId, onPick }) {
   return (
     <div>
-      <p className="mono text-tomate mb-2">01 / SEDE</p>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">¿Desde qué Nonno pedimos?</h3>
       <div className="flex flex-col gap-3">
         {LOCATIONS.map((loc) => {
@@ -305,7 +317,6 @@ function StepMode({ modes, value, onPick, location, pickupSaving, tiers, readyAt
   }
   return (
     <div>
-      <p className="mono text-tomate mb-2">02 / MODO</p>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">¿Cómo quieres tu pizza?</h3>
       <div className="grid grid-cols-2 gap-3">
         {modes.map((m) => {
@@ -367,7 +378,6 @@ function StepCustomer({ customer, mode, locationId, errors, onChange }) {
 
   return (
     <div>
-      <p className="mono text-tomate mb-2">03 / DATOS</p>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">¿A nombre de quién?</h3>
       <div className="flex flex-col gap-5">
         {field('name', 'NOMBRE', 'Tu nombre')}
@@ -450,7 +460,6 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
   const arrival = readyAt && (trip ? readyAt + trip.minutes * 60000 : readyAt)
   return (
     <div>
-      <p className="mono text-tomate mb-2">04 / RESUMEN</p>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">Todo listo para confirmar</h3>
 
       <div className="rounded-2xl border border-carbon/10 divide-y divide-carbon/8">
