@@ -1,6 +1,6 @@
 import { LOCATIONS } from '../data/locations'
 import { useActions } from '../store/StoreContext'
-import { followLink, navigate } from '../lib/router'
+import { navigate } from '../lib/router'
 
 /**
  * Footer bajo la franja de cuadros: a la izquierda la llamada a pedir,
@@ -34,10 +34,6 @@ export default function Footer() {
             <ul className="flex flex-col gap-5">
               <li><button onClick={() => navigate('/carta')} className={link}>Pedidos</button></li>
               <li><button onClick={() => navigate('/carta')} className={link}>Carta</button></li>
-            </ul>
-            <ul className="flex flex-col gap-5 lg:items-end">
-              <li><button onClick={() => followLink({ id: 'historia' })} className={link}>Historia</button></li>
-              <li><button onClick={() => followLink({ id: 'sedes' })} className={link}>Contacto</button></li>
             </ul>
             {LOCATIONS.map((loc, i) => (
               <div key={loc.id} className={['flex flex-col gap-1', i === 1 ? 'lg:items-end lg:text-right' : ''].join(' ')}>

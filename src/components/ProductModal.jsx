@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Minus, Plus, Leaf, Flame as FlameIcon, Check } from 'lucide-react'
-import { getProduct, isPizza, isSoldOut, PIZZA_SIZE } from '../data/menu'
+import { getProduct, isPizza, isSoldOut, isExtraOut, missingIngredients, PIZZA_SIZE } from '../data/menu'
 import ProductImage from './ProductImage'
 import ToppingPicker from './ToppingPicker'
 import { unitPrice } from '../lib/pricing'
@@ -26,6 +26,9 @@ export default function ProductModal() {
   const product = productId ? getProduct(productId) : null
   const isDesktop = useIsDesktop()
   const soldOut = Boolean(product) && isSoldOut(product.id, locationId)
+  const missing = product ? missingIngredients(product.id, locationId) : []
+  /* Toppings agotados en esta sede: no se pueden añadir, y si ya estaban marcados no cuentan */
+  const outExtras = product ? (product.extras || []).filter((id) => isExtraOut(id, locationId)) : []
 
   const panelRef = useRef(null)
   const dialogRef = useRef(null)
@@ -53,7 +56,7 @@ export default function ProductModal() {
   useEffect(() => {
     if (locationId && pendingAdd.current && product) {
       pendingAdd.current = false
-      const ok = addToCart({ productId, portionId, extraIds, removed, qty, note })
+      const ok = addToCart({ productId, portionId, extraIds: extraIds.filter((id) => !outExtras.includes(id)), removed, qty, note })
       if (ok) closeProduct()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,7 +83,7 @@ export default function ProductModal() {
   const toggleIngredient = (ing) =>
     setRemoved((prev) => (prev.includes(ing) ? prev.filter((i) => i !== ing) : [...prev, ing]))
 
-  const total = unitPrice(product, { extraIds, portionId }) * qty
+  const total = unitPrice(product, { extraIds: extraIds.filter((id) => !outExtras.includes(id)), portionId }) * qty
 
   const handleAdd = () => {
     if (!locationId) {
@@ -88,7 +91,7 @@ export default function ProductModal() {
       openLocationPrompt()
       return
     }
-    const ok = addToCart({ productId, portionId, extraIds, removed, qty, note })
+    const ok = addToCart({ productId, portionId, extraIds: extraIds.filter((id) => !outExtras.includes(id)), removed, qty, note })
     if (ok) closeProduct()
   }
 
@@ -213,7 +216,7 @@ export default function ProductModal() {
 
           {product.extras?.length > 0 && (
             <div className="mt-7">
-              <ToppingPicker extraIds={product.extras} selected={extraIds} onToggle={toggleExtra} title="¿AÑADIR ALGO?" />
+              <ToppingPicker extraIds={product.extras} selected={extraIds} onToggle={toggleExtra} title="¿AÑADIR ALGO?" disabledIds={outExtras} />
             </div>
           )}
 
@@ -258,7 +261,7 @@ export default function ProductModal() {
 
             <button onClick={handleAdd} disabled={soldOut} className="btn flex-1 bg-tomate text-masa px-4 sm:px-6 disabled:opacity-50 disabled:pointer-events-none">
               <span className="btn-layer bg-forno" />
-              <span className="btn-label">{soldOut ? 'AGOTADO HOY EN ESTA SEDE' : `AÑADIR · ${price(total)}`}</span>
+              <span className="btn-label">{soldOut ? (missing.length ? `SIN ${missing[0].toUpperCase()} HOY EN ESTA SEDE` : 'AGOTADO HOY EN ESTA SEDE') : `AÑADIR · ${price(total)}`}</span>
             </button>
         </div>
       </div>

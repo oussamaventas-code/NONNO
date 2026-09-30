@@ -17,7 +17,7 @@ export const LOYALTY = {
   pointsPerEuro: 1,
   redeemStep: 100, // se canjea en bloques de 100 puntos…
   stepValue: 5,    // …y cada bloque son 5 €
-  codeLength: 4,   // cifras del código que llega por SMS
+  codeLength: 6,   // cifras del código que llega por SMS
 }
 
 /** Puntos que da un pedido de este importe. */

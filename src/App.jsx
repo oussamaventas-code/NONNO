@@ -1,13 +1,9 @@
 import Grain from './components/Grain'
 import Navbar from './components/Navbar'
 import MobileNav from './components/MobileNav'
-import Hero from './components/Hero'
-import MenuShowcase from './components/MenuShowcase'
-import DealsBand from './components/DealsBand'
+import Entrada from './components/Entrada'
+import ElegirPedido from './components/ElegirPedido'
 import Menu from './components/Menu'
-import Story from './components/Story'
-import Values from './components/Values'
-import LocationSelector from './components/LocationSelector'
 import Footer from './components/Footer'
 
 import CartDrawer from './components/CartDrawer'
@@ -18,19 +14,29 @@ import StickyOrderBar from './components/StickyOrderBar'
 import Toasts from './components/Toasts'
 import AccountDrawer from './components/AccountDrawer'
 import OrderTracking from './components/OrderTracking'
-import { usePath } from './lib/router'
+import { useEffect } from 'react'
+import { useStore } from './store/StoreContext'
+import { usePath, navigate } from './lib/router'
 import { useMenuOverrides } from './hooks/useMenuOverrides'
 
 /**
- * Dos páginas con la misma cabecera y el mismo footer:
- *   "/"      landing (estructura de diner): Hero → Escaparate de la
- *            carta → Ofertas → Historia → Valores → Pedido en las sedes.
- *   "/carta" la carta completa con el pedido online.
+ * Flujo de pedido en tres pantallas, con la misma cabecera y carrito:
+ *   "/"       ENTRADA          nombre, una frase y PEDIR.
+ *   "/pedir"  ELECCIÓN         sede y recoger / entrega.
+ *   "/carta"  MENÚ             categorías, productos, añadir y carrito.
+ *   "/p/…"    seguimiento del pedido.
  * Los sistemas globales (carrito, modal, checkout, avisos) viven
  * fuera del flujo de scroll y se muestran/ocultan según el estado.
  */
 export default function App() {
   const path = usePath()
+  const { locationId } = useStore()
+  const enFlujo = path === '/' || path === '/pedir'
+
+  /* La carta necesita sede: sin ella se pasa antes por la elección */
+  useEffect(() => {
+    if (path === '/carta' && !locationId) navigate('/pedir')
+  }, [path, locationId])
   /* Precios, ocultos y agotados que la dirección cambia desde el panel */
   useMenuOverrides()
 
@@ -45,20 +51,14 @@ export default function App() {
           <OrderTracking token={decodeURIComponent(path.slice(3))} />
         ) : path === '/carta' ? (
           <Menu />
+        ) : path === '/pedir' ? (
+          <ElegirPedido />
         ) : (
-          <>
-            <Hero />
-            <MenuShowcase />
-            <DealsBand />
-            <Story />
-            <Values />
-            <div className="double-rule border-forno bg-masa" aria-hidden="true" />
-            <LocationSelector />
-          </>
+          <Entrada />
         )}
       </main>
 
-      <Footer />
+      {!enFlujo && <Footer />}
 
       <StickyOrderBar />
       <CartDrawer />

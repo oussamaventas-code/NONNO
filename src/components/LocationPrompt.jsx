@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { X, Star, MapPin, Package, Truck, Clock } from 'lucide-react'
 import { LOCATIONS } from '../data/locations'
 import { useStore, useActions } from '../store/StoreContext'
@@ -9,10 +9,8 @@ import { decimal } from '../lib/format'
 import { img } from '../data/images'
 import { revealFrom, useGSAP, EASE } from '../lib/motion'
 
-/* A los 2 s de entrar, si el cliente aún no tiene sede, se le pregunta
-   desde qué Nonno pide. Si lo cierra sin elegir, no se le vuelve a
-   insistir en esa visita: ya se le preguntará al añadir algo. */
-const WELCOME_DELAY_MS = 2000
+/* La sede y el modo se eligen ahora en la pantalla /pedir; este diálogo
+   solo se abre si se intenta añadir algo sin sede elegida. */
 const DISMISSED_KEY = 'nonno.sede.preguntada'
 
 /**
@@ -21,24 +19,12 @@ const DISMISSED_KEY = 'nonno.sede.preguntada'
  * cliente intenta añadir un producto sin sede elegida.
  */
 export default function LocationPrompt() {
-  const { ui, locationId } = useStore()
+  const { ui } = useStore()
   const { setLocation, openLocationPrompt, closeLocationPrompt } = useActions()
   const { isOpen: storeOpen } = useStoreStatus()
   const open = ui.locationPrompt
   const panelRef = useRef(null)
   const dialogRef = useRef(null)
-
-  /* Bienvenida: solo si no hay sede guardada y no se ha cerrado ya en esta visita */
-  useEffect(() => {
-    if (locationId) return undefined
-    let dismissed = false
-    try { dismissed = sessionStorage.getItem(DISMISSED_KEY) === '1' } catch { /* modo privado */ }
-    if (dismissed) return undefined
-    const timer = setTimeout(openLocationPrompt, WELCOME_DELAY_MS)
-    return () => clearTimeout(timer)
-    // Solo al cargar la web
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const close = () => {
     try { sessionStorage.setItem(DISMISSED_KEY, '1') } catch { /* modo privado */ }

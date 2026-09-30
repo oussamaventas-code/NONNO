@@ -1,6 +1,6 @@
 import { Plus, Leaf, Flame as FlameIcon } from 'lucide-react'
 import { price } from '../lib/format'
-import { priceOf, isSoldOut } from '../data/menu'
+import { priceOf, isSoldOut, missingIngredients } from '../data/menu'
 import { useStore } from '../store/StoreContext'
 import ProductImage from './ProductImage'
 
@@ -12,14 +12,15 @@ import ProductImage from './ProductImage'
 export default function ProductCard({ product, onOpen }) {
   const { locationId } = useStore()
   const soldOut = isSoldOut(product.id, locationId)
+  const missing = missingIngredients(product.id, locationId)
   const halfPortion = product.portions?.find((p) => p.id === 'media')
 
   return (
     <article className="product-card group frame h-full">
-      <div className="frame-in flex flex-col">
+      <div className="frame-in flex flex-row sm:flex-col">
       <button
         onClick={() => onOpen(product.id)}
-        className="relative aspect-[4/3] overflow-hidden bg-tomate/10 border-b border-tomate"
+        className="relative w-[34%] sm:w-full flex-shrink-0 aspect-square sm:aspect-[4/3] overflow-hidden bg-tomate/10 border-r sm:border-r-0 sm:border-b border-tomate"
         aria-label={`Ver ${product.name}`}
       >
         <ProductImage
@@ -32,7 +33,7 @@ export default function ProductCard({ product, onOpen }) {
         />
         {soldOut && (
           <span className="absolute inset-0 flex items-center justify-center bg-forno/55">
-            <span className="rounded-md bg-masa text-tomate font-sans font-extrabold uppercase tracking-wider text-sm px-3 py-1.5">Agotado hoy</span>
+            <span className="rounded-md bg-masa text-tomate font-sans font-extrabold uppercase tracking-wider text-[0.65rem] sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 mx-1 text-center">{missing.length ? `Sin ${missing[0]}` : 'Agotado hoy'}</span>
           </span>
         )}
         {product.badge && (
@@ -41,26 +42,26 @@ export default function ProductCard({ product, onOpen }) {
           </span>
         )}
       </button>
-      <div className="flex flex-col flex-1 px-4 pt-4 pb-4">
-        <h3 className="font-display font-extrabold text-xl text-forno flex items-center gap-1.5">
+      <div className="flex flex-col flex-1 min-w-0 px-3 sm:px-4 pt-3 sm:pt-4 pb-3 sm:pb-4">
+        <h3 className="font-display font-extrabold text-lg sm:text-xl text-forno flex items-center gap-1.5">
           {product.name}
           {product.vegetarian && <Leaf className="w-4 h-4 text-albahaca flex-shrink-0" strokeWidth={2} />}
           {product.spicy && <FlameIcon className="w-4 h-4 text-tomate flex-shrink-0" strokeWidth={2} />}
         </h3>
         <p className="mt-1 text-sm text-forno/65 line-clamp-2 flex-1">{product.description}</p>
-        <div className="mt-4 flex items-end justify-between gap-3">
-          <p className="font-display font-extrabold text-2xl text-tomate leading-none">
+        <div className="mt-3 sm:mt-4 flex items-end justify-between gap-2">
+          <p className="font-display font-extrabold text-xl sm:text-2xl text-tomate leading-none">
             {price(priceOf(product))}
             {halfPortion && <span className="block mt-1 font-sans font-semibold text-xs text-forno/55">½ ración {price(halfPortion.price)}</span>}
           </p>
           <button
             onClick={() => onOpen(product.id)}
             disabled={soldOut}
-            className="btn bg-tomate w-11 h-11 !min-h-0 !px-0 flex-shrink-0 disabled:opacity-40 disabled:pointer-events-none"
+            className="btn bg-tomate h-11 !min-h-0 !px-3 flex-shrink-0 disabled:opacity-40 disabled:pointer-events-none"
             aria-label={soldOut ? `${product.name}: agotado` : `Añadir ${product.name}`}
           >
             <span className="btn-layer bg-forno" />
-            <span className="btn-label"><Plus className="w-5 h-5" strokeWidth={2.5} /></span>
+            <span className="btn-label"><Plus className="w-5 h-5" strokeWidth={2.5} /><span className="text-xs">Añadir</span></span>
           </button>
         </div>
       </div>

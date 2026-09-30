@@ -16,7 +16,8 @@ export default {
         tomate: 'rgb(var(--c-tomate) / <alpha-value>)',    // Rojo logo  — CTA y acción
         horno: 'rgb(var(--c-horno) / <alpha-value>)',      // Naranja    — hover, highlights
         albahaca: 'rgb(var(--c-albahaca) / <alpha-value>)', // Verde     — estados positivos
-        queso: 'rgb(var(--c-queso) / <alpha-value>)'       // Amarillo   — sección de valores
+        queso: 'rgb(var(--c-queso) / <alpha-value>)',      // Amarillo   — sección de valores
+        papel: 'rgb(var(--c-papel) / <alpha-value>)'       // Crema fijo — texto claro sobre color
       },
       fontFamily: {
         sans: ['Barlow', 'system-ui', 'sans-serif'],

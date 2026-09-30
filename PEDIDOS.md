@@ -123,7 +123,7 @@ Muestra:
 
 ## Club Nonno (cuentas de cliente y puntos)
 
-El cliente entra en **Mi cuenta** con su móvil y un código de 4 cifras que le llega por SMS, sin contraseñas. Dentro ve sus puntos, sus pedidos y el tique de cada uno para imprimir o guardar en PDF.
+El cliente entra en **Mi cuenta** con su móvil y un código de 6 cifras que le llega por SMS, sin contraseñas. Dentro ve sus puntos, sus pedidos y el tique de cada uno para imprimir o guardar en PDF.
 
 - **Gana 1 punto por cada euro** del total, cuando el pedido se marca **ENTREGADO** en el panel. Si el pedido lo hizo sin entrar en su cuenta, los puntos van igual al móvil del pedido, si ese móvil ya tiene cuenta.
 - **100 puntos = 5 € de descuento** en un pedido online. Lo elige en el resumen del pedido. El descuento nunca cubre el envío.
@@ -164,9 +164,11 @@ Cambia la carta sin tocar código:
 - **Ocultar** (solo dirección): quita el producto de la web en todas las sedes. Sigue ahí para volver a mostrarlo.
 - **Marcar agotado** (cada local el suyo): en la web sale "Agotado hoy" y no se puede añadir. El mostrador sí puede seguir vendiéndolo. Hay que quitarlo a mano al reponer.
 
+- **Ingredientes** (cada local el suyo): en la pestaña *Ingredientes* de la Carta, marca **Sin stock** en lo que se ha acabado (por ejemplo, el jamón cocido). Las pizzas que lo llevan quedan **descartadas solas** en esa sede: la web pone "Sin jamón cocido", no deja añadirlas y el servidor las rechaza. El topping equivalente también sale tachado. En *Productos* ves cuáles se han descartado y por qué. Al reponer el ingrediente, vuelven solas. El mostrador sigue pudiendo venderlas.
+
 La web lo recoge en menos de un minuto. El servidor aplica los precios nuevos al momento a cada pedido, así que un cliente con la web abierta desde antes nunca paga un precio viejo. Un producto agotado u oculto que ya estuviera en su carrito le sale como error al pedir, con el nombre del producto.
 
-**Para activarlo** (una sola vez): en Supabase → SQL Editor → New query, pega el contenido de [`supabase/carta.sql`](supabase/carta.sql) y pulsa **Run**. Sin ese paso la pestaña avisa de que no puede guardar y la web sigue con la carta de siempre.
+**Para activarlo** (una sola vez): en Supabase → SQL Editor → New query, pega el contenido de [`supabase/carta.sql`](supabase/carta.sql) y pulsa **Run**. Sin ese paso la pestaña avisa de que no puede guardar y la web sigue con la carta de siempre. Si ya lo ejecutaste antes de que existieran los ingredientes, **vuelve a ejecutarlo**: solo añade la tabla que falta y no toca lo que ya tienes.
 
 ## Crear pedidos: clientes que ya han pedido
 
@@ -198,7 +200,9 @@ Los pedidos con la dirección sin verificar (el cliente eligió la distancia a m
 Para que quien espera vea cómo va su pedido: **En preparación** y **¡Listo! Recoge tu pedido**, con el número y el nombre abreviado. Solo aparecen los pedidos para recoger; nunca teléfonos ni direcciones.
 
 1. En la TV (o un ordenador/Chromecast/Fire TV conectado a ella) abre `tu-dominio/pantalla/sangonera` (o `/pantalla/santo-angel`).
-2. Entra con la contraseña del local. Se queda guardada 30 días.
+2. Entra con la contraseña del local. Se queda guardada 7 días. Tras 5 contraseñas malas desde el mismo sitio, el acceso se bloquea 15 minutos.
+
+**Seguridad (una sola vez):** en Supabase → SQL Editor, pega [`supabase/seguridad.sql`](supabase/seguridad.sql) y pulsa **Run**. Activa el límite de intentos del login, de los códigos del Club, de los SMS y de los pedidos de la web. Además, en Vercel crea `ADMIN_SESSION_SECRET` con una cadena larga y aleatoria (30+ caracteres). Para **cerrar todas las sesiones abiertas** (por ejemplo si se pierde un ordenador), cambia ese valor y vuelve a desplegar.
 3. Pulsa **Pantalla completa y sonido** una vez: activa el aviso sonoro cuando un pedido pasa a listo.
 
 Los pedidos pasan a "¡Listo!" cuando cocina pulsa **MARCAR LISTO** en el panel, y desaparecen al marcarlos **ENTREGADO**. Si se corta internet, la TV sigue enseñando lo último que sabía y se pone al día sola al volver.

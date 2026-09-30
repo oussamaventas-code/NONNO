@@ -26,6 +26,7 @@
     --c-horno: 245 150 52;    /* naranja "Nonno" del logo */
     --c-albahaca: 47 133 90;  /* verde: estados positivos */
     --c-queso: 255 238 170;   /* amarillo queso: sección de valores */
+    --c-papel: 255 250 233;   /* crema fijo: texto y filetes claros sobre bloques de color */
 
     /* Ritmo de movimiento compartido con GSAP (src/lib/motion.js) */
     --ease-magnetic: cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -110,12 +111,12 @@
   /* Botón de acción retro: filete crema por dentro y sombra dura */
   .btn.bg-tomate,
   .btn.bg-albahaca {
-    color: rgb(var(--c-masa));
+    color: rgb(var(--c-papel));
   }
-  .btn.bg-tomate { box-shadow: inset 0 0 0 2px rgb(var(--c-masa) / 0.9), 0 0 0 2px rgb(var(--c-tomate)), 3px 3px 0 2px rgb(var(--c-forno)); }
-  .btn.bg-albahaca { box-shadow: inset 0 0 0 2px rgb(var(--c-masa) / 0.9), 0 0 0 2px rgb(var(--c-albahaca)), 3px 3px 0 2px rgb(var(--c-forno)); }
+  .btn.bg-tomate { box-shadow: inset 0 0 0 2px rgb(var(--c-papel) / 0.9), 0 0 0 2px rgb(var(--c-tomate)), 3px 3px 0 2px rgb(var(--c-forno)); }
+  .btn.bg-albahaca { box-shadow: inset 0 0 0 2px rgb(var(--c-papel) / 0.9), 0 0 0 2px rgb(var(--c-albahaca)), 3px 3px 0 2px rgb(var(--c-forno)); }
   .btn.bg-panel,
-  .btn.bg-forno { box-shadow: inset 0 0 0 2px rgb(var(--c-masa) / 0.9), 0 0 0 2px rgb(var(--c-forno)), 3px 3px 0 2px rgb(var(--c-tomate)); }
+  .btn.bg-forno { box-shadow: inset 0 0 0 2px rgb(var(--c-papel) / 0.9), 0 0 0 2px rgb(var(--c-forno)), 3px 3px 0 2px rgb(var(--c-tomate)); }
   .btn > .btn-layer {
     @apply absolute inset-0 translate-y-full transition-transform duration-500 ease-magnetic;
   }
@@ -151,7 +152,7 @@
     box-shadow: 3px 3px 0 0 rgb(var(--c-tomate));
   }
   .btn-retro > span {
-    @apply flex items-center justify-center gap-2 rounded-md border border-tomate bg-tomate text-masa
+    @apply flex items-center justify-center gap-2 rounded-md border border-tomate bg-tomate text-papel
            font-display italic font-bold text-xl sm:text-2xl leading-none whitespace-nowrap px-7 h-[52px] transition-colors;
   }
   .btn-retro:hover { transform: translate(-1px, -1px); }
@@ -307,3 +308,66 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   TEMA NEGRO (solo la web pública; el panel conserva el clásico).
+   Es el tema único de la web: index.html pone la clase .tema-negro en
+   <html> (salvo en /admin y /pantalla, que usan la paleta clara).
+
+   Ojo: carbon, forno y masa sirven a la vez de texto y de fondo, así
+   que aquí se invierten como texto y los bloques oscuros se fijan a
+   mano con --c-bloque.
+   ═══════════════════════════════════════════════════════════════ */
+:root.tema-negro {
+  --c-masa: 12 12 12;        /* fondo de la página */
+  --c-crema: 27 27 29;       /* tarjetas, modales, superficies */
+  --c-carbon: 246 240 224;   /* texto principal (crema) */
+  --c-forno: 246 240 224;    /* texto y filetes */
+  --c-panel: 22 26 44;       /* bloques oscuros de color */
+  --c-bloque: 22 26 44;      /* azul noche muy oscuro: historia, footer */
+  --c-albahaca: 82 186 130;  /* verde legible sobre negro */
+  --c-tomate: 255 92 124;    /* rosa-rojo neón del rótulo del logo: títulos, filetes */
+  --c-texto: 250 241 222;    /* crema cálido: todo el texto corrido */
+}
+.tema-negro { color-scheme: dark; }
+
+/* Texto y filetes claros sobre rojo o azul: siguen siendo crema */
+.tema-negro .text-masa { color: rgb(var(--c-papel)); }
+.tema-negro .text-masa\/90 { color: rgb(var(--c-papel) / 0.9); }
+.tema-negro .text-masa\/85 { color: rgb(var(--c-papel) / 0.85); }
+.tema-negro .border-masa { border-color: rgb(var(--c-papel)); }
+
+/* Bloques oscuros: no se invierten con el texto */
+.tema-negro .bg-forno,
+.tema-negro .bg-carbon { background-color: rgb(var(--c-bloque)); }
+.tema-negro .bg-forno\/70 { background-color: rgb(var(--c-bloque) / 0.7); }
+.tema-negro .bg-forno\/55 { background-color: rgb(var(--c-bloque) / 0.55); }
+.tema-negro .bg-forno\/40 { background-color: rgb(var(--c-bloque) / 0.4); }
+.tema-negro .bg-forno\/\[0\.88\] { background-color: rgb(var(--c-bloque) / 0.88); }
+.tema-negro .hover\:bg-forno:hover { background-color: rgb(var(--c-bloque)); }
+.tema-negro .hover\:bg-forno\/60:hover { background-color: rgb(var(--c-bloque) / 0.6); }
+.tema-negro .btn-retro:hover > span { background-color: rgb(var(--c-bloque)); }
+
+/* Campos de formulario translúcidos */
+.tema-negro .bg-white\/60 { background-color: rgb(255 255 255 / 0.06); }
+.tema-negro .hover\:bg-white:hover { background-color: rgb(255 255 255 / 0.12); }
+
+
+/* ── Paleta del logo (neón sobre negro) ──────────────────────────
+   Texto corrido en crema; el neón rosa-rojo queda para títulos,
+   filetes y sombras. Los botones rellenos mantienen el rojo del
+   logo con letra crema. */
+.tema-negro .text-tomate { color: rgb(var(--c-texto)); }
+.tema-negro .text-tomate\/45,
+.tema-negro .text-tomate\/50 { color: rgb(var(--c-texto) / 0.6); }
+.tema-negro .text-tomate\/70,
+.tema-negro .text-tomate\/75 { color: rgb(var(--c-texto) / 0.8); }
+.tema-negro .text-tomate\/80,
+.tema-negro .text-tomate\/90 { color: rgb(var(--c-texto) / 0.9); }
+.tema-negro h1.text-tomate, .tema-negro h2.text-tomate, .tema-negro h3.text-tomate, .tema-negro h4.text-tomate,
+.tema-negro .font-display.text-tomate,
+.tema-negro .serif.text-tomate { color: rgb(var(--c-tomate)); }
+.tema-negro .hover\:text-forno:hover,
+.tema-negro .hover\:text-tomate:hover { color: rgb(var(--c-tomate)); }
+.tema-negro .bg-tomate,
+.tema-negro .btn-retro > span { background-color: rgb(226 62 87); }
