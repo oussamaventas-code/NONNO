@@ -311,9 +311,8 @@
 
 /* ═══════════════════════════════════════════════════════════════
    TEMA NEGRO (solo la web pública; el panel conserva el clásico).
-   Se activa con la clase .tema-negro en <html> (interruptor del menú,
-   src/hooks/useTheme.js). El tema crema de siempre no cambia: esta
-   capa solo actúa cuando la clase está puesta.
+   Es el tema único de la web: index.html pone la clase .tema-negro en
+   <html> (salvo en /admin y /pantalla, que usan la paleta clara).
 
    Ojo: carbon, forno y masa sirven a la vez de texto y de fondo, así
    que aquí se invierten como texto y los bloques oscuros se fijan a
@@ -327,6 +326,8 @@
   --c-panel: 22 26 44;       /* bloques oscuros de color */
   --c-bloque: 22 26 44;      /* azul noche muy oscuro: historia, footer */
   --c-albahaca: 82 186 130;  /* verde legible sobre negro */
+  --c-tomate: 255 92 124;    /* rosa-rojo neón del rótulo del logo: títulos, filetes */
+  --c-texto: 250 241 222;    /* crema cálido: todo el texto corrido */
 }
 .tema-negro { color-scheme: dark; }
 
@@ -351,8 +352,22 @@
 .tema-negro .bg-white\/60 { background-color: rgb(255 255 255 / 0.06); }
 .tema-negro .hover\:bg-white:hover { background-color: rgb(255 255 255 / 0.12); }
 
-/* Rojo apagado sobre negro: se ve mucho menos que sobre crema, se sube */
+
+/* ── Paleta del logo (neón sobre negro) ──────────────────────────
+   Texto corrido en crema; el neón rosa-rojo queda para títulos,
+   filetes y sombras. Los botones rellenos mantienen el rojo del
+   logo con letra crema. */
+.tema-negro .text-tomate { color: rgb(var(--c-texto)); }
 .tema-negro .text-tomate\/45,
-.tema-negro .text-tomate\/50 { color: rgb(var(--c-tomate) / 0.72); }
+.tema-negro .text-tomate\/50 { color: rgb(var(--c-texto) / 0.6); }
 .tema-negro .text-tomate\/70,
-.tema-negro .text-tomate\/75 { color: rgb(var(--c-tomate) / 0.88); }
+.tema-negro .text-tomate\/75 { color: rgb(var(--c-texto) / 0.8); }
+.tema-negro .text-tomate\/80,
+.tema-negro .text-tomate\/90 { color: rgb(var(--c-texto) / 0.9); }
+.tema-negro h1.text-tomate, .tema-negro h2.text-tomate, .tema-negro h3.text-tomate, .tema-negro h4.text-tomate,
+.tema-negro .font-display.text-tomate,
+.tema-negro .serif.text-tomate { color: rgb(var(--c-tomate)); }
+.tema-negro .hover\:text-forno:hover,
+.tema-negro .hover\:text-tomate:hover { color: rgb(var(--c-tomate)); }
+.tema-negro .bg-tomate,
+.tema-negro .btn-retro > span { background-color: rgb(226 62 87); }

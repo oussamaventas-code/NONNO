@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Menu as MenuIcon, UserRound, MapPin, Flame, Moon, Sun } from 'lucide-react'
+import { Menu as MenuIcon, UserRound, MapPin, Flame } from 'lucide-react'
 import { readLastOrder, LAST_ORDER_EVENT } from '../lib/lastOrder'
 import { trackPath } from '../lib/tracking'
-import { useTheme } from '../hooks/useTheme'
 import { NAV_LINKS } from '../data/site'
 import { ANNOUNCE } from '../data/content'
 import { useCart, useActions, useSelectedLocation } from '../store/StoreContext'
@@ -29,7 +28,6 @@ export default function Navbar() {
   }, [])
   const showTrack = lastOrder && !path.startsWith('/p/')
   const { status, points, openAccount } = useAccount()
-  const { dark, toggle } = useTheme()
 
   return (
     <header className="relative z-[90] bg-masa">
@@ -72,14 +70,6 @@ export default function Navbar() {
 
           {/* Derecha: mi cuenta + pedir */}
           <div className="justify-self-end flex items-center gap-3 sm:gap-6">
-            <button
-              onClick={toggle}
-              className="inline-flex items-center justify-center w-9 h-9 text-tomate hover:text-forno transition-colors"
-              aria-label={dark ? 'Cambiar a fondo claro' : 'Cambiar a fondo negro'}
-              title={dark ? 'Fondo claro' : 'Fondo negro'}
-            >
-              {dark ? <Sun className="w-5 h-5" strokeWidth={2} /> : <Moon className="w-5 h-5" strokeWidth={2} />}
-            </button>
             {status !== 'loading' && (
               <button
                 onClick={openAccount}
