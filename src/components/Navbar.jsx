@@ -1,4 +1,5 @@
-import { Menu as MenuIcon, UserRound } from 'lucide-react'
+import { Menu as MenuIcon, UserRound, Moon, Sun } from 'lucide-react'
+import { useTheme } from '../hooks/useTheme'
 import { NAV_LINKS } from '../data/site'
 import { ANNOUNCE } from '../data/content'
 import { useCart, useActions } from '../store/StoreContext'
@@ -14,6 +15,7 @@ export default function Navbar() {
   const { count } = useCart()
   const { openCart, toggleMobileNav } = useActions()
   const { status, points, openAccount } = useAccount()
+  const { dark, toggle } = useTheme()
 
   return (
     <header className="relative z-[90] bg-masa">
@@ -56,6 +58,14 @@ export default function Navbar() {
 
           {/* Derecha: mi cuenta + pedir */}
           <div className="justify-self-end flex items-center gap-3 sm:gap-6">
+            <button
+              onClick={toggle}
+              className="inline-flex items-center justify-center w-9 h-9 text-tomate hover:text-forno transition-colors"
+              aria-label={dark ? 'Cambiar a fondo claro' : 'Cambiar a fondo negro'}
+              title={dark ? 'Fondo claro' : 'Fondo negro'}
+            >
+              {dark ? <Sun className="w-5 h-5" strokeWidth={2} /> : <Moon className="w-5 h-5" strokeWidth={2} />}
+            </button>
             {status !== 'loading' && (
               <button
                 onClick={openAccount}
