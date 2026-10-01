@@ -51,8 +51,7 @@ function itemsTable(items) {
     <tr>
       <td class="qty">${i.qty}×</td>
       <td>
-        <strong>${esc(i.name)}</strong>
-        ${i.size ? `<div class="sub">${esc(i.size)}</div>` : ''}
+        <strong>${esc(i.name)}</strong>${i.size ? ` <span class="sub">${esc(i.size)}</span>` : ''}
         ${i.removed?.length ? `<div class="remove">SIN ${esc(i.removed.join(' · SIN ').toUpperCase())}</div>` : ''}
         ${i.extras?.length ? `<div class="sub">+ ${esc(i.extras.join(', '))}</div>` : ''}
         ${i.note ? `<div class="note">"${esc(i.note)}"</div>` : ''}
@@ -65,7 +64,7 @@ const STYLE = `
   /* Siempre en vertical y con el papel que tenga el driver de la
      impresora (rollo de 80 mm o etiqueta de 10×15): así Chrome no lo
      gira en horizontal ni lo encoge a un ancho que no es el suyo. */
-  @page { size: portrait; margin: 3mm; }
+  @page { size: portrait; margin: 2mm 3mm; }
   /* Papel siempre blanco: el ticket no debe heredar el modo oscuro
      del navegador ni en la vista previa ni al imprimir. */
   :root { color-scheme: light; }
@@ -101,7 +100,7 @@ const STYLE = `
   .payment { text-align: center; font-size: 13px; font-weight: bold; border: 1.5px solid #000; padding: 3px 0; margin: 6px 0; }
   .field { margin: 2px 0; }
   .foot { font-size: 11px; text-align: center; margin-top: 8px; }
-  .logo { display: block; width: 24mm; margin: 0 auto 2px; }
+  .logo { display: block; width: 20mm; margin: 0 auto 1px; }
   .thanks { font-size: 13px; font-weight: bold; text-align: center; margin-top: 4px; }
 `
 
@@ -132,8 +131,7 @@ function ticketFoot(order, { full, customer }) {
     : 'PENDIENTE DE PAGO'}</div>`
   return `
   ${full ? `
-  <div class="field"><strong>${esc(order.customer_name)}</strong></div>
-  ${order.customer_phone ? `<div class="field">Tel: ${esc(order.customer_phone)}</div>` : ''}
+  <div class="field"><strong>${esc(order.customer_name)}</strong>${order.customer_phone ? ` · Tel: ${esc(order.customer_phone)}` : ''}</div>
   ${order.address ? `<div class="field">Dir: ${esc(order.address)}</div>` : ''}
   ${order.delivery_zone ? `<div class="field"><strong>DISTANCIA: ${esc(order.delivery_zone.toUpperCase())}</strong></div>` : ''}
   ${order.delivery_verified === false ? '<div class="payment">DIRECCIÓN SIN VERIFICAR · LLAMAR AL CLIENTE</div>' : ''}
