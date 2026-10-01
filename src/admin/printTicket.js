@@ -73,18 +73,18 @@ const STYLE = `
   * { box-sizing: border-box; }
   html, body { background: #fff; }
   body {
-    width: 100%; max-width: 100mm; margin: 0 auto; padding: 2mm 0;
-    font-family: "Courier New", monospace; font-size: 12px; line-height: 1.35; color: #000;
+    width: 100%; max-width: 100mm; margin: 0 auto; padding: 0;
+    font-family: "Courier New", monospace; font-size: 12px; line-height: 1.25; color: #000;
   }
   h1 { font-size: 15px; margin: 0; letter-spacing: .5px; }
   .center { text-align: center; }
-  .rule { border-top: 1px dashed #000; margin: 7px 0; }
+  .rule { border-top: 1px dashed #000; margin: 5px 0; }
   .big { font-size: 20px; font-weight: bold; }
   .mode { font-size: 15px; font-weight: bold; text-transform: uppercase; }
   .section { font-size: 16px; font-weight: bold; text-align: center; border: 2px solid #000; padding: 3px 0; margin: 6px 0; }
   .part { font-size: 11px; text-align: center; color: #333; }
   table { width: 100%; border-collapse: collapse; }
-  td { vertical-align: top; padding: 3px 0; }
+  td { vertical-align: top; padding: 2px 0; }
   /* Si el ticket no cabe en una etiqueta, que no parta una línea por la mitad. */
   tr, .total, .payment, .field { break-inside: avoid; }
   .qty { width: 26px; font-weight: bold; }
@@ -102,8 +102,8 @@ const STYLE = `
   .payment { text-align: center; font-size: 13px; font-weight: bold; border: 1.5px solid #000; padding: 3px 0; margin: 6px 0; }
   .field { margin: 2px 0; }
   .foot { font-size: 11px; text-align: center; margin-top: 8px; }
-  .logo { display: block; width: 42mm; max-width: 60%; margin: 0 auto 3px; }
-  .thanks { font-size: 14px; font-weight: bold; text-align: center; margin-top: 8px; }
+  .logo { display: block; width: 24mm; margin: 0 auto 2px; }
+  .thanks { font-size: 13px; font-weight: bold; text-align: center; margin-top: 4px; }
 `
 
 function ticketHead(order, { sectionLabel, part, logo } = {}) {
@@ -143,7 +143,7 @@ function ticketFoot(order, { full, customer }) {
   ${paymentLine}
   <div class="rule"></div>
   ${customer
-    ? '<div class="thanks">¡Gracias por elegir a Nonno!</div><div class="foot">Buen provecho</div>'
+    ? '<div class="thanks">¡Gracias por elegir a Nonno!</div>'
     : '<div class="foot">Gracias por elegir a Nonno</div>'}`
 }
 
