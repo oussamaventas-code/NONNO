@@ -1,6 +1,9 @@
 import { price } from '../lib/format'
 import { STATIONS, stationOf } from '../data/menu'
 import { hourOf } from '../lib/kitchenSlots'
+/* Logo en blanco y negro puro (la versión neón tiene fondo negro y en
+   térmica saldría un borrón). Va incrustado: imprime aunque no haya red. */
+import logoTicket from '../assets/logo-ticket.png?inline'
 
 /* ═══════════════════════════════════════════════════════════════
    Impresión del ticket de cocina.
@@ -60,14 +63,17 @@ function itemsTable(items) {
 }
 
 const STYLE = `
-  @page { size: 80mm auto; margin: 4mm; }
+  /* Siempre en vertical y con el papel que tenga el driver de la
+     impresora (rollo de 80 mm o etiqueta de 10×15): así Chrome no lo
+     gira en horizontal ni lo encoge a un ancho que no es el suyo. */
+  @page { size: portrait; margin: 3mm; }
   /* Papel siempre blanco: el ticket no debe heredar el modo oscuro
      del navegador ni en la vista previa ni al imprimir. */
   :root { color-scheme: light; }
   * { box-sizing: border-box; }
   html, body { background: #fff; }
   body {
-    width: 72mm; margin: 0 auto; padding: 4mm 0;
+    width: 100%; max-width: 100mm; margin: 0 auto; padding: 2mm 0;
     font-family: "Courier New", monospace; font-size: 12px; line-height: 1.35; color: #000;
   }
   h1 { font-size: 15px; margin: 0; letter-spacing: .5px; }
@@ -79,6 +85,8 @@ const STYLE = `
   .part { font-size: 11px; text-align: center; color: #333; }
   table { width: 100%; border-collapse: collapse; }
   td { vertical-align: top; padding: 3px 0; }
+  /* Si el ticket no cabe en una etiqueta, que no parta una línea por la mitad. */
+  tr, .total, .payment, .field { break-inside: avoid; }
   .qty { width: 26px; font-weight: bold; }
   .amount { text-align: right; white-space: nowrap; padding-left: 4px; }
   .sub { font-size: 11px; }
@@ -94,12 +102,14 @@ const STYLE = `
   .payment { text-align: center; font-size: 13px; font-weight: bold; border: 1.5px solid #000; padding: 3px 0; margin: 6px 0; }
   .field { margin: 2px 0; }
   .foot { font-size: 11px; text-align: center; margin-top: 8px; }
+  .logo { display: block; width: 42mm; max-width: 60%; margin: 0 auto 3px; }
+  .thanks { font-size: 14px; font-weight: bold; text-align: center; margin-top: 8px; }
 `
 
-function ticketHead(order, { sectionLabel, part, total } = {}) {
+function ticketHead(order, { sectionLabel, part, logo } = {}) {
   return `
   <div class="center">
-    <h1>LA PIZZA DE NONNO</h1>
+    ${logo ? `<img class="logo" src="${logoTicket}" alt="La Pizza de Nonno">` : '<h1>LA PIZZA DE NONNO</h1>'}
     <div>${esc(order.location_name || '')}</div>
   </div>
 
@@ -117,7 +127,7 @@ function ticketHead(order, { sectionLabel, part, total } = {}) {
 
 const CHANNEL = { mostrador: 'MOSTRADOR', telefono: 'TELÉFONO' }
 
-function ticketFoot(order, { full }) {
+function ticketFoot(order, { full, customer }) {
   const paymentLine = `<div class="payment">${order.payment_status === 'pagado'
     ? `PAGADO${order.payment_method ? ` · ${esc(order.payment_method.toUpperCase())}` : ''}`
     : 'PENDIENTE DE PAGO'}</div>`
@@ -132,7 +142,9 @@ function ticketFoot(order, { full }) {
   ` : `<div class="field center">${esc(order.customer_name)}</div>`}
   ${paymentLine}
   <div class="rule"></div>
-  <div class="foot">Gracias por elegir a Nonno</div>`
+  ${customer
+    ? '<div class="thanks">¡Gracias por elegir a Nonno!</div><div class="foot">Buen provecho</div>'
+    : '<div class="foot">Gracias por elegir a Nonno</div>'}`
 }
 
 function page(title, body) {
@@ -211,8 +223,15 @@ function printOne(html) {
     doc.write(html)
     doc.close()
 
-    /* Un instante para que aplique los estilos antes de imprimir. */
-    setTimeout(() => {
+    /* Espera a que carguen las imágenes (el logo) y un instante para
+       que apliquen los estilos antes de imprimir. */
+    const images = [...doc.images].map((img) => img.complete ? null
+      : new Promise((done) => { img.onload = img.onerror = done }))
+    const loaded = Promise.race([
+      Promise.all(images),
+      new Promise((done) => setTimeout(done, 2000)),
+    ])
+    loaded.then(() => setTimeout(() => {
       let ok = true
       try {
         frame.contentWindow.focus()
@@ -221,7 +240,7 @@ function printOne(html) {
         ok = false
       }
       setTimeout(() => { frame.remove(); resolve(ok) }, 500)
-    }, 250)
+    }, 250))
   })
   queue = queue.then(job, job)
   return queue
@@ -233,13 +252,13 @@ export const printDocument = (title, bodyHtml) => printOne(page(title, bodyHtml)
 /** Ticket de cliente del mostrador: un único ticket completo, sin secciones de cocina. */
 export function printReceipt(order) {
   const body = `
-    ${ticketHead(order)}
+    ${ticketHead(order, { logo: true })}
     <table>${itemsTable(order.items || [])}</table>
     <div class="rule"></div>
     ${breakdown(order)}
     <div class="total"><span>TOTAL</span><span>${esc(price(order.total))}</span></div>
     <div class="rule"></div>
-    ${ticketFoot(order, { full: true })}`
+    ${ticketFoot(order, { full: true, customer: true })}`
   return printOne(page(`Ticket ${order.ref}`, body))
 }
 
