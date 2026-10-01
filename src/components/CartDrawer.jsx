@@ -13,6 +13,7 @@ import { useKitchenEta, minutesUntil } from '../hooks/useKitchenEta'
 import { SITE } from '../data/site'
 import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 import { navigate } from '../lib/router'
+import LineIngredients from './LineIngredients'
 
 /**
  * Carrito global. Desktop: drawer lateral derecho. Móvil: bottom sheet.
@@ -118,16 +119,7 @@ export default function CartDrawer() {
                   {line.sizeLabel && (
                     <p className="mono normal-case text-carbon/45 mt-0.5">{line.sizeLabel}</p>
                   )}
-                  {line.removed?.length > 0 && (
-                    <p className="mono normal-case text-tomate font-semibold mt-0.5">
-                      Sin {line.removed.join(', sin ')}
-                    </p>
-                  )}
-                  {line.extraLabels.length > 0 && (
-                    <p className="mono normal-case text-albahaca mt-0.5 truncate">
-                      + {line.extraLabels.join(', ')}
-                    </p>
-                  )}
+                  <LineIngredients removed={line.removed} extras={line.extraLabels} className="mono normal-case font-semibold mt-0.5" />
                   {line.note && (
                     <p className="text-xs text-carbon/40 italic mt-0.5">"{line.note}"</p>
                   )}

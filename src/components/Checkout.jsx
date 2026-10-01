@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, ChevronLeft, MapPin, Package, Truck, Check, Pizza, Phone, MessageCircle, Star, Minus, Plus } from 'lucide-react'
+import { X, ChevronLeft, MapPin, Package, Check, Pizza, Phone, MessageCircle, Star, Minus, Plus } from 'lucide-react'
+import LineIngredients from './LineIngredients'
+import ScooterIcon from './ScooterIcon'
 import { LOCATIONS } from '../data/locations'
 import { useStore, useActions, useCart, useSelectedLocation } from '../store/StoreContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
@@ -321,7 +323,7 @@ function StepMode({ modes, value, onPick, location, pickupSaving, tiers, readyAt
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">¿Cómo quieres tu pizza?</h3>
       <div className="grid grid-cols-2 gap-3">
         {modes.map((m) => {
-          const Icon = m.id === 'pickup' ? Package : Truck
+          const Icon = m.id === 'pickup' ? Package : ScooterIcon
           const active = value === m.id
           return (
             <button
@@ -498,14 +500,7 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
           <div key={l.id} className="flex items-start justify-between gap-3 text-sm">
             <span className="text-carbon/70">
               {l.qty}× {l.name}
-              {l.removed?.length > 0 && (
-                <span className="block text-tomate font-semibold">
-                  Sin {l.removed.join(', sin ')}
-                </span>
-              )}
-              {l.extraLabels?.length > 0 && (
-                <span className="block text-albahaca">+ {l.extraLabels.join(', ')}</span>
-              )}
+              <LineIngredients removed={l.removed} extras={l.extraLabels} className="font-semibold" />
             </span>
             <span className="mono text-carbon/60 whitespace-nowrap">{price(lineTotal(l))}</span>
           </div>

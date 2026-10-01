@@ -1,3 +1,4 @@
+import { MapPin } from 'lucide-react'
 import { LOCATIONS } from '../data/locations'
 import { useActions } from '../store/StoreContext'
 import { navigate } from '../lib/router'
@@ -22,27 +23,33 @@ export default function Footer() {
     <footer>
       <div className="checker" aria-hidden="true" />
       <div className="neon-banda">
-        <div className="px-5 pt-20 pb-16 grid lg:grid-cols-[38.5rem_1fr] gap-14">
+        <div className="px-5 pt-20 pb-16 grid lg:grid-cols-[minmax(0,38.5rem)_auto] lg:justify-between gap-14">
           <div>
-            <p className="font-sans font-medium uppercase text-lg">Pide online y recoge tu pizza recién hecha en tu sede</p>
+            <p className="font-sans font-medium uppercase text-lg">Pide online para recoger o a domicilio</p>
             <button onClick={() => navigate('/carta')} className="btn-retro mt-8 border-masa bg-tomate shadow-[3px_3px_0_0_rgb(var(--c-masa))]">
               <span className="w-[15.5rem] bg-papel border-papel text-tomate">Haz tu pedido</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-10 gap-y-6 lg:justify-self-end lg:w-[25rem]">
+          <div className="grid grid-cols-[auto_1fr] lg:grid-cols-[auto_auto] gap-x-10 lg:gap-x-16 gap-y-6">
             <ul className="flex flex-col gap-5">
               <li><button onClick={() => navigate('/carta')} className={link}>Pedidos</button></li>
               <li><button onClick={() => navigate('/carta')} className={link}>Carta</button></li>
             </ul>
-            {LOCATIONS.map((loc, i) => (
-              <div key={loc.id} className={['flex flex-col gap-1', i === 1 ? 'lg:items-end lg:text-right' : ''].join(' ')}>
-                <button onClick={() => orderAt(loc.id)} className={link}>{loc.name}</button>
-                {loc.phones?.map((p) => (
-                  <a key={p} href={`tel:+34${p.replace(/\s/g, '')}`} className="font-sans font-semibold text-base hover:text-forno">{p}</a>
-                ))}
-              </div>
-            ))}
+            {/* Las dos sedes en la misma columna, alineadas, con su pin */}
+            <ul className="flex flex-col gap-5">
+              {LOCATIONS.map((loc) => (
+                <li key={loc.id} className="flex items-start gap-2">
+                  <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                  <div className="flex flex-col gap-1">
+                    <button onClick={() => orderAt(loc.id)} className={`${link} lg:whitespace-nowrap`}>{loc.name}</button>
+                    {loc.phones?.map((p) => (
+                      <a key={p} href={`tel:+34${p.replace(/\s/g, '')}`} className="font-sans font-semibold text-base hover:text-forno">{p}</a>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <p className="font-display italic font-bold text-5xl leading-none">La Pizza de Nonno</p>

@@ -1,5 +1,6 @@
 import { useRef } from 'react'
-import { X, Star, MapPin, Package, Truck, Clock } from 'lucide-react'
+import { X, Star, MapPin, Package, Clock } from 'lucide-react'
+import ScooterIcon from './ScooterIcon'
 import { LOCATIONS } from '../data/locations'
 import { useStore, useActions } from '../store/StoreContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
@@ -109,7 +110,7 @@ export default function LocationPrompt() {
                           <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-horno text-horno" /> {decimal(loc.rating)}</span>
                         )}
                         {loc.services.pickup && <span className="flex items-center gap-1"><Package className="w-3.5 h-3.5 text-tomate" /> Recoger</span>}
-                        {loc.services.delivery && <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5 text-tomate" /> A domicilio</span>}
+                        {loc.services.delivery && <span className="flex items-center gap-1"><ScooterIcon className="w-3.5 h-3.5 text-tomate" /> A domicilio</span>}
                         {loc.kitchen && <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-tomate" /> {loc.kitchen.open}–{loc.kitchen.close}</span>}
                       </span>
                     </span>

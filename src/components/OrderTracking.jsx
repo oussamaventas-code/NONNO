@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { ClipboardCheck, Flame, PackageCheck, Truck, Home, Phone, MapPin, XCircle, CalendarClock, RefreshCw } from 'lucide-react'
+import { ClipboardCheck, Flame, PackageCheck, Home, Phone, MapPin, XCircle, CalendarClock, RefreshCw } from 'lucide-react'
 import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
 import { navigate } from '../lib/router'
 import { forgetLastOrder, rememberLastOrder } from '../lib/lastOrder'
 import InstallApp from './InstallApp'
+import LineIngredients from './LineIngredients'
+import ScooterIcon from './ScooterIcon'
 
 /* ═══════════════════════════════════════════════════════════════
    SEGUIMIENTO DEL PEDIDO  (/p/NN-4821-a1b2c3d4e5)
@@ -21,7 +23,7 @@ function stepsFor(order) {
     { id: 'recibido', label: 'Recibido', Icon: ClipboardCheck },
     { id: 'preparando', label: 'En preparación', Icon: Flame },
     delivery
-      ? { id: 'camino', label: 'En camino', Icon: Truck }
+      ? { id: 'camino', label: 'En camino', Icon: ScooterIcon }
       : { id: 'listo', label: 'Listo', Icon: PackageCheck },
     { id: 'entregado', label: delivery ? 'Entregado' : 'Recogido', Icon: Home },
   ]
@@ -165,8 +167,7 @@ export default function OrderTracking({ token }) {
                   <span className="font-mono font-bold text-tomate w-8">{it.qty}×</span>
                   <span className="flex-1">
                     <span className="font-semibold text-carbon">{it.name}</span>
-                    {it.removed.length > 0 && <span className="block text-xs font-bold uppercase text-tomate">Sin {it.removed.join(', sin ')}</span>}
-                    {it.extras.length > 0 && <span className="block text-xs text-carbon/60">+ {it.extras.join(', ')}</span>}
+                    <LineIngredients removed={it.removed} extras={it.extras} className="text-xs font-semibold" />
                   </span>
                 </li>
               ))}

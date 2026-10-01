@@ -592,3 +592,8 @@
   background-color: rgb(72 190 255 / 0.12);
   box-shadow: 0 0 0 1px rgb(72 190 255), 0 0 14px rgb(72 190 255 / 0.55) !important;
 }
+
+/* Ingredientes de una línea del pedido: lo quitado en rojo y lo
+   añadido en verde, con su color real también en el tema negro. */
+.ing-sin { color: rgb(var(--c-tomate)); }
+.ing-mas { color: rgb(var(--c-albahaca)); }
