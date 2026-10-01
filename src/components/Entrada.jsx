@@ -21,7 +21,7 @@ const GLOBO = (() => {
  */
 export default function Entrada() {
   return (
-    <section className="relative isolate overflow-hidden bg-masa min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-end sm:justify-center text-center px-3 pt-4 pb-8 sm:py-6">
+    <section className="relative isolate overflow-hidden bg-masa min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-end sm:justify-center text-center px-3 pt-4 pb-32 sm:py-6">
       {/* Fachadas de las dos sedes de fondo (una sobre otra en el móvil, lado a lado en pantallas grandes) */}
       <div className="absolute inset-0 -z-20 grid grid-rows-2 lg:grid-rows-1 lg:grid-cols-2" aria-hidden="true">
         {[PHOTO.venueSangonera, PHOTO.venueSantoAngel].map((photo, i) => (
@@ -45,7 +45,7 @@ export default function Entrada() {
 
       {/* Cartel: el recorte con el globo encima. Se ajusta al ancho (móvil) o al alto
           libre (PC); el texto del globo escala con el ancho del cartel */}
-      <div className="relative isolate w-[min(100vw,28rem,calc((100svh-10rem)*1.035))] sm:w-[min(92vw,36rem,calc((100svh-14rem)*1.035))] [container-type:inline-size]">
+      <div className="relative isolate w-[min(100vw,28rem,calc((100svh-16rem)*1.035))] sm:w-[min(92vw,36rem,calc((100svh-14rem)*1.035))] [container-type:inline-size]">
         {/* Halo de neón detrás de la chica, con los colores del rótulo */}
         <div
           className="absolute inset-[6%] -z-10 rounded-full blur-3xl opacity-70"
@@ -75,7 +75,8 @@ export default function Entrada() {
           </p>
         </div>
       </div>
-      {/* En el móvil el botón monta sobre el borde de abajo del recorte, como si la chica saliera de él */}
+      {/* En el móvil el botón monta sobre el borde de abajo del recorte, como si la chica saliera de él.
+          El hueco de abajo (pb-32) deja libre la barra de "Tu pedido". */}
       <button onClick={() => navigate("/pedir")} className="btn-retro relative z-10 -mt-7 sm:mt-7">
         <span className="w-[16rem] sm:w-[18rem] !h-16 !text-3xl">PEDIR</span>
       </button>
