@@ -8,14 +8,13 @@ import logoTicket from '../assets/logo-ticket.png?inline'
 /* ═══════════════════════════════════════════════════════════════
    Impresión del ticket de cocina.
 
-   Un pedido con entrantes, pizzas y bebidas sale en VARIOS tickets:
-   uno completo (para llevar/entrega, o como resguardo) y uno por
-   cada sección que tenga líneas — así cada puesto de cocina
-   (entrantes, horno, barra de bebidas) coge solo el suyo y no tiene
-   que leer el pedido entero para encontrar lo que le toca.
+   La comanda de cocina sale en UNA etiqueta por sección con líneas
+   (entrantes, pizzas, bebidas): cada puesto coge solo la suya y no
+   tiene que leer el pedido entero. El ticket completo con todo el
+   pedido es el del cliente, que lo saca el TPV.
 
-   Cada ticket va maquetado a 80 mm (ancho estándar de impresora
-   térmica) y se imprime por separado. El navegador imprime en la
+   Cada ticket ocupa el ancho del papel del driver (rollo de 80 mm o
+   etiqueta de 10×15) y se imprime por separado. El navegador imprime en la
    impresora predeterminada de ESE equipo: el ordenador de cocina
    saca comandas y el del mostrador tickets de cliente. Con Chrome en
    modo kiosco (--kiosk-printing) salen sin diálogo.
@@ -186,21 +185,18 @@ export function buildTicketHtml(order) {
 /** Un ticket por sección (entrantes / pizzas / bebidas / ...). */
 export function buildSectionTicketHtml(order, section) {
   const body = `
-    ${ticketHead(order, { sectionLabel: section.label, part: section.label })}
+    ${ticketHead(order, { sectionLabel: section.label })}
     <table>${itemsTable(section.items)}</table>
     <div class="rule"></div>
     ${ticketFoot(order, { full: false })}`
   return page(`Pedido ${order.ref} · ${section.label}`, body)
 }
 
-/** Todos los tickets a imprimir para este pedido: completo + secciones (solo si hay más de una). */
+/** Comanda de cocina: una etiqueta por sección con líneas, en el orden de STATIONS. */
 export function buildTicketSet(order) {
-  const secs = sections(order)
-  const set = [{ label: 'COMPLETO', html: buildTicketHtml(order) }]
-  if (secs.length > 1) {
-    secs.forEach((s) => set.push({ label: s.label, html: buildSectionTicketHtml(order, s) }))
-  }
-  return set
+  const set = sections(order).map((s) => ({ label: s.label, html: buildSectionTicketHtml(order, s) }))
+  /* Un pedido sin líneas (no debería pasar) saca al menos el completo. */
+  return set.length ? set : [{ label: 'COMPLETO', html: buildTicketHtml(order) }]
 }
 
 /* Un único trabajo de impresión a la vez: si entran dos pedidos
@@ -263,8 +259,7 @@ export function printReceipt(order) {
 }
 
 /**
- * Comanda de cocina: el juego completo de tickets, uno tras otro:
- * el completo primero y luego uno por cada sección con líneas.
+ * Comanda de cocina: una etiqueta por sección con líneas, una tras otra.
  * Devuelve false si el navegador bloqueó la primera ventana.
  */
 export async function printTicket(order) {
