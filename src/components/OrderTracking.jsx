@@ -3,7 +3,8 @@ import { ClipboardCheck, Flame, PackageCheck, Truck, Home, Phone, MapPin, XCircl
 import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
 import { navigate } from '../lib/router'
-import { forgetLastOrder } from '../lib/lastOrder'
+import { forgetLastOrder, rememberLastOrder } from '../lib/lastOrder'
+import InstallApp from './InstallApp'
 
 /* ═══════════════════════════════════════════════════════════════
    SEGUIMIENTO DEL PEDIDO  (/p/NN-4821-a1b2c3d4e5)
@@ -76,6 +77,8 @@ export default function OrderTracking({ token }) {
           forgetLastOrder(token)
           return
         }
+        /* Si llega desde el SMS, también queda a mano en la cabecera. */
+        rememberLastOrder(token, data.order.ref)
         timer = setTimeout(load, POLL_MS)
       } catch {
         if (!cancelled) timer = setTimeout(load, POLL_MS)
@@ -174,6 +177,8 @@ export default function OrderTracking({ token }) {
             </div>
           </div>
         </div>
+
+        <InstallApp />
 
         {/* Dónde y contacto */}
         {order.location && (

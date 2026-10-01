@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { StoreProvider } from './store/StoreContext'
 import { AccountProvider } from './store/AccountContext'
 import App from './App'
+import { setupInstall } from './lib/installApp'
 import './styles/index.css'
 
 /* El panel de cocina solo lo carga quien entra en /admin: no lastra
@@ -18,6 +19,9 @@ const DisplayBoard = lazy(() => import('./admin/DisplayBoard'))
 const ruta = window.location.pathname.replace(/\/+$/, '')
 const seccion = ['/admin', '/pantalla'].find((b) => ruta === b || ruta.startsWith(`${b}/`))
 const sedeEnRuta = seccion && ruta.startsWith(`${seccion}/`) ? ruta.slice(seccion.length + 1) : null
+
+/* La web del cliente se puede instalar como app; el panel no. */
+if (!seccion) setupInstall()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
