@@ -1,55 +1,59 @@
 # Montar las impresoras en la tienda (sin ayuda)
 
-Cada sede tiene **dos ordenadores**, cada uno con **su impresora**:
+## Cómo es cada sede
 
-| | COCINA | TPV / MOSTRADOR |
+- **Un solo ordenador: el TPV** (Windows, el de Repsol, el que tiene pídeme.net).
+- **Dos impresoras**, que ya funcionan con el TPV por Wi-Fi o por cable:
+  - **Cocina**: saca las comandas.
+  - **Mostrador**: saca el ticket del cliente.
+
+En el TPV se abren **dos ventanas de Nonno**, y cada una imprime en su impresora:
+
+| Icono | Qué hace | Impresora |
 |---|---|---|
-| Qué imprime | Etiquetas ENTRANTES / PIZZAS / BEBIDAS, **solas**, al entrar cada pedido | Ticket del cliente con logo, al cobrar |
-| Pestaña del panel | **Cocina** | **Mostrador** |
-| "Comandas automáticas" | **SÍ** | NO |
+| **Nonno Cocina** | Cuando entra un pedido (web, mostrador o teléfono), saca **sola** una etiqueta por sección: ENTRANTES, PIZZAS y BEBIDAS. Puede estar **minimizada**. | Cocina |
+| **Nonno TPV** | La que usáis para tomar pedidos y cobrar. Al cobrar saca el **ticket con logo**. | Mostrador |
 
-La web siempre imprime en la **impresora predeterminada** de ese ordenador. Si cada ordenador tiene la suya bien puesta, no hay más secreto.
+Cada icono es un Chrome aparte que **recuerda su impresora**, así que no se mezclan.
 
 ---
 
-## 1. Conectar la impresora Wi-Fi a la red
+## 1. Comprobar que Windows ve las dos impresoras
 
-1. Enciende la impresora y conéctala al **Wi-Fi de la tienda**. Según el modelo, se hace desde su pantalla, con el botón **WPS** (pulsar WPS en el router y luego en la impresora) o con la app del fabricante.
-2. Imprime la **hoja de configuración** de la impresora. Suele salir dejando pulsado el botón FEED unos segundos o desde su menú. En esa hoja viene su **dirección IP**, algo como `192.168.1.50`. Apúntala.
-3. **Recomendable:** en el router, "reserva" esa IP para la impresora (DHCP estático). Si no, el día que el router se reinicie la impresora puede cambiar de dirección y dejar de imprimir.
+En el TPV ve a *Configuración → Bluetooth y dispositivos → Impresoras y escáneres*.
 
-## 2. Instalarla en el ordenador
+- **Si aparecen las dos** (la de cocina y la del mostrador), apunta sus nombres y pasa al paso 2.
+- **Si falta alguna**, puede que pídeme.net imprima directo, sin pasar por Windows. Para añadirla:
+  1. Imprime la **hoja de configuración** de esa impresora. Suele salir dejando pulsado el botón FEED unos segundos con la tapa cerrada. Ahí viene su **IP**, algo como `192.168.1.50`.
+  2. Descarga el **driver de la marca** desde su web oficial (Epson, Star, Bixolon, Xprinter…). La marca y el modelo están en la pegatina de la impresora.
+  3. Instálalo y, cuando pida el puerto, elige **red / TCP/IP** con esa IP. Si no lo pide, ve a *Impresoras y escáneres → Agregar dispositivo → Agregar manualmente → Agregar con dirección TCP/IP*.
+  4. Pulsa **Imprimir página de prueba**.
 
-1. Descarga el **driver de la marca** desde su web oficial (Epson, Star, Bixolon, Xprinter…). Busca el modelo y entra en *Drivers*.
-2. Instálalo. Cuando pregunte el puerto o la conexión, elige **red / TCP/IP** y escribe la IP que apuntaste.
-   - Si el instalador no lo pregunta, ve a *Configuración → Bluetooth y dispositivos → Impresoras y escáneres → Agregar dispositivo*. Si no aparece sola, pulsa *Agregar manualmente → Agregar con dirección TCP/IP* y escribe la IP.
-3. Abre las **Preferencias de impresión** de la impresora:
-   - Papel **80 mm** (rollo). Para etiquetas como la Zebra: 10 × 15 cm.
-   - Orientación **Vertical**.
-   - Si es térmica sin cinta: **Térmico directo**.
-4. Pulsa **Imprimir página de prueba**. Si sale, está bien.
-5. Ponla como **predeterminada**:
-   - En *Impresoras y escáneres*, desactiva **"Permitir que Windows administre mi impresora predeterminada"**.
-   - Entra en la impresora y pulsa **Establecer como predeterminada**.
+> **No cambies la impresora predeterminada ni toques la configuración de pídeme.net.** Así sigue funcionando todo como hasta ahora.
 
-## 3. El icono del panel (impresión sin ventanas)
+## 2. Montar "Nonno Cocina"
 
-1. Copia la carpeta `tienda` al ordenador (con un USB o descargándola de GitHub).
+1. Copia la carpeta `tienda` al TPV (con un USB o descargándola de GitHub).
 2. Doble clic en **`instalar-equipo-nonno.bat`**.
-3. Elige **1 = Cocina** o **2 = TPV**.
-4. Pega la dirección del panel de esa sede, por ejemplo `https://TU-WEB/admin/sangonera`.
-5. Sale en el escritorio el icono **"Nonno Cocina"** o **"Nonno TPV"**. El de cocina, además, se abre solo al encender el ordenador.
-6. Ábrelo, **inicia sesión** (solo la primera vez) y:
-   - **Cocina:** pestaña **Cocina** → menú → **Comandas automáticas: SÍ**.
-   - **TPV:** pestaña **Mostrador**.
+3. Escribe **1** (Cocina) y pega la dirección del panel de esa sede, por ejemplo `https://TU-WEB/admin/sangonera`.
+4. Se abre una **prueba de impresión**:
+   - En *Destino*, elige **la impresora de COCINA**. Si no está en la lista, pulsa *Ver más…*
+   - Pulsa **Imprimir**.
+   - Cuando salga el papel, **cierra esa ventana**.
+5. Aparece en el escritorio el icono **"Nonno Cocina"**. Ábrelo, **inicia sesión**, ve a la pestaña **Cocina** y en el menú pon **Comandas automáticas: SÍ**.
+6. Puedes minimizarla, pero **no la cierres**. Se abre sola cada vez que se enciende el ordenador.
 
-Abriendo el panel desde ese icono, Chrome imprime **directo**, sin la ventana de "Imprimir".
+## 3. Montar "Nonno TPV"
+
+1. Vuelve a abrir **`instalar-equipo-nonno.bat`** y escribe **2** (TPV).
+2. En la prueba de impresión, elige **la impresora del MOSTRADOR** y pulsa Imprimir.
+3. Abre el icono **"Nonno TPV"**, inicia sesión y ve a la pestaña **Mostrador**.
 
 ## 4. Prueba final
 
 1. Haz un pedido de prueba desde el móvil con entrante, pizza y bebida.
 2. En **cocina** tienen que salir solas **3 etiquetas**: ENTRANTES, PIZZAS · HORNO y BEBIDAS.
-3. En el **TPV**, cobra el pedido marcando imprimir. Sale el **ticket con logo**.
+3. En **Nonno TPV**, cobra el pedido marcando imprimir. En el **mostrador** sale el ticket con logo.
 4. Cancela el pedido de prueba.
 
 ---
@@ -58,11 +62,9 @@ Abriendo el panel desde ese icono, Chrome imprime **directo**, sin la ventana de
 
 | Pasa esto | Haz esto |
 |---|---|
-| No imprime nada | ¿Impresora encendida y con papel? ¿Es la **predeterminada**? Imprime la página de prueba de Windows. |
-| Antes iba y ya no | La impresora ha cambiado de IP. Imprime su hoja de configuración y comprueba la IP. Mejor: reserva la IP en el router (paso 1.3). |
-| Sale la ventana de "Imprimir" | No has abierto el panel desde el icono **Nonno Cocina/TPV**. Ciérralo y ábrelo desde el icono. |
-| En cocina no sale solo | Pestaña **Cocina** abierta, **Comandas automáticas: SÍ** y la ventana **sin minimizar**. |
-| Sale girado o en 2 trozos | Preferencias de impresión → **Vertical** y el tamaño de papel correcto. |
-| Salen la fecha y la web encima del ticket | En la ventana de imprimir de Chrome, quita **Encabezados y pies de página**. |
-| Zebra en rojo, "Falta de cinta" | Preferencias → Configuración avanzada → **Térmico directo** → Calibrar. |
-| Pedidos que entraron con el panel cerrado | No se imprimen solos. Ábrelos en el panel y pulsa **IMPRIMIR COMANDA**. |
+| La comanda sale en el mostrador (o al revés) | Has elegido la impresora equivocada en la prueba. Vuelve a abrir el instalador para ese icono y elige la buena. |
+| En cocina no sale nada | ¿Está abierta **Nonno Cocina** (aunque sea minimizada), en la pestaña **Cocina** y con **Comandas automáticas: SÍ**? ¿La impresora tiene papel? |
+| Sale la ventana de "Imprimir" | Has abierto el panel desde el Chrome normal. Ábrelo desde los iconos **Nonno Cocina** o **Nonno TPV**. |
+| Antes iba y ya no | La impresora ha cambiado de IP (pasa si se reinicia el router). Imprime su hoja de configuración y compara la IP. Lo mejor es pedir a quien os puso el router que **reserve la IP** de cada impresora. |
+| Sale girado o en 2 trozos | En *Preferencias de impresión* de esa impresora: **Vertical** y el tamaño de papel correcto (rollo de 80 mm). |
+| Pedidos que entraron con Nonno Cocina cerrada | No se imprimen solos. En la ventana **Nonno Cocina** (no en la del TPV, que imprime en el mostrador), abre el pedido y pulsa **IMPRIMIR COMANDA**. |
