@@ -29,7 +29,7 @@ export default function ElegirPedido() {
 
         <div className="mt-5 sm:mt-8 flex flex-col gap-4 sm:gap-5">
           {LOCATIONS.map((loc) => {
-            /* Abierta de verdad: interruptor del local encendido y dentro del horario de cocina */
+            /* Abierta: el interruptor del panel (si la sede tuviera horario fijo, también cuenta) */
             const hours = kitchenHours(loc.kitchen)
             const abierta = isOpen(loc.id) && hours.open
             const estado = abierta ? 'Abierta'

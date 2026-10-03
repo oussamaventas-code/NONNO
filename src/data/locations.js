@@ -71,7 +71,9 @@ export const LOCATIONS = [
     /* Horno: de 19:00 a 23:00 (carta impresa). Qué días se abre lo
        decide el interruptor del panel; `closeByDay` permite cerrar
        antes un día concreto si algún día hiciera falta. */
-    kitchen: { open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
+    /* manual: la cocina abre y cierra SOLO con el botón del panel
+       (open/close quedan como referencia; sin `manual` volverían a mandar). */
+    kitchen: { manual: true, open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
 
     deliveryNote:
       'Envío 1,50 € hasta 1 km, 3 € hasta 3 km y 3,50 € hasta 4 km del local. Las ofertas "Llévatelas por menos" son solo para recoger.',
@@ -93,7 +95,9 @@ export const LOCATIONS = [
     services: { pickup: true, delivery: true },
 
     /* Jueves a domingo y festivos, 19:00–23:00 (carta impresa). */
-    kitchen: { open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
+    /* manual: la cocina abre y cierra SOLO con el botón del panel
+       (open/close quedan como referencia; sin `manual` volverían a mandar). */
+    kitchen: { manual: true, open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15 },
 
     address: 'C. Isaac Peral 2, 30151 Santo Ángel, Murcia',
     /* Geocodificado a partir de la dirección real (calle, sin poder

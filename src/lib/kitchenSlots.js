@@ -60,8 +60,9 @@ export const ovenUnits = (items = []) =>
  */
 export function planOrder({ nowMs, kitchen, load = new Map(), pizzas, notBeforeMs = 0 }) {
   const slotMs = kitchen.slotMinutes * MIN
-  const open = madridTime(nowMs, kitchen.open)
-  const close = madridTime(nowMs, closeOf(kitchen, nowMs))
+  /* Sin horario fijo: abre y cierra quien manda, con el botón del panel */
+  const open = kitchen.manual ? 0 : madridTime(nowMs, kitchen.open)
+  const close = kitchen.manual ? Infinity : madridTime(nowMs, closeOf(kitchen, nowMs))
   /* Nunca la franja en curso: la siguiente que empiece a partir de ahora.
      Un pedido programado no entra antes de su hora (`notBeforeMs`). */
   const first = Math.max(Math.ceil(nowMs / slotMs) * slotMs, Math.ceil(notBeforeMs / slotMs) * slotMs, open)
@@ -141,7 +142,7 @@ export function buildLoad(orders, kitchen) {
  *   later: todavía abre hoy (antes de la hora de apertura)
  */
 export function kitchenHours(kitchen, nowMs = Date.now()) {
-  if (!kitchen) return { open: true, opensAt: '', later: false }
+  if (!kitchen || kitchen.manual) return { open: true, opensAt: '', later: false }
   const openMs = madridTime(nowMs, kitchen.open)
   const closeMs = madridTime(nowMs, closeOf(kitchen, nowMs))
   return { open: nowMs >= openMs && nowMs < closeMs, opensAt: kitchen.open, later: nowMs < openMs }
