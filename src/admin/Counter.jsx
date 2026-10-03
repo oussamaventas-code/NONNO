@@ -15,7 +15,8 @@ import ChargeDialog from './ChargeDialog'
      EN COCINA            → con lo que les falta
      ENTREGADOS SIN COBRAR → para que no se escape ninguno
    Lo ya cerrado (cobrado y entregado, cancelado) queda plegado abajo.
-   Lo habitual va en un toque: COBRAR Y ENTREGAR.
+   Cobrar un pedido LISTO de recogida lo da también por entregado: si
+   se cobra en el mostrador es que el cliente se lo lleva.
    ═══════════════════════════════════════════════════════════════ */
 
 const CHANNEL = {
@@ -227,7 +228,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
       {/* Deshacer el último "entregado" (un toque de más en hora punta) */}
       {undo && (
         <div className="fixed inset-x-3 bottom-20 md:bottom-6 z-40 mx-auto max-w-md flex items-center justify-between gap-3 rounded-md bg-forno px-4 py-3 text-masa shadow-float">
-          <span className="text-sm font-semibold">{undo.order.ref} entregado</span>
+          <span className="text-sm font-semibold">{undo.order.ref} {undo.wasPaid ? 'entregado' : 'cobrado y entregado'}</span>
           <button onClick={undoLast} className="flex items-center gap-1.5 rounded-md border border-masa/40 px-3 py-1.5 text-sm font-bold uppercase">
             <Undo2 className="w-4 h-4" /> Deshacer
           </button>
@@ -300,12 +301,12 @@ function OrderRow({ o, tone, now, flash, busy, onCharge, onDeliver, onEdit, onUn
   const editable = !local && active && (o.items || []).every((i) => i.id)
   const time = o.ready_at && active ? minutesText(o.ready_at, now) : null
 
-  /* Qué es lo más probable que haya que hacer con este pedido */
+  /* Qué es lo más probable que haya que hacer con este pedido.
+     Listo y de recogida: cobrar = entregar (un solo botón). */
   const canCharge = !local && !paid && o.status !== 'cancelado'
   const canDeliver = !local && active
-  const primary = !local && active && o.status === 'listo' && !delivery
-    ? (paid ? 'entregar' : 'cobrar-entregar')
-    : canCharge ? 'cobrar' : null
+  const handOver = !local && active && o.status === 'listo' && !delivery
+  const primary = handOver ? (paid ? 'entregar' : 'cobrar-entregar') : canCharge ? 'cobrar' : null
 
   return (
     <li className={['pcard p-4 sm:p-5', STRIPE[tone] || '', flash ? 'animate-pulse ring-4 ring-albahaca' : ''].join(' ')}>
@@ -358,7 +359,7 @@ function OrderRow({ o, tone, now, flash, busy, onCharge, onDeliver, onEdit, onUn
           <span className="btn-layer bg-carbon" />
           <span className="btn-label text-base">
             {primary === 'entregar' && <><PackageCheck className="w-5 h-5" /> ENTREGAR</>}
-            {primary === 'cobrar-entregar' && <><Euro className="w-5 h-5" /> COBRAR Y ENTREGAR</>}
+            {primary === 'cobrar-entregar' && <><Euro className="w-5 h-5" /> COBRAR</>}
             {primary === 'cobrar' && <><Euro className="w-5 h-5" /> COBRAR</>}
           </span>
         </button>
@@ -368,9 +369,6 @@ function OrderRow({ o, tone, now, flash, busy, onCharge, onDeliver, onEdit, onUn
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {canDeliver && primary !== 'entregar' && primary !== 'cobrar-entregar' && (
           <button onClick={onDeliver} disabled={busy} className="ptab soft"><PackageCheck className="w-4 h-4" /> Entregado</button>
-        )}
-        {primary === 'cobrar-entregar' && (
-          <button onClick={() => onCharge(false)} disabled={busy} className="ptab soft"><Euro className="w-4 h-4" /> Solo cobrar</button>
         )}
         {editable && <button onClick={onEdit} disabled={busy} className="ptab soft"><Pencil className="w-4 h-4" /> Editar</button>}
         <button onClick={() => printReceipt(o)} className="ptab soft"><Printer className="w-4 h-4" /> Ticket</button>

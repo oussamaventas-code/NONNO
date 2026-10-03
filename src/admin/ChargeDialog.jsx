@@ -25,8 +25,8 @@ export default function ChargeDialog({ order, deliver = false, busy, onClose, on
         <div className="pframe-in p-6">
           <div className="flex items-start justify-between">
             <div>
-              <p className="mono text-tomate">{order.ref} · {order.customer_name}</p>
-              <h2 id="charge-title" className="font-sans font-extrabold uppercase text-xl text-tomate mt-1">{deliver ? 'Cobrar y entregar' : 'Cobrar'}</h2>
+              <p className="mono text-tomate">{order.ref} · {order.customer_name}{deliver ? ' · se marca entregado' : ''}</p>
+              <h2 id="charge-title" className="font-sans font-extrabold uppercase text-xl text-tomate mt-1">Cobrar</h2>
             </div>
             <button onClick={onClose} className="w-10 h-10 rounded-md border border-tomate/50 flex items-center justify-center text-tomate hover:bg-tomate/10" aria-label="Cerrar">
               <X className="w-5 h-5" />
@@ -110,7 +110,7 @@ export default function ChargeDialog({ order, deliver = false, busy, onClose, on
             className="btn mt-5 w-full bg-albahaca text-crema disabled:opacity-50"
           >
             <span className="btn-layer bg-carbon" />
-            <span className="btn-label">{busy ? 'GUARDANDO…' : `${deliver ? 'COBRADO Y ENTREGADO' : 'COBRADO'} · ${price(total)}`}</span>
+            <span className="btn-label">{busy ? 'GUARDANDO…' : `COBRADO · ${price(total)}`}</span>
           </button>
         </div>
       </div>
