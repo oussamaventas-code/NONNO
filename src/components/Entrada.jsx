@@ -1,7 +1,9 @@
 import { navigate } from '../lib/router'
 import { PHOTO, img, srcSet } from '../data/images'
 
-/* Globo de cómic en estrella (clip-path), como el del rótulo del local */
+/* Globo de cómic en estrella (clip-path), como el del rótulo del local.
+   La estrella está 4 puntos más abajo que la caja: el texto lleva un
+   paddingTop para quedar en su centro. */
 const GLOBO = (() => {
   const puntas = 14
   const pts = []
@@ -66,7 +68,7 @@ export default function Entrada() {
         <div className="absolute left-[3%] sm:left-[-2%] top-[43%] sm:top-[44%] w-[33%] animate-globo drop-shadow-[0_6px_14px_rgba(0,0,0,0.65)]">
           <p
             className="aspect-[1.1] flex flex-col items-center justify-center text-center font-sans font-extrabold uppercase leading-[1.05]"
-            style={{ clipPath: GLOBO, background: "#F6F0E0", color: "#1A1A1A", fontSize: "3.25cqw" }}
+            style={{ clipPath: GLOBO, background: "#F6F0E0", color: "#1A1A1A", fontSize: "3.1cqw", paddingTop: "7%" }}
           >
             <span>La pizza</span>
             <span>más <span style={{ color: "#FF5C7C" }}>orgásmica</span></span>
