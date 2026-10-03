@@ -82,6 +82,7 @@ export default function DeliveryPicker({ locationId, value, onChange, invalid, c
           onChange={(e) => { onChange({ address: e.target.value, coords: null, tier: null }); setStatus('idle') }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); search() } }}
           placeholder="Calle, número y pueblo"
+          autoComplete="street-address"
           className={[field, compact ? 'mt-1' : '', invalid && !quote?.ok ? 'border-tomate' : 'border-carbon/12 focus:border-tomate'].join(' ')}
         />
       </label>

@@ -162,7 +162,9 @@ export default function CartDrawer() {
               ].join(' ')}>
                 <Clock className="w-4 h-4 flex-shrink-0" />
                 {eta.ok
-                  ? `Si pides ahora, listo a las ${hourOf(eta.readyAt)} (${minutesUntil(eta.readyAt)} min)`
+                  ? (minutesUntil(eta.readyAt) <= 90
+                    ? `Si pides ahora, listo a las ${hourOf(eta.readyAt)} (${minutesUntil(eta.readyAt)} min)`
+                    : `Si pides ahora, lo tienes listo a las ${hourOf(eta.readyAt)}`)
                   : eta.message}
               </p>
             )}

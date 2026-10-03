@@ -1,6 +1,15 @@
 /* Reconocer a un cliente por su teléfono en el mostrador.
    Sin dependencias: lo usa el servidor y las pruebas. */
 
+/** Móvil español (6XX o 7XX, con o sin +34) → "+34XXXXXXXXX"; si no lo es, null.
+    Los avisos van por SMS, así que un fijo o un número a medias no sirve. */
+export function mobileNumber(raw) {
+  let digits = String(raw || '').replace(/[^\d+]/g, '')
+  if (digits.startsWith('+34')) digits = digits.slice(3)
+  else if (digits.startsWith('0034')) digits = digits.slice(4)
+  return /^[67]\d{8}$/.test(digits) ? `+34${digits}` : null
+}
+
 /** Últimos 9 dígitos: da igual "+34 611 98 18 08", "611981808" o "611 98 18 08". */
 export const phoneKey = (phone) => String(phone ?? '').replace(/\D/g, '').slice(-9)
 

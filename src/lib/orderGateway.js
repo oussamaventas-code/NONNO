@@ -4,6 +4,7 @@ import { cartCount } from './pricing'
 import { orderTotals } from './orderTotals'
 import { deliveryQuote, deliveryProblem } from './delivery'
 import { price, orderRef } from './format'
+import { mobileNumber } from './customerLookup'
 
 /* ═══════════════════════════════════════════════════════════════
    CAPA DE INTEGRACIÓN DE PEDIDOS
@@ -82,7 +83,7 @@ export function validateOrder({ lines, locationId, mode, customer }) {
   if (!mode) errors.mode = 'Elige recogida o entrega.'
   if (!customer?.name?.trim()) errors.name = 'Necesitamos un nombre.'
   if (!customer?.phone?.trim()) errors.phone = 'Necesitamos un teléfono de contacto.'
-  else if (!/^[+\d][\d\s.-]{6,}$/.test(customer.phone.trim())) errors.phone = 'Revisa el teléfono.'
+  else if (!mobileNumber(customer.phone)) errors.phone = 'Escribe un móvil español (empieza por 6 o 7).'
   if (mode === 'delivery' && !customer?.address?.trim())
     errors.address = 'Necesitamos la dirección de entrega.'
   if (mode === 'delivery') {

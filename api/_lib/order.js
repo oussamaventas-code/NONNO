@@ -4,6 +4,7 @@ import { getLocation } from '../../src/data/locations.js'
 import { ovenUnits } from '../../src/lib/kitchenSlots.js'
 import { deliveryProblem } from '../../src/lib/delivery.js'
 import { isOrderable, isExtraOut, getExtra } from '../../src/data/menu.js'
+import { mobileNumber } from '../../src/lib/customerLookup.js'
 
 /* ═══════════════════════════════════════════════════════════════
    Saneado y validación del pedido que llega desde el navegador.
@@ -175,6 +176,8 @@ export function validateOrder({ order, unknownProduct, delivery }) {
      él mismo: para una entrega hace falta poder llamarle, venga de
      donde venga el pedido. */
   if (!order.customer_phone && (order.channel !== 'mostrador' || order.mode === 'delivery')) return 'Falta el teléfono.'
+  /* La web avisa por SMS: tiene que ser un móvil de verdad */
+  if (order.channel === 'web' && !mobileNumber(order.customer_phone)) return 'Escribe un móvil español (empieza por 6 o 7).'
   if (order.mode === 'delivery') {
     if (!order.address) return 'Falta la dirección de entrega.'
     if (!delivery?.ok) return deliveryProblem(delivery)

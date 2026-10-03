@@ -604,3 +604,13 @@
    añadido en verde, con su color real también en el tema negro. */
 .ing-sin { color: rgb(var(--c-tomate)); }
 .ing-mas { color: rgb(var(--c-albahaca)); }
+
+/* iPhone hace zoom al tocar un campo con letra de menos de 16 px y la
+   página se queda ampliada: en el móvil todos los campos van a 16 px. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']),
+  textarea:not(.no-zoom),
+  select:not(.no-zoom) {
+    font-size: 16px;
+  }
+}

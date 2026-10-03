@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { getLocation } from '../../src/data/locations.js'
 import { hourOf } from '../../src/lib/kitchenSlots.js'
 import { trackToken, trackPath } from '../../src/lib/tracking.js'
+import { mobileNumber } from '../../src/lib/customerLookup.js'
 
 /* Enlace para seguir el pedido. Solo si SITE_URL está puesto en Vercel
    (p. ej. https://lapizzadenonno.es): sin él, el SMS va como antes. */
@@ -78,12 +79,7 @@ export const smsProvider = () =>
   waTemplate('listo') ? 'whatsapp' : twilioConfigured() ? 'twilio' : gatewayConfigured() ? 'android' : null
 
 /** Móvil español en formato +34XXXXXXXXX, o null si no es un móvil (los fijos no reciben SMS). */
-export function mobileNumber(raw) {
-  let digits = String(raw || '').replace(/[^\d+]/g, '')
-  if (digits.startsWith('+34')) digits = digits.slice(3)
-  else if (digits.startsWith('0034')) digits = digits.slice(4)
-  return /^[67]\d{8}$/.test(digits) ? `+34${digits}` : null
-}
+export { mobileNumber }
 
 /* Sin tildes ni símbolos raros: así el SMS usa el alfabeto básico y
    caben 160 caracteres en un solo mensaje (con una tilde bajaría a 70). */

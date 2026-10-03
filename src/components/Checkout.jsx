@@ -21,6 +21,7 @@ import { LOYALTY, pointsFor, maxRedeemable } from '../data/loyalty'
 import { rememberLastOrder } from '../lib/lastOrder'
 import { trackPath } from '../lib/tracking'
 import { navigate } from '../lib/router'
+import { mobileNumber } from '../lib/customerLookup'
 
 const newClientKey = () =>
   (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -124,8 +125,9 @@ export default function Checkout() {
     if (step === 2) return Boolean(order.mode)
     if (step === 3) {
       const errs = {}
-      if (!customer.name.trim()) errs.name = true
-      if (!customer.phone.trim()) errs.phone = true
+      if (!customer.name.trim()) errs.name = 'Escribe tu nombre.'
+      if (!customer.phone.trim()) errs.phone = 'Escribe tu móvil.'
+      else if (!mobileNumber(customer.phone)) errs.phone = 'Escribe un móvil español (empieza por 6 o 7).'
       if (order.mode === 'delivery' && (!customer.address.trim() || !totals.delivery?.ok)) errs.delivery = true
       setFieldErrors(errs)
       return Object.keys(errs).length === 0
@@ -361,12 +363,14 @@ function StepMode({ modes, value, onPick, location, pickupSaving, tiers, readyAt
 
 /* ── Paso 3: datos ────────────────────────────────────────────── */
 function StepCustomer({ customer, mode, locationId, errors, onChange, onSwitchSede }) {
-  const field = (key, label, placeholder, type = 'text') => (
+  const field = (key, label, placeholder, type = 'text', autoComplete) => (
     <div>
       <label htmlFor={`f-${key}`} className="mono text-carbon/50 mb-2 block">{label}</label>
       <input
         id={`f-${key}`}
         type={type}
+        autoComplete={autoComplete}
+        inputMode={type === 'tel' ? 'tel' : undefined}
         value={customer[key]}
         onChange={(e) => onChange({ [key]: e.target.value })}
         placeholder={placeholder}
@@ -375,7 +379,7 @@ function StepCustomer({ customer, mode, locationId, errors, onChange, onSwitchSe
           errors[key] ? 'border-tomate' : 'border-carbon/12 focus:border-tomate',
         ].join(' ')}
       />
-      {errors[key] && <p className="mt-1 text-xs text-tomate">Este campo es necesario.</p>}
+      {errors[key] && <p className="mt-1 text-xs text-tomate">{errors[key] === true ? 'Este campo es necesario.' : errors[key]}</p>}
     </div>
   )
 
@@ -383,9 +387,9 @@ function StepCustomer({ customer, mode, locationId, errors, onChange, onSwitchSe
     <div>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">¿A nombre de quién?</h3>
       <div className="flex flex-col gap-5">
-        {field('name', 'NOMBRE', 'Tu nombre')}
+        {field('name', 'NOMBRE', 'Tu nombre', 'text', 'given-name')}
         <div>
-          {field('phone', 'TELÉFONO MÓVIL', '600 000 000', 'tel')}
+          {field('phone', 'TELÉFONO MÓVIL', '600 000 000', 'tel', 'tel')}
           <p className="mt-1.5 text-xs text-carbon/45">Te mandamos un WhatsApp o SMS con la confirmación y la hora, y otro cuando esté listo.</p>
         </div>
         {mode === 'delivery' && (
