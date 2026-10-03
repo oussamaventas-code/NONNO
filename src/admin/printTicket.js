@@ -182,8 +182,14 @@ export function buildTicketHtml(order) {
 
 /** Un ticket por sección (entrantes / pizzas / bebidas / ...). */
 export function buildSectionTicketHtml(order, section) {
+  /* En la comanda del horno, si el pedido va en varios tramos, cuántas
+     pizzas meter en cada uno (el primero es el que hay que empezar ya) */
+  const split = section.id === 'pizzas' && order.oven_slots?.length > 1
+    ? `<div class="payment">HORNO: ${order.oven_slots.map((s) => `${esc(hourOf(s.start))} → ${s.pizzas}`).join(' · ')}</div>`
+    : ''
   const body = `
     ${ticketHead(order, { sectionLabel: section.label })}
+    ${split}
     <table>${itemsTable(section.items)}</table>
     <div class="rule"></div>
     ${ticketFoot(order, { full: false })}`
@@ -244,7 +250,7 @@ function printOne(html) {
 export const printDocument = (title, bodyHtml) => printOne(page(title, bodyHtml))
 
 /** Ticket de cliente del mostrador: un único ticket completo, sin secciones de cocina. */
-export function printReceipt(order) {
+export function buildReceiptHtml(order) {
   const body = `
     ${ticketHead(order, { logo: true })}
     <table>${itemsTable(order.items || [])}</table>
@@ -253,8 +259,10 @@ export function printReceipt(order) {
     <div class="total"><span>TOTAL</span><span>${esc(price(order.total))}</span></div>
     <div class="rule"></div>
     ${ticketFoot(order, { full: true, customer: true })}`
-  return printOne(page(`Ticket ${order.ref}`, body))
+  return page(`Ticket ${order.ref}`, body)
 }
+
+export const printReceipt = (order) => printOne(buildReceiptHtml(order))
 
 /**
  * Comanda de cocina: una etiqueta por sección con líneas, una tras otra.

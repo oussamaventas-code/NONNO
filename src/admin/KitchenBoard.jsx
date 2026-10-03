@@ -176,6 +176,12 @@ function KitchenCard({ order, col, now, busy, onStatus, onUpdated }) {
             {delivery && order.eta_at && (
               <p className="mt-1 mono normal-case text-carbon/60">llega hacia las {hourOf(order.eta_at)}</p>
             )}
+            {/* Pedido partido entre tramos: cuántas pizzas meter en cada uno */}
+            {order.oven_slots?.length > 1 && (
+              <p className="mt-1.5 font-sans font-bold text-sm text-horno">
+                Horno: {order.oven_slots.map((s) => `${hourOf(s.start)} → ${s.pizzas}`).join(' · ')}
+              </p>
+            )}
           </div>
           <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
             <span className="pchip !border-tomate !text-tomate">
