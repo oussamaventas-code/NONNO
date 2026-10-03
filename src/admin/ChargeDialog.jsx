@@ -8,7 +8,7 @@ const QUICK = [5, 10, 20, 50]
  * Cobro en el mostrador. En efectivo calcula el cambio; la web no
  * procesa pagos: esto solo deja apuntado que está cobrado y cómo.
  */
-export default function ChargeDialog({ order, busy, onClose, onConfirm }) {
+export default function ChargeDialog({ order, deliver = false, busy, onClose, onConfirm }) {
   const total = Number(order.total)
   const [method, setMethod] = useState('efectivo')
   const [given, setGiven] = useState('')
@@ -26,7 +26,7 @@ export default function ChargeDialog({ order, busy, onClose, onConfirm }) {
           <div className="flex items-start justify-between">
             <div>
               <p className="mono text-tomate">{order.ref} · {order.customer_name}</p>
-              <h2 id="charge-title" className="font-sans font-extrabold uppercase text-xl text-tomate mt-1">Cobrar</h2>
+              <h2 id="charge-title" className="font-sans font-extrabold uppercase text-xl text-tomate mt-1">{deliver ? 'Cobrar y entregar' : 'Cobrar'}</h2>
             </div>
             <button onClick={onClose} className="w-10 h-10 rounded-md border border-tomate/50 flex items-center justify-center text-tomate hover:bg-tomate/10" aria-label="Cerrar">
               <X className="w-5 h-5" />
@@ -87,12 +87,12 @@ export default function ChargeDialog({ order, busy, onClose, onConfirm }) {
               />
               <div className="mt-2 grid grid-cols-5 gap-2">
                 <button onClick={() => setGiven(String(total))} className="ptab soft">Justo</button>
-                {QUICK.filter((q) => q >= total || q === 50).map((q) => (
+                {QUICK.filter((q) => q >= total || q === 50).slice(0, 4).map((q) => (
                   <button key={q} onClick={() => setGiven(String(q))} className="ptab soft">{q} €</button>
                 ))}
               </div>
               {given !== '' && (
-                <p className={['mt-4 text-lg font-bold', short ? 'text-tomate' : 'text-albahaca'].join(' ')}>
+                <p className={['mt-4 rounded-md px-4 py-3 text-center font-extrabold', short ? 'bg-tomate/10 text-tomate text-xl' : 'bg-albahaca/15 text-albahaca text-3xl'].join(' ')}>
                   {short ? `Faltan ${price(-change)}` : `Cambio: ${price(change)}`}
                 </p>
               )}
@@ -110,7 +110,7 @@ export default function ChargeDialog({ order, busy, onClose, onConfirm }) {
             className="btn mt-5 w-full bg-albahaca text-crema disabled:opacity-50"
           >
             <span className="btn-layer bg-carbon" />
-            <span className="btn-label">{busy ? 'GUARDANDO…' : `COBRADO · ${price(total)}`}</span>
+            <span className="btn-label">{busy ? 'GUARDANDO…' : `${deliver ? 'COBRADO Y ENTREGADO' : 'COBRADO'} · ${price(total)}`}</span>
           </button>
         </div>
       </div>

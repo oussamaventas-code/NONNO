@@ -64,5 +64,26 @@ export function useOrderAlert() {
     })
   }, [unlock])
 
-  return { play, unlock, ready }
+  /* "Ding-dong" de pedido LISTO para el mostrador: dos notas que bajan,
+     distinto de las tres campanadas de pedido nuevo. */
+  const ding = useCallback(() => {
+    unlock()
+    const ctx = ctxRef.current
+    if (!ctx || ctx.state !== 'running') return
+    ;[[0, 1318], [0.22, 988]].forEach(([offset, freq]) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      const at = ctx.currentTime + offset
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(freq, at)
+      gain.gain.setValueAtTime(0.0001, at)
+      gain.gain.exponentialRampToValueAtTime(0.4, at + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.5)
+      osc.connect(gain).connect(ctx.destination)
+      osc.start(at)
+      osc.stop(at + 0.52)
+    })
+  }, [unlock])
+
+  return { play, ding, unlock, ready }
 }
