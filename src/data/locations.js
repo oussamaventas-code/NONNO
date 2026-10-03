@@ -73,9 +73,11 @@ export const LOCATIONS = [
        antes un día concreto si algún día hiciera falta. */
     /* manual: la cocina abre y cierra SOLO con el botón del panel
        (open/close quedan como referencia; sin `manual` volverían a mandar). */
-    /* minMinutes: un pedido entra en el tramo en marcha si le quedan al menos
-       esos minutos (pide 20:01 → listo 20:15; pide 20:05 → listo 20:30) */
-    kitchen: { manual: true, open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15, minMinutes: 12 },
+    /* Tramos de 15 min con 15 pizzas: un pedido entra en el tramo en marcha
+       mientras queden huecos (pide 20:01 o 20:10 → listo 20:15); si está
+       lleno, lo que no cabe pasa al siguiente. minMinutes: minutos que le
+       tienen que quedar al tramo para entrar en él (0 = siempre). */
+    kitchen: { manual: true, open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15, minMinutes: 0 },
 
     deliveryNote:
       'Envío 1,50 € hasta 1 km, 3 € hasta 3 km y 3,50 € hasta 4 km del local. Las ofertas "Llévatelas por menos" son solo para recoger.',
@@ -99,9 +101,11 @@ export const LOCATIONS = [
     /* Jueves a domingo y festivos, 19:00–23:00 (carta impresa). */
     /* manual: la cocina abre y cierra SOLO con el botón del panel
        (open/close quedan como referencia; sin `manual` volverían a mandar). */
-    /* minMinutes: un pedido entra en el tramo en marcha si le quedan al menos
-       esos minutos (pide 20:01 → listo 20:15; pide 20:05 → listo 20:30) */
-    kitchen: { manual: true, open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15, minMinutes: 12 },
+    /* Tramos de 15 min con 15 pizzas: un pedido entra en el tramo en marcha
+       mientras queden huecos (pide 20:01 o 20:10 → listo 20:15); si está
+       lleno, lo que no cabe pasa al siguiente. minMinutes: minutos que le
+       tienen que quedar al tramo para entrar en él (0 = siempre). */
+    kitchen: { manual: true, open: '19:00', close: '23:00', slotMinutes: 15, pizzasPerSlot: 15, minMinutes: 0 },
 
     address: 'C. Isaac Peral 2, 30151 Santo Ángel, Murcia',
     /* Geocodificado a partir de la dirección real (calle, sin poder
