@@ -153,7 +153,8 @@ export async function sendSms(phone, text) {
     const sent = await sendTelnyx(to, text, at)
     if (sent.ok || !twilioConfigured()) return sent
     /* Telnyx falló: de reserva, Twilio (se apunta por qué falló el primero) */
-    return { ...(await sendTwilio(to, text, at)), fallbackFrom: sent.error }
+    const backup = await sendTwilio(to, text, at)
+    return backup.ok ? { ...backup, fallbackFrom: sent.error } : { ...sent, error: `${sent.error} | reserva ${backup.error}` }
   }
   if (twilioConfigured()) return sendTwilio(to, text, at)
 
