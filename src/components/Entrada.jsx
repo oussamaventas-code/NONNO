@@ -63,10 +63,10 @@ export default function Entrada() {
           className="h-auto w-full drop-shadow-[0_10px_30px_rgba(0,0,0,0.7)]"
         />
         {/* La sombra va en el contenedor: el clip-path del globo la recortaría */}
-        <div className="absolute left-[1%] sm:left-[-4%] top-[38%] sm:top-[40%] w-[40%] animate-globo drop-shadow-[0_6px_14px_rgba(0,0,0,0.65)]">
+        <div className="absolute left-[3%] sm:left-[-2%] top-[43%] sm:top-[44%] w-[33%] animate-globo drop-shadow-[0_6px_14px_rgba(0,0,0,0.65)]">
           <p
             className="aspect-[1.1] flex flex-col items-center justify-center text-center font-sans font-extrabold uppercase leading-[1.05]"
-            style={{ clipPath: GLOBO, background: "#F6F0E0", color: "#1A1A1A", fontSize: "4.3cqw" }}
+            style={{ clipPath: GLOBO, background: "#F6F0E0", color: "#1A1A1A", fontSize: "3.25cqw" }}
           >
             <span>La pizza</span>
             <span>más <span style={{ color: "#FF5C7C" }}>orgásmica</span></span>
@@ -75,9 +75,9 @@ export default function Entrada() {
           </p>
         </div>
       </div>
-      {/* En el móvil el botón monta sobre el borde de abajo del recorte, como si la chica saliera de él.
+      {/* La chica queda justo encima del botón, sin taparlo.
           El hueco de abajo (pb-32) deja libre la barra de "Tu pedido". */}
-      <button onClick={() => navigate("/pedir")} className="btn-retro relative z-10 -mt-7 sm:mt-7">
+      <button onClick={() => navigate("/pedir")} className="btn-retro relative z-10 mt-1">
         <span className="w-[16rem] sm:w-[18rem] !h-16 !text-3xl">PEDIR</span>
       </button>
     </section>
