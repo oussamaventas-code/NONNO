@@ -63,9 +63,13 @@ export function planOrder({ nowMs, kitchen, load = new Map(), pizzas, notBeforeM
   /* Sin horario fijo: abre y cierra quien manda, con el botón del panel */
   const open = kitchen.manual ? 0 : madridTime(nowMs, kitchen.open)
   const close = kitchen.manual ? Infinity : madridTime(nowMs, closeOf(kitchen, nowMs))
-  /* Nunca la franja en curso: la siguiente que empiece a partir de ahora.
-     Un pedido programado no entra antes de su hora (`notBeforeMs`). */
-  const first = Math.max(Math.ceil(nowMs / slotMs) * slotMs, Math.ceil(notBeforeMs / slotMs) * slotMs, open)
+  /* La franja en curso solo si aún da tiempo a hacerlo (le quedan al
+     menos `minMinutes`); si no, la siguiente. Un pedido programado no
+     entra antes de su hora (`notBeforeMs`). */
+  const current = Math.floor(nowMs / slotMs) * slotMs
+  const leadMs = (kitchen.minMinutes ?? kitchen.slotMinutes) * MIN
+  const soonest = current + slotMs - nowMs >= leadMs ? current : current + slotMs
+  const first = Math.max(soonest, Math.ceil(notBeforeMs / slotMs) * slotMs, open)
 
   if (first + slotMs > close) return { ok: false, reason: 'after-hours' }
   if (pizzas <= 0) return { ok: true, readyAt: first + slotMs, slots: [] }
