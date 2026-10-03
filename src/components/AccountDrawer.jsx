@@ -59,7 +59,7 @@ function Rules() {
     <ul className="flex flex-col gap-2 font-sans text-sm text-forno/80">
       <li className="flex gap-2"><Star className="w-4 h-4 mt-0.5 text-tomate fill-tomate flex-shrink-0" strokeWidth={0} />{LOYALTY.pointsPerEuro} punto por cada euro de tus pedidos, al entregártelos.</li>
       <li className="flex gap-2"><Gift className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />{LOYALTY.redeemStep} puntos = {price(LOYALTY.stepValue)} de descuento en tu próximo pedido online.</li>
-      <li className="flex gap-2"><Smartphone className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />Sin contraseñas ni códigos: entras solo con tu móvil.</li>
+      <li className="flex gap-2"><Smartphone className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />Sin contraseñas: entras con tu móvil. Para gastar puntos te mandamos un código por SMS.</li>
     </ul>
   )
 }

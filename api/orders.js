@@ -6,7 +6,7 @@ import { isStoreOpen } from './_lib/store.js'
 import { loadMenu } from './_lib/menu.js'
 import { precheck, assignSlot, SLOT_ERRORS } from './_lib/slots.js'
 import { notifyCustomer } from './_lib/sms.js'
-import { readCustomerId, getCustomer, movePoints, isMissingTable } from './_lib/customer.js'
+import { readCustomerSession, getCustomer, movePoints, isMissingTable } from './_lib/customer.js'
 import { normalizeRedeem } from '../src/data/loyalty.js'
 import { forcedSlot } from '../src/lib/kitchenSlots.js'
 import { getLocation } from '../src/data/locations.js'
@@ -86,14 +86,19 @@ export default async function handler(req, res) {
        pedido queda a su nombre y puede canjear puntos, como mucho los
        que tiene de verdad según la base de datos. */
     let customer = null
+    const session = staff ? null : readCustomerSession(req)
     if (!staff) {
       try {
-        customer = await getCustomer(readCustomerId(req))
+        customer = await getCustomer(session?.id)
       } catch (err) {
         if (!isMissingTable(err)) console.error('Error leyendo el cliente:', err)
       }
     }
     const redeem = customer ? Math.min(normalizeRedeem(req.body?.redeemPoints), normalizeRedeem(customer.points)) : 0
+    /* Gastar puntos pide haber confirmado el móvil con el código del SMS */
+    if (redeem > 0 && !session?.verified) {
+      return res.status(403).json({ code: 'verify', error: 'Para usar tus puntos confirma tu móvil con el código que te mandamos por SMS.' })
+    }
 
     /* Precios, ocultos y agotados al día: el total se recalcula con la carta
        real, no con la que el navegador tenía en pantalla. */

@@ -48,8 +48,11 @@ export const isMissingTable = (error) =>
 
 // ── Sesión ─────────────────────────────────────────────────────
 
-export function createCustomerCookie(customerId) {
-  const body = `${Date.now()}.${randomBytes(6).toString('hex')}~${customerId}`
+/* verified: se entró con el código del SMS. Solo así se pueden canjear
+   puntos (entrar solo con el móvil deja ver la cuenta, no gastarla).
+   Va dentro de la parte firmada: no se puede falsificar. */
+export function createCustomerCookie(customerId, { verified = false } = {}) {
+  const body = `${Date.now()}.${randomBytes(6).toString('hex')}${verified ? '.v' : ''}~${customerId}`
   return [
     `${COOKIE}=${body}~${sign(body)}`,
     'HttpOnly', 'Secure', 'SameSite=Lax', 'Path=/', `Max-Age=${MAX_AGE}`,
@@ -58,8 +61,8 @@ export function createCustomerCookie(customerId) {
 
 export const clearCustomerCookie = () => `${COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`
 
-/** @returns {string|null} id del cliente con sesión válida */
-export function readCustomerId(req) {
+/** @returns {{ id: string, verified: boolean }|null} sesión válida del cliente */
+export function readCustomerSession(req) {
   if (!secret()) return null
   const match = (req.headers?.cookie || '').split(';').map((c) => c.trim()).find((c) => c.startsWith(`${COOKIE}=`))
   if (!match) return null
@@ -69,8 +72,11 @@ export function readCustomerId(req) {
   if (!safeEqual(signature, sign(`${issued}~${id}`))) return null
   const at = Number(issued.split('.')[0])
   if (!at || Date.now() - at > MAX_AGE * 1000) return null
-  return id
+  return { id, verified: issued.endsWith('.v') }
 }
+
+/** @returns {string|null} id del cliente con sesión válida */
+export const readCustomerId = (req) => readCustomerSession(req)?.id || null
 
 // ── Códigos por SMS ────────────────────────────────────────────
 

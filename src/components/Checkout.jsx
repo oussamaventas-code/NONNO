@@ -417,6 +417,68 @@ function StepCustomer({ customer, mode, locationId, errors, onChange, onSwitchSe
   )
 }
 
+/* ── Código por SMS para gastar puntos ─────────────────────────
+   Entrar solo con el móvil deja ver la cuenta; para gastar los puntos
+   hay que demostrar que el móvil es tuyo. Se pide una vez: la sesión
+   queda confirmada. */
+function ConfirmPhone({ account, redeemMax }) {
+  const [sent, setSent] = useState(false)
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const send = async () => {
+    setBusy(true); setError('')
+    const r = await account.sendCode(account.customer.phone)
+    setBusy(false)
+    if (!r.ok) return setError(r.data.error || 'No hemos podido mandar el código.')
+    setSent(true)
+    if (r.data.devCode) setCode(r.data.devCode)
+  }
+
+  const check = async (e) => {
+    e.preventDefault()
+    setBusy(true); setError('')
+    const r = await account.verify(account.customer.phone, code)
+    setBusy(false)
+    if (!r.ok) setError(r.data.error || 'Código incorrecto.')
+  }
+
+  if (!sent) {
+    return (
+      <div className="mt-3">
+        <p className="text-sm text-carbon">Puedes usar hasta {redeemMax} puntos. Para gastarlos te mandamos un código al móvil.</p>
+        <button type="button" onClick={send} disabled={busy} className="mt-2 rounded-md bg-tomate px-4 h-11 text-sm font-semibold text-masa disabled:opacity-50">
+          {busy ? 'Enviando…' : 'Usar mis puntos'}
+        </button>
+        {error && <p className="mt-2 text-xs text-tomate">{error}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={check} className="mt-3">
+      <label htmlFor="club-code" className="text-sm text-carbon">Escribe el código que te hemos mandado por SMS</label>
+      <div className="mt-2 flex gap-2">
+        <input
+          id="club-code"
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, LOYALTY.codeLength))}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          placeholder={'0'.repeat(LOYALTY.codeLength)}
+          className="w-32 rounded-md border border-tomate bg-crema px-3 h-11 text-center tracking-[0.3em] text-carbon outline-none"
+        />
+        <button type="submit" disabled={busy || code.length !== LOYALTY.codeLength} className="rounded-md bg-tomate px-4 h-11 text-sm font-semibold text-masa disabled:opacity-50">
+          {busy ? '…' : 'Confirmar'}
+        </button>
+      </div>
+      <button type="button" onClick={send} disabled={busy} className="mt-2 text-xs text-carbon/60 underline underline-offset-4">No me ha llegado: mandar otro</button>
+      {error && <p className="mt-2 text-xs text-tomate">{error}</p>}
+    </form>
+  )
+}
+
 /* ── Club Nonno en el resumen ─────────────────────────────────── */
 function ClubBox({ account, totals, redeem, redeemMax, onRedeem }) {
   const earn = pointsFor(totals.total)
@@ -441,7 +503,9 @@ function ClubBox({ account, totals, redeem, redeemMax, onRedeem }) {
         <Star className="w-4 h-4 fill-tomate" strokeWidth={0} />
         Tienes {account.points} puntos · con este pedido ganas {earn}
       </p>
-      {redeemMax > 0 ? (
+      {redeemMax > 0 && !account.customer?.verified ? (
+        <ConfirmPhone account={account} redeemMax={redeemMax} />
+      ) : redeemMax > 0 ? (
         <div className="mt-3 flex items-center justify-between gap-3">
           <span className="text-sm text-carbon">
             {redeem > 0 ? `Usas ${redeem} puntos: −${price(totals.pointsDiscount)}` : `Puedes usar hasta ${redeemMax} puntos`}

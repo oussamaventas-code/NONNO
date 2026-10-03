@@ -4,7 +4,7 @@ import { guard, clear, clientIp } from './_lib/limiter.js'
 import {
   CODE_TTL_MIN, MAX_ATTEMPTS, RESEND_SECONDS, MAX_SENDS_PER_HOUR,
   normalizePhone, newCode, hashCode, codeMatches, isMissingTable,
-  createCustomerCookie, clearCustomerCookie, readCustomerId, sessionConfigured, getCustomer,
+  createCustomerCookie, clearCustomerCookie, readCustomerId, readCustomerSession, sessionConfigured, getCustomer,
 } from './_lib/customer.js'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -12,8 +12,8 @@ import {
 
    GET                         → mi cuenta (puntos, movimientos, pedidos)
    POST { action: 'login', phone, name }      → entra solo con el móvil (lo que usa la web)
-   POST { action: 'send-code', phone }        → manda el código por SMS (apagado en la web;
-                                                se deja por si se vuelve al código)
+   POST { action: 'send-code', phone }        → manda el código por SMS (la web lo pide
+                                                solo para canjear puntos)
    POST { action: 'verify', phone, code, name } → entra (cookie de sesión)
    POST { action: 'update', name }            → cambia el nombre
    POST { action: 'logout' }                  → sale
@@ -61,7 +61,8 @@ export default async function handler(req, res) {
 
 /** Mi cuenta: datos, últimos movimientos de puntos y pedidos (para las facturas). */
 async function me(req, res) {
-  const customer = await getCustomer(readCustomerId(req))
+  const session = readCustomerSession(req)
+  const customer = await getCustomer(session?.id)
   if (!customer) return res.status(200).json({ customer: null })
 
   const [ledger, orders] = await Promise.all([
@@ -73,7 +74,7 @@ async function me(req, res) {
   if (ledger.error) throw ledger.error
   if (orders.error) throw orders.error
 
-  return res.status(200).json({ customer: publicCustomer(customer), ledger: ledger.data, orders: orders.data })
+  return res.status(200).json({ customer: { ...publicCustomer(customer), verified: session.verified }, ledger: ledger.data, orders: orders.data })
 }
 
 /** Entrar solo con el móvil: sin código. Tope de intentos por conexión
@@ -210,7 +211,7 @@ async function verify(req, res) {
     customer = data
   }
 
-  res.setHeader('Set-Cookie', createCustomerCookie(customer.id))
+  res.setHeader('Set-Cookie', createCustomerCookie(customer.id, { verified: true }))
   return res.status(200).json({ customer: publicCustomer(customer), created: !existing })
 }
 
