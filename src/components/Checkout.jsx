@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, ChevronLeft, MapPin, Package, Check, Pizza, Phone, MessageCircle, Star, Minus, Plus } from 'lucide-react'
+import { X, ChevronLeft, MapPin, Package, Check, Pizza, Phone, MessageCircle, Star, Minus, Plus, Download } from 'lucide-react'
 import LineIngredients from './LineIngredients'
 import ScooterIcon from './ScooterIcon'
 import { LOCATIONS } from '../data/locations'
@@ -21,6 +21,8 @@ import { LOYALTY, pointsFor, maxRedeemable } from '../data/loyalty'
 import { rememberLastOrder } from '../lib/lastOrder'
 import { trackPath } from '../lib/tracking'
 import { navigate } from '../lib/router'
+import { saveTicket } from '../lib/ticketImage'
+import InstallApp from './InstallApp'
 import { mobileNumber } from '../lib/customerLookup'
 
 const newClientKey = () =>
@@ -62,6 +64,9 @@ export default function Checkout() {
   /* Club Nonno: puntos que el cliente quiere canjear en este pedido */
   const account = useAccount()
   const [redeem, setRedeem] = useState(0)
+  /* Tras pedir, el ticket hay que guardarlo antes de poder cerrar */
+  const [ticketPending, setTicketPending] = useState(false)
+  const handleCloseRef = useRef(() => {})
 
   const panelRef = useRef(null)
   const dialogRef = useRef(null)
@@ -69,7 +74,7 @@ export default function Checkout() {
   const clientKey = useRef(null)
 
   useLockBodyScroll(open)
-  useFocusTrap(dialogRef, open, closeCheckout)
+  useFocusTrap(dialogRef, open, () => handleCloseRef.current())
 
   useGSAP(() => {
     if (!open) return
@@ -87,7 +92,8 @@ export default function Checkout() {
     if (!open || account.status !== 'member') return
     const patch = {}
     if (!customer.name.trim() && account.customer.name) patch.name = account.customer.name
-    if (!customer.phone.trim()) patch.phone = account.customer.phone.replace(/^\+34/, '')
+    if (!customer.phone.trim() && account.customer.phone) patch.phone = account.customer.phone.replace(/^\+34/, '')
+    if (!customer.email?.trim() && account.customer.email) patch.email = account.customer.email
     if (Object.keys(patch).length) setCustomer(patch)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, account.status])
@@ -128,6 +134,7 @@ export default function Checkout() {
       if (!customer.name.trim()) errs.name = 'Escribe tu nombre.'
       if (!customer.phone.trim()) errs.phone = 'Escribe tu móvil.'
       else if (!mobileNumber(customer.phone)) errs.phone = 'Escribe un móvil español (empieza por 6 o 7).'
+      if (customer.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(customer.email.trim())) errs.email = 'Revisa el correo.'
       if (order.mode === 'delivery' && (!customer.address.trim() || !totals.delivery?.ok)) errs.delivery = true
       setFieldErrors(errs)
       return Object.keys(errs).length === 0
@@ -166,9 +173,12 @@ export default function Checkout() {
   }
 
   const handleClose = () => {
+    if (ticketPending && order.status === 'success') return
     closeCheckout()
     if (order.status === 'success') resetOrder()
   }
+
+  handleCloseRef.current = handleClose
 
   return (
     <div ref={panelRef} className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
@@ -188,9 +198,11 @@ export default function Checkout() {
               </button>
             ) : <span />}
             <h2 id="checkout-title" className="font-sans font-extrabold uppercase text-sm text-carbon/70">TU PEDIDO</h2>
-            <button onClick={handleClose} className="w-9 h-9 rounded-full flex items-center justify-center text-carbon/60 hover:bg-carbon/5" aria-label="Cerrar">
-              <X className="w-5 h-5" />
-            </button>
+            {ticketPending && order.status === 'success' ? <span className="w-9" /> : (
+              <button onClick={handleClose} className="w-9 h-9 rounded-full flex items-center justify-center text-carbon/60 hover:bg-carbon/5" aria-label="Cerrar">
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
 
           {order.status === 'idle' && (
@@ -215,7 +227,7 @@ export default function Checkout() {
           )}
 
           {order.status === 'success' && (
-            <OrderSuccess result={order.result} onClose={handleClose} />
+            <OrderSuccess result={order.result} onClose={() => { setTicketPending(false); closeCheckout(); resetOrder() }} onTicketPending={setTicketPending} />
           )}
 
           {order.status === 'error' && (
@@ -390,7 +402,17 @@ function StepCustomer({ customer, mode, locationId, errors, onChange, onSwitchSe
         {field('name', 'NOMBRE', 'Tu nombre', 'text', 'given-name')}
         <div>
           {field('phone', 'TELÉFONO MÓVIL', '600 000 000', 'tel', 'tel')}
-          <p className="mt-1.5 text-xs text-carbon/45">Te mandamos un WhatsApp o SMS con la confirmación y la hora, y otro cuando esté listo.</p>
+          <p className="mt-1.5 text-xs text-carbon/45">Por si la tienda necesita llamarte.</p>
+        </div>
+        <div>
+          {field('email', 'CORREO (OPCIONAL)', 'tucorreo@gmail.com', 'email', 'email')}
+          <p className="mt-1.5 text-xs text-carbon/45">Te mandamos el ticket del pedido a tu correo.</p>
+          {customer.email?.trim() && (
+            <label className="mt-3 flex items-start gap-3 text-xs text-carbon/70">
+              <input type="checkbox" checked={Boolean(customer.marketing)} onChange={(e) => onChange({ marketing: e.target.checked })} className="mt-0.5 h-5 w-5 accent-tomate flex-shrink-0" />
+              Quiero recibir ofertas y novedades de La Pizza de Nonno por correo.
+            </label>
+          )}
         </div>
         {mode === 'delivery' && (
           <DeliveryPicker
@@ -414,68 +436,6 @@ function StepCustomer({ customer, mode, locationId, errors, onChange, onSwitchSe
         </div>
       </div>
     </div>
-  )
-}
-
-/* ── Código por SMS para gastar puntos ─────────────────────────
-   Entrar solo con el móvil deja ver la cuenta; para gastar los puntos
-   hay que demostrar que el móvil es tuyo. Se pide una vez: la sesión
-   queda confirmada. */
-function ConfirmPhone({ account, redeemMax }) {
-  const [sent, setSent] = useState(false)
-  const [code, setCode] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-
-  const send = async () => {
-    setBusy(true); setError('')
-    const r = await account.sendCode(account.customer.phone)
-    setBusy(false)
-    if (!r.ok) return setError(r.data.error || 'No hemos podido mandar el código.')
-    setSent(true)
-    if (r.data.devCode) setCode(r.data.devCode)
-  }
-
-  const check = async (e) => {
-    e.preventDefault()
-    setBusy(true); setError('')
-    const r = await account.verify(account.customer.phone, code)
-    setBusy(false)
-    if (!r.ok) setError(r.data.error || 'Código incorrecto.')
-  }
-
-  if (!sent) {
-    return (
-      <div className="mt-3">
-        <p className="text-sm text-carbon">Puedes usar hasta {redeemMax} puntos. Para gastarlos te mandamos un código al móvil.</p>
-        <button type="button" onClick={send} disabled={busy} className="mt-2 rounded-md bg-tomate px-4 h-11 text-sm font-semibold text-masa disabled:opacity-50">
-          {busy ? 'Enviando…' : 'Usar mis puntos'}
-        </button>
-        {error && <p className="mt-2 text-xs text-tomate">{error}</p>}
-      </div>
-    )
-  }
-
-  return (
-    <form onSubmit={check} className="mt-3">
-      <label htmlFor="club-code" className="text-sm text-carbon">Escribe el código que te hemos mandado por SMS</label>
-      <div className="mt-2 flex gap-2">
-        <input
-          id="club-code"
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, LOYALTY.codeLength))}
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          placeholder={'0'.repeat(LOYALTY.codeLength)}
-          className="w-32 rounded-md border border-tomate bg-crema px-3 h-11 text-center tracking-[0.3em] text-carbon outline-none"
-        />
-        <button type="submit" disabled={busy || code.length !== LOYALTY.codeLength} className="rounded-md bg-tomate px-4 h-11 text-sm font-semibold text-masa disabled:opacity-50">
-          {busy ? '…' : 'Confirmar'}
-        </button>
-      </div>
-      <button type="button" onClick={send} disabled={busy} className="mt-2 text-xs text-carbon/60 underline underline-offset-4">No me ha llegado: mandar otro</button>
-      {error && <p className="mt-2 text-xs text-tomate">{error}</p>}
-    </form>
   )
 }
 
@@ -503,9 +463,7 @@ function ClubBox({ account, totals, redeem, redeemMax, onRedeem }) {
         <Star className="w-4 h-4 fill-tomate" strokeWidth={0} />
         Tienes {account.points} puntos · con este pedido ganas {earn}
       </p>
-      {redeemMax > 0 && !account.customer?.verified ? (
-        <ConfirmPhone account={account} redeemMax={redeemMax} />
-      ) : redeemMax > 0 ? (
+      {redeemMax > 0 ? (
         <div className="mt-3 flex items-center justify-between gap-3">
           <span className="text-sm text-carbon">
             {redeem > 0 ? `Usas ${redeem} puntos: −${price(totals.pointsDiscount)}` : `Puedes usar hasta ${redeemMax} puntos`}
@@ -620,42 +578,86 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
 }
 
 /* ── Estado: éxito ────────────────────────────────────────────── */
-function OrderSuccess({ result, onClose }) {
+function OrderSuccess({ result, onClose, onTicketPending }) {
+  /* Paso 1: guardar el ticket (obligatorio) · paso 2: instalar la app ·
+     paso 3: seguir el pedido */
+  const [stage, setStage] = useState('ticket')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const order = result?.payload
+  const delivery = order?.mode === 'delivery'
+
   /* El pedido queda apuntado en este navegador para poder seguirlo */
   useEffect(() => {
     if (result?.track) rememberLastOrder(result.track, result.payload?.ref)
   }, [result?.track, result?.payload?.ref])
 
+  /* No se puede cerrar hasta guardar el ticket */
+  useEffect(() => {
+    onTicketPending?.(!saved)
+    return () => onTicketPending?.(false)
+  }, [saved, onTicketPending])
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await saveTicket(order, result?.arrivalAt)
+    } catch (err) {
+      console.warn('No se pudo guardar el ticket', err)
+    }
+    setSaving(false)
+    setSaved(true)
+  }
+
+  const follow = () => {
+    onClose()
+    if (result?.track) navigate(trackPath(result.track))
+  }
+
+  if (stage === 'app') return <InstallApp big onDone={() => setStage('fin')} />
+
+  if (stage === 'fin') {
+    return (
+      <div className="text-center py-10">
+        <p className="font-sans font-extrabold uppercase text-xl text-carbon">¡Todo listo!</p>
+        <p className="mt-2 text-carbon/60">Ya puedes ver cómo va tu pedido.</p>
+        <button onClick={follow} className="btn-retro mt-6"><span>Sigue tu pedido</span></button>
+      </div>
+    )
+  }
+
   return (
     <div className="text-center py-6">
       <span className="inline-flex w-16 h-16 rounded-full bg-albahaca/10 text-albahaca items-center justify-center mb-5">
-        <Pizza className="w-7 h-7" strokeWidth={1.5} />
+        <Check className="w-8 h-8" strokeWidth={2.5} />
       </span>
-      <h3 className="font-sans font-extrabold uppercase text-xl text-carbon">Perfecto. Ya está en tu pedido.</h3>
-      <p className="mt-2 text-carbon/55">{result?.message}</p>
+      <h3 className="font-sans font-extrabold uppercase text-xl text-carbon">¡Pedido recibido!</h3>
+      {order?.ref && <p className="mt-2 font-display font-bold text-5xl text-queso">{order.ref}</p>}
       {result?.arrivalAt && (
-        <p className="mt-4 font-sans font-extrabold uppercase text-lg text-tomate">
-          {result.payload?.mode === 'delivery' ? 'Llega hacia las ' : 'Lista para recoger a las '}
+        <p className="mt-3 font-sans font-extrabold uppercase text-lg text-tomate">
+          {delivery ? 'Llega hacia las ' : 'Lista para recoger a las '}
           {hourOf(result.arrivalAt)}
         </p>
       )}
-      {result?.payload?.ref && (
-        <p className="mono mt-4 text-carbon/40">REF. {result.payload.ref}</p>
+      {order?.customer?.email && (
+        <p className="mt-3 text-sm text-carbon/60">Te hemos mandado el ticket a <strong>{order.customer.email}</strong>.</p>
       )}
-      <p className="mt-3 text-xs text-carbon/40 max-w-xs mx-auto">
-        Recuerda: el pago se realiza en el local o al recibir el pedido.
-      </p>
-      {result?.track ? (
-        <div className="mt-6 flex flex-col items-center gap-3">
-          <button onClick={() => { onClose(); navigate(trackPath(result.track)) }} className="btn-retro">
-            <span>Sigue tu pedido</span>
-          </button>
-          <button onClick={onClose} className="text-sm font-semibold text-carbon/55 underline underline-offset-4">Cerrar</button>
-        </div>
-      ) : (
-        <button onClick={onClose} className="btn mt-6 bg-tomate text-masa px-8">
+      <p className="mt-2 text-xs text-carbon/45 max-w-xs mx-auto">El pago se realiza en el local o al recibir el pedido.</p>
+
+      <div className="mt-6 rounded-md border border-tomate bg-tomate/5 px-4 py-4">
+        <p className="font-semibold text-carbon">Guarda tu ticket en el móvil</p>
+        <p className="mt-1 text-xs text-carbon/60">Enséñalo al recoger o al recibir el pedido.</p>
+        <button onClick={save} disabled={saving} className="btn-retro mt-4">
+          <span className="flex items-center justify-center gap-2">
+            <Download className="w-5 h-5" /> {saving ? 'GUARDANDO…' : saved ? 'GUARDAR OTRA VEZ' : 'GUARDAR MI TICKET'}
+          </span>
+        </button>
+      </div>
+
+      {saved && (
+        <button onClick={() => setStage(result?.track ? 'app' : 'fin')} className="btn mt-5 w-full bg-tomate text-masa">
           <span className="btn-layer bg-forno" />
-          <span className="btn-label">CERRAR</span>
+          <span className="btn-label">CONTINUAR →</span>
         </button>
       )}
     </div>

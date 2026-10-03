@@ -11,7 +11,7 @@ import Billing from './Billing'
 import Discounts from './Discounts'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
 import { printTicket, printReceipt } from './printTicket'
-import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus, testSms } from './api'
+import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus } from './api'
 import { useOrderAlert } from './useOrderAlert'
 import KitchenBoard from './KitchenBoard'
 import { price } from '../lib/format'
@@ -143,8 +143,6 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const [moreOpen, setMoreOpen] = useState(false)
   const [confirmClose, setConfirmClose] = useState(null)
   const [undo, setUndo] = useState(null)
-  const [testPhone, setTestPhone] = useState('')
-  const [testResult, setTestResult] = useState(null)
   const [autoPrint, setAutoPrint] = useState(() => readPref(PREF_AUTOPRINT, false))
   const [autoReceipt, setAutoReceipt] = useState(() => readPref(PREF_AUTORECEIPT, false))
 
@@ -714,41 +712,6 @@ export default function AdminPanel({ scope, onSignedOut }) {
                       <BellOff className="w-4 h-4" /> Activar avisos del navegador
                     </button>
                   )}
-                  {/* SMS de prueba: para comprobar al abrir que los avisos salen */}
-                  <div className="rounded-md border border-tomate/40 p-2.5">
-                    <p className="mono normal-case text-carbon/60 mb-1.5">Probar los avisos a clientes (WhatsApp / SMS)</p>
-                    <div className="flex gap-1.5">
-                      <input
-                        type="tel"
-                        inputMode="tel"
-                        value={testPhone}
-                        onChange={(e) => { setTestPhone(e.target.value); setTestResult(null) }}
-                        placeholder="Tu móvil"
-                        aria-label="Móvil para el SMS de prueba"
-                        className="pfield !py-2 text-sm"
-                      />
-                      <button
-                        onClick={async () => {
-                          setTestResult({ sending: true })
-                          try { setTestResult(await testSms(testPhone)) } catch (err) { setTestResult({ ok: false, error: err.message }) }
-                        }}
-                        disabled={!testPhone.trim() || testResult?.sending}
-                        className="ptab soft disabled:opacity-50"
-                      >
-                        Enviar
-                      </button>
-                    </div>
-                    {testResult && !testResult.sending && (
-                      <p className={['mt-1.5 text-xs font-semibold', testResult.ok ? 'text-albahaca' : 'text-tomate'].join(' ')}>
-                        {testResult.ok
-                          ? testResult.via === 'whatsapp'
-                            ? 'Enviado por WhatsApp. Si en un minuto no llega, mira Twilio → Monitor → Logs.'
-                            : `SMS enviado por ${{ twilio: 'Twilio', telnyx: 'Telnyx' }[testResult.provider] || 'el Android del local'}. Mira el móvil.`
-                          : testResult.error || (testResult.skipped === 'no-es-movil' ? 'Ese número no es un móvil.' : 'No ha salido.')}
-                      </p>
-                    )}
-                    {testResult?.sending && <p className="mt-1.5 text-xs text-carbon/60">Enviando…</p>}
-                  </div>
                   <button onClick={toggleFullscreen} className="ptab w-full justify-start">
                     <Maximize className="w-4 h-4" /> Pantalla completa
                   </button>
@@ -830,7 +793,6 @@ export default function AdminPanel({ scope, onSignedOut }) {
             <div className="pframe-in !border-masa/40 flex items-center justify-between gap-3 px-4 py-3 text-masa">
               <p className="text-sm font-semibold">
                 <span className="font-mono">{undo.ref}</span> → {undo.label}
-                {undo.to === 'listo' && <span className="block mono normal-case text-masa/60">El cliente ya tiene el SMS de “listo”.</span>}
               </p>
               <button onClick={undoLast} className="ptab soft !bg-masa !border-masa !text-tomate">
                 <Undo2 className="w-4 h-4" /> DESHACER

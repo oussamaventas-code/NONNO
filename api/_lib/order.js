@@ -5,6 +5,7 @@ import { ovenUnits } from '../../src/lib/kitchenSlots.js'
 import { deliveryProblem } from '../../src/lib/delivery.js'
 import { isOrderable, isExtraOut, getExtra } from '../../src/data/menu.js'
 import { mobileNumber } from '../../src/lib/customerLookup.js'
+import { isEmail } from './mail.js'
 
 /* ═══════════════════════════════════════════════════════════════
    Saneado y validación del pedido que llega desde el navegador.
@@ -129,6 +130,10 @@ export function sanitizeOrder(body, { staff = false, customerId = null, redeem =
       /* Solo se añaden si hay cliente o canje: así, sin las columnas del
          club creadas en la base de datos, los pedidos siguen entrando. */
       ...(customerId ? { customer_id: customerId } : {}),
+      /* Correo para mandarle el ticket y si quiere ofertas: solo si lo deja,
+         para que sin las columnas nuevas los pedidos sigan entrando. */
+      ...(isEmail(body?.customer?.email) ? { customer_email: trim(body.customer.email, 160).toLowerCase() } : {}),
+      ...(!staff && body?.customer?.marketing === true && isEmail(body?.customer?.email) ? { marketing_ok: true } : {}),
       /* Igual que el club: solo si hay pedido programado, para que sin la
          columna nueva los pedidos normales sigan entrando. */
       ...(scheduledFor ? { scheduled_for: scheduledFor } : {}),
@@ -176,7 +181,7 @@ export function validateOrder({ order, unknownProduct, delivery }) {
      él mismo: para una entrega hace falta poder llamarle, venga de
      donde venga el pedido. */
   if (!order.customer_phone && (order.channel !== 'mostrador' || order.mode === 'delivery')) return 'Falta el teléfono.'
-  /* La web avisa por SMS: tiene que ser un móvil de verdad */
+  /* La tienda tiene que poder llamar al cliente: un móvil de verdad */
   if (order.channel === 'web' && !mobileNumber(order.customer_phone)) return 'Escribe un móvil español (empieza por 6 o 7).'
   if (order.mode === 'delivery') {
     if (!order.address) return 'Falta la dirección de entrega.'

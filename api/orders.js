@@ -1,12 +1,12 @@
 import { db, isConfigured } from './_lib/supabase.js'
 import { requireSession, readSession, SCOPE_ALL } from './_lib/auth.js'
 import { notifyNewOrder } from './_lib/push.js'
+import { sendMail, orderMail } from './_lib/mail.js'
 import { sanitizeOrder, validateOrder, newRef } from './_lib/order.js'
 import { isStoreOpen } from './_lib/store.js'
 import { loadMenu } from './_lib/menu.js'
 import { precheck, assignSlot, SLOT_ERRORS } from './_lib/slots.js'
-import { notifyCustomer } from './_lib/sms.js'
-import { readCustomerSession, getCustomer, movePoints, isMissingTable } from './_lib/customer.js'
+import { readCustomerId, getCustomer, movePoints, isMissingTable } from './_lib/customer.js'
 import { normalizeRedeem } from '../src/data/loyalty.js'
 import { forcedSlot } from '../src/lib/kitchenSlots.js'
 import { getLocation } from '../src/data/locations.js'
@@ -40,6 +40,10 @@ async function dailyNumber(locationId, day) {
 }
 
 /** La base de datos aún no tiene la columna service_day. */
+/* Sin supabase/cuentas-correo.sql ejecutado: el pedido entra sin el correo */
+const missingMailColumn = (err) =>
+  ['42703', 'PGRST204'].includes(err?.code) && /customer_email|marketing_ok/.test(err?.message || '')
+
 const missingDayColumn = (err) =>
   ['42703', 'PGRST204'].includes(err?.code) && /service_day/.test(err?.message || '')
 
@@ -70,8 +74,7 @@ export default async function handler(req, res) {
     const staff = Boolean(session)
 
     /* Pedidos de la web: tope por IP y por teléfono. Evita llenar el horno
-       con pedidos falsos y que se use el aviso por SMS contra un número
-       ajeno. Con margen de sobra para una familia que pide varias veces. */
+       con pedidos falsos. Con margen de sobra para una familia que pide varias veces. */
     if (!staff) {
       const rules = [[`order:ip:${clientIp(req)}`, { max: 12, window: 600, lock: 600 }]]
       const digits = phoneKey(req.body?.customer?.phone)
@@ -86,19 +89,14 @@ export default async function handler(req, res) {
        pedido queda a su nombre y puede canjear puntos, como mucho los
        que tiene de verdad según la base de datos. */
     let customer = null
-    const session = staff ? null : readCustomerSession(req)
     if (!staff) {
       try {
-        customer = await getCustomer(session?.id)
+        customer = await getCustomer(readCustomerId(req))
       } catch (err) {
         if (!isMissingTable(err)) console.error('Error leyendo el cliente:', err)
       }
     }
     const redeem = customer ? Math.min(normalizeRedeem(req.body?.redeemPoints), normalizeRedeem(customer.points)) : 0
-    /* Gastar puntos pide haber confirmado el móvil con el código del SMS */
-    if (redeem > 0 && !session?.verified) {
-      return res.status(403).json({ code: 'verify', error: 'Para usar tus puntos confirma tu móvil con el código que te mandamos por SMS.' })
-    }
 
     /* Precios, ocultos y agotados al día: el total se recalcula con la carta
        real, no con la que el navegador tenía en pantalla. */
@@ -169,6 +167,11 @@ export default async function handler(req, res) {
         if (!offlineRef) order.ref = newRef()
         continue
       }
+      if (error && (order.customer_email || order.marketing_ok) && missingMailColumn(error)) {
+        delete order.customer_email
+        delete order.marketing_ok
+        continue
+      }
       if (error?.code !== '23505') break
       /* Dos envíos del mismo pedido a la vez: gana uno, el otro lo recoge. */
       const dup = await findByClientKey(order.client_key)
@@ -230,15 +233,12 @@ export default async function handler(req, res) {
       }
     }
 
-    /* Los avisos no deben tumbar el pedido si fallan, y son
-       independientes entre sí: van a la vez, no uno detrás del otro
-       (el SMS puede tardar hasta 5 s si el móvil de la pasarela no
-       responde, y el cliente no tiene por qué esperar ese tiempo). */
-    const [, smsResult] = await Promise.all([
+    /* El aviso al panel y el ticket por correo no deben tumbar el pedido
+       si fallan; van a la vez para que el cliente no espere de más. */
+    await Promise.all([
       notifyNewOrder(row).catch((err) => console.error('Error enviando la notificación:', err)),
-      notifyCustomer(db(), row, 'recibido').catch((err) => console.error('Error enviando el SMS:', err)),
+      !staff && row.customer_email ? sendMail({ to: row.customer_email, ...orderMail(row) }) : null,
     ])
-    if (smsResult) row.sms = smsResult
 
     return res.status(201).json(reply(row, staff))
   }

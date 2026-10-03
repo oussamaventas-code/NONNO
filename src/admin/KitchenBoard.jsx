@@ -3,7 +3,6 @@ import { Truck, Package, Phone, MapPin, ChevronDown, Printer, BellRing, Clock, A
 import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
 import { printTicket } from './printTicket'
-import SmsStatus from './SmsStatus'
 import OrderCard from './OrderCard'
 import CancelReasons from './CancelReasons'
 
@@ -282,7 +281,6 @@ function KitchenCard({ order, col, now, busy, onStatus, onUpdated }) {
               <Euro className="w-4 h-4" />
               {price(order.total)} · {order.payment_status === 'pagado' ? 'Pagado' : 'Falta por pagar'}
             </p>
-            <SmsStatus order={order} onUpdated={onUpdated} />
 
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <button

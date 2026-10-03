@@ -1,7 +1,7 @@
 import { db, isConfigured } from './supabase.js'
 
 /* ═══════════════════════════════════════════════════════════════
-   Límite de intentos (login, códigos por SMS, pedidos públicos).
+   Límite de intentos (login, contraseñas, pedidos públicos).
 
    La cuenta se lleva en Supabase (supabase/seguridad.sql, función
    auth_take) para que valga entre todas las instancias del servidor

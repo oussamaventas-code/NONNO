@@ -43,6 +43,8 @@ export function buildOrderPayload({ lines, locationId, mode, customer, clientKey
     customer: {
       name: customer?.name?.trim() || '',
       phone: customer?.phone?.trim() || '',
+      email: customer?.email?.trim() || '',
+      marketing: Boolean(customer?.marketing),
       address: mode === 'delivery' ? customer?.address?.trim() || '' : null,
       coords: mode === 'delivery' ? customer?.coords || null : null,
       tier: mode === 'delivery' ? customer?.tier ?? null : null,

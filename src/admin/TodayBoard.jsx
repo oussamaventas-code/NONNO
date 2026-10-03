@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Power, AlertTriangle, Eye, MessageSquareWarning, MapPinOff, Wallet, ChevronRight, CheckCircle2 } from 'lucide-react'
+import { Power, AlertTriangle, Eye, MapPinOff, Wallet, ChevronRight, CheckCircle2 } from 'lucide-react'
 import { LOCATIONS } from '../data/locations'
 import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
@@ -54,12 +54,10 @@ export default function TodayBoard({ orders, storeStatuses, onOpenSede, onError 
   const late = active.filter((o) => o.ready_at && ['nuevo', 'horno'].includes(o.status) && Date.parse(o.ready_at) < now)
   const unseen = active.filter((o) => o.status === 'nuevo' && !o.seen_at && now - Date.parse(o.created_at) > 2 * 60000
     && !(o.scheduled_for && Date.parse(o.ready_at) - now > 45 * 60000))
-  const smsFailed = active.filter((o) => Object.values(o.sms || {}).some((r) => r && r.ok === false && !r.skipped))
   const unverified = active.filter((o) => o.mode === 'delivery' && o.delivery_verified === false)
   const alerts = [
     ...late.map((o) => ({ key: `late-${o.id}`, Icon: AlertTriangle, tone: 'text-tomate', text: `${o.ref} (${o.location_name}) va con ${Math.round((now - Date.parse(o.ready_at)) / 60000)} min de retraso` })),
     ...unseen.map((o) => ({ key: `unseen-${o.id}`, Icon: Eye, tone: 'text-tomate', text: `${o.ref} (${o.location_name}) lleva ${Math.round((now - Date.parse(o.created_at)) / 60000)} min sin que nadie lo vea` })),
-    ...smsFailed.map((o) => ({ key: `sms-${o.id}`, Icon: MessageSquareWarning, tone: 'text-horno', text: `${o.ref} (${o.location_name}): no le llegó el SMS al cliente, hay que llamarle` })),
     ...unverified.map((o) => ({ key: `addr-${o.id}`, Icon: MapPinOff, tone: 'text-horno', text: `${o.ref} (${o.location_name}): dirección sin verificar, confirmar por teléfono` })),
   ]
 

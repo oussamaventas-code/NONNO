@@ -174,7 +174,7 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
       </main>
 
       <footer className="flex items-center justify-between px-[3vw] py-[1.5vh] border-t-2 border-tomate text-[1vw] text-carbon/60">
-        <p>Tu número de pedido está en tu ticket y en el SMS de confirmación.</p>
+        <p>Tu número de pedido está en tu ticket.</p>
         {offline && (
           <p className="flex items-center gap-[0.5vw] text-tomate">
             <WifiOff className="w-[1.1vw] h-[1.1vw]" /> Sin conexión: mostrando la última información

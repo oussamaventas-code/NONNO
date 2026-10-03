@@ -2,7 +2,6 @@ import { Printer, Truck, Package, Phone, MapPin, Clock, Euro, CircleDollarSign }
 import { price } from '../lib/format'
 import { printTicket } from './printTicket'
 import { hourOf } from '../lib/kitchenSlots'
-import SmsStatus from './SmsStatus'
 
 const FLOW = [
   /* Un pedido entra ya en preparación ("horno" queda de pedidos antiguos) */
@@ -169,7 +168,6 @@ export default function OrderCard({ order, onStatus, onUpdated, busy }) {
               Dirección sin verificar: el cliente eligió la distancia a mano. Confírmala por teléfono.
             </span>
           )}
-          <SmsStatus order={order} onUpdated={onUpdated} />
           {order.notes && (
             <span className="mt-1 rounded-md border border-tomate/25 bg-queso/50 px-3 py-2 text-carbon/80">
               <strong>Notas:</strong> {order.notes}

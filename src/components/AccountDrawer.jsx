@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { X, Star, Smartphone, LogOut, FileText, Gift } from 'lucide-react'
+import { X, Star, Mail, LogOut, FileText, Gift } from 'lucide-react'
 import { useAccount } from '../store/AccountContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
@@ -12,8 +12,8 @@ const REASON = { pedido: 'Pedido', canje: 'Canje', devolucion: 'Devolución', an
 const day = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Madrid' })
 
 /**
- * "Mi cuenta" del Club Nonno: entrar solo con el móvil y,
- * dentro, los puntos, los pedidos con su tique y los movimientos.
+ * "Mi cuenta" del Club Nonno: entrar o crear la cuenta con correo y
+ * contraseña y, dentro, los puntos, los pedidos con su tique y los movimientos.
  */
 export default function AccountDrawer() {
   const account = useAccount()
@@ -59,7 +59,7 @@ function Rules() {
     <ul className="flex flex-col gap-2 font-sans text-sm text-forno/80">
       <li className="flex gap-2"><Star className="w-4 h-4 mt-0.5 text-tomate fill-tomate flex-shrink-0" strokeWidth={0} />{LOYALTY.pointsPerEuro} punto por cada euro de tus pedidos, al entregártelos.</li>
       <li className="flex gap-2"><Gift className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />{LOYALTY.redeemStep} puntos = {price(LOYALTY.stepValue)} de descuento en tu próximo pedido online.</li>
-      <li className="flex gap-2"><Smartphone className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />Sin contraseñas: entras con tu móvil. Para gastar puntos te mandamos un código por SMS.</li>
+      <li className="flex gap-2"><Mail className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />Entras con tu correo y tu contraseña, y te mandamos el ticket de cada pedido al correo.</li>
     </ul>
   )
 }
@@ -74,50 +74,99 @@ function ClubOff() {
   )
 }
 
-/* ── Entrar: solo el móvil ──────────────────────────────────── */
+/* ── Entrar, crear cuenta o recuperar la contraseña ─────────── */
+const inputClass = 'w-full rounded-md border border-tomate bg-crema px-4 h-12 text-forno placeholder:text-forno/35 outline-none focus:ring-2 focus:ring-tomate/40'
+
+function Field({ label, hint, ...props }) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="font-sans font-semibold uppercase text-xs tracking-wider text-tomate">
+        {label}{hint && <span className="normal-case font-normal text-forno/50"> {hint}</span>}
+      </span>
+      <input className={inputClass} {...props} />
+    </label>
+  )
+}
+
 function Login() {
-  const { login } = useAccount()
-  const [phone, setPhone] = useState('')
-  const [name, setName] = useState('')
+  const { login, register, forgot } = useAccount()
+  const [mode, setMode] = useState('entrar') // entrar | crear | olvido
+  const [form, setForm] = useState({ email: '', password: '', name: '', phone: '', marketing: false })
   const [error, setError] = useState('')
+  const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
+  const go = (next) => { setMode(next); setError(''); setSent(false) }
 
   const submit = async (e) => {
     e.preventDefault()
     setBusy(true); setError('')
-    const { ok, data } = await login(phone, name)
+    const r = mode === 'crear' ? await register(form)
+      : mode === 'olvido' ? await forgot(form.email)
+        : await login(form.email, form.password)
     setBusy(false)
-    if (!ok) setError(data.error || 'No hemos podido entrar. Inténtalo otra vez.')
+    if (!r.ok) return setError(r.data.error || 'No ha salido. Inténtalo otra vez.')
+    if (mode === 'olvido') setSent(true)
   }
 
-  const input = 'w-full rounded-md border border-tomate bg-crema px-4 h-12 text-forno placeholder:text-forno/35 outline-none focus:ring-2 focus:ring-tomate/40'
+  const link = 'text-sm text-tomate underline underline-offset-4'
 
   return (
     <div>
-      <p className="font-display font-bold text-2xl text-forno leading-tight">Gana puntos con cada pizza</p>
-      <div className="mt-4"><Rules /></div>
+      <p className="font-display font-bold text-2xl text-forno leading-tight">
+        {mode === 'crear' ? 'Crea tu cuenta' : mode === 'olvido' ? 'Recupera tu contraseña' : 'Gana puntos con cada pizza'}
+      </p>
+      {mode !== 'olvido' && <div className="mt-4"><Rules /></div>}
 
-      <form onSubmit={submit} className="mt-8 flex flex-col gap-4">
-        <label className="flex flex-col gap-1.5">
-          <span className="font-sans font-semibold uppercase text-xs tracking-wider text-tomate">Tu móvil</span>
-          <input className={input} type="tel" inputMode="tel" autoComplete="tel" placeholder="600 000 000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="font-sans font-semibold uppercase text-xs tracking-wider text-tomate">Tu nombre <span className="normal-case font-normal text-forno/50">(si es tu primera vez)</span></span>
-          <input className={input} autoComplete="given-name" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        {error && <p className="text-sm text-tomate font-semibold" role="alert">{error}</p>}
-        <button className="btn-retro self-start" disabled={busy || phone.replace(/D/g, '').length < 9}>
-          <span>{busy ? 'Entrando…' : 'Entrar'}</span>
-        </button>
-      </form>
+      {sent ? (
+        <div className="mt-8">
+          <p className="text-forno">Si hay una cuenta con <strong>{form.email}</strong>, te hemos mandado un correo con un enlace para elegir una contraseña nueva. Mira también en "Spam".</p>
+          <button onClick={() => go('entrar')} className={`${link} mt-6`}>Volver a entrar</button>
+        </div>
+      ) : (
+        <form onSubmit={submit} className="mt-8 flex flex-col gap-4">
+          {mode === 'crear' && <Field label="Tu nombre" autoComplete="given-name" placeholder="Nombre" value={form.name} onChange={set('name')} required />}
+          <Field label="Correo" type="email" inputMode="email" autoComplete="email" placeholder="tucorreo@gmail.com" value={form.email} onChange={set('email')} required />
+          {mode !== 'olvido' && (
+            <Field
+              label="Contraseña"
+              hint={mode === 'crear' ? '(mínimo 6)' : ''}
+              type="password"
+              autoComplete={mode === 'crear' ? 'new-password' : 'current-password'}
+              value={form.password}
+              onChange={set('password')}
+              minLength={mode === 'crear' ? 6 : undefined}
+              required
+            />
+          )}
+          {mode === 'crear' && (
+            <>
+              <Field label="Tu móvil" hint="(para que la tienda pueda llamarte)" type="tel" inputMode="tel" autoComplete="tel" placeholder="600 000 000" value={form.phone} onChange={set('phone')} required />
+              <label className="flex items-start gap-3 text-sm text-forno/80">
+                <input type="checkbox" checked={form.marketing} onChange={set('marketing')} className="mt-0.5 h-5 w-5 accent-tomate flex-shrink-0" />
+                Quiero recibir ofertas y novedades de La Pizza de Nonno por correo. (Puedes darte de baja cuando quieras.)
+              </label>
+            </>
+          )}
+          {error && <p className="text-sm text-tomate font-semibold" role="alert">{error}</p>}
+          <button className="btn-retro self-start" disabled={busy}>
+            <span>{busy ? 'Un momento…' : mode === 'crear' ? 'Crear cuenta' : mode === 'olvido' ? 'Mandarme el enlace' : 'Entrar'}</span>
+          </button>
+
+          <div className="mt-2 flex flex-col items-start gap-3">
+            {mode === 'entrar' && <button type="button" onClick={() => go('crear')} className={link}>¿No tienes cuenta? Créala gratis</button>}
+            {mode === 'entrar' && <button type="button" onClick={() => go('olvido')} className={link}>He olvidado mi contraseña</button>}
+            {mode !== 'entrar' && <button type="button" onClick={() => go('entrar')} className={link}>Ya tengo cuenta: entrar</button>}
+          </div>
+        </form>
+      )}
     </div>
   )
 }
 
 /* ── Dentro: puntos, pedidos y movimientos ───────────────────── */
 function Member() {
-  const { customer, orders, ledger, points, logout, updateName } = useAccount()
+  const { customer, orders, ledger, points, logout, updateName, updateAccount } = useAccount()
   const [tab, setTab] = useState('pedidos')
   const [name, setName] = useState('')
   const toNext = LOYALTY.redeemStep - (points % LOYALTY.redeemStep)
@@ -134,7 +183,11 @@ function Member() {
           <button className="rounded-md bg-tomate text-masa px-4 font-semibold">Guardar</button>
         </form>
       )}
-      <p className="mt-1 text-sm text-forno/60">{customer.phone.replace(/^\+34(\d{3})(\d{2})(\d{2})(\d{2})$/, '$1 $2 $3 $4')}</p>
+      <p className="mt-1 text-sm text-forno/60">{customer.email}{customer.email && customer.phone ? ' · ' : ''}{customer.phone?.replace(/^\+34(\d{3})(\d{2})(\d{2})(\d{2})$/, '$1 $2 $3 $4')}</p>
+      <label className="mt-3 flex items-start gap-3 text-sm text-forno/80">
+        <input type="checkbox" checked={Boolean(customer.marketing)} onChange={(e) => updateAccount({ marketing: e.target.checked })} className="mt-0.5 h-5 w-5 accent-tomate flex-shrink-0" />
+        Quiero recibir ofertas y novedades por correo
+      </label>
 
       {/* Tarjeta de puntos */}
       <div className="frame mt-6">

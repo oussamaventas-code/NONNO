@@ -10,7 +10,7 @@ import { printDocument, esc } from './printTicket'
 /* ═══════════════════════════════════════════════════════════════
    REPARTO
    "Por salir": el sistema agrupa los pedidos a domicilio en salidas
-   y ordena las paradas. "Sale el reparto" las fija, avisa por SMS y
+   y ordena las paradas. "Sale el reparto" las fija y
    pasan a "En reparto", donde se marcan entregadas (y cobradas).
    ═══════════════════════════════════════════════════════════════ */
 

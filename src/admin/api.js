@@ -65,9 +65,6 @@ export const getPushConfig = () => request('/api/push')
 export const savePushSubscription = (subscription, label) =>
   request('/api/push', { method: 'POST', body: JSON.stringify({ subscription, label }) })
 
-/** Manda un SMS de prueba a ese móvil con la vía configurada (Twilio o Android) */
-export const testSms = (phone) =>
-  request('/api/push', { method: 'POST', body: JSON.stringify({ action: 'test-sms', phone }) })
 
 export const removePushSubscription = (endpoint) =>
   request('/api/push', { method: 'DELETE', body: JSON.stringify({ endpoint }) })

@@ -2,7 +2,7 @@
    Sin dependencias: lo usa el servidor y las pruebas. */
 
 /** Móvil español (6XX o 7XX, con o sin +34) → "+34XXXXXXXXX"; si no lo es, null.
-    Los avisos van por SMS, así que un fijo o un número a medias no sirve. */
+    La tienda tiene que poder llamar al cliente: un número a medias no sirve. */
 export function mobileNumber(raw) {
   let digits = String(raw || '').replace(/[^\d+]/g, '')
   if (digits.startsWith('+34')) digits = digits.slice(3)

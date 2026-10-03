@@ -6,7 +6,6 @@ import { updateOrder } from './api'
 import { printReceipt } from './printTicket'
 import OrderEditor from './OrderEditor'
 import ChargeDialog from './ChargeDialog'
-import SmsStatus from './SmsStatus'
 
 /* ═══════════════════════════════════════════════════════════════
    TPV DEL MOSTRADOR
@@ -171,9 +170,6 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
                         <Clock className="w-3.5 h-3.5" />
                         {o.mode === 'delivery' && o.eta_at ? `Sale ${hourOf(o.ready_at)} · llega ${hourOf(o.eta_at)}` : `Listo a las ${hourOf(o.ready_at)}`}
                       </p>
-                    )}
-                    {!local && (
-                      <div className="mt-2"><SmsStatus order={o} onUpdated={onSaved} onError={onError} /></div>
                     )}
                   </div>
 

@@ -10,7 +10,7 @@ import ScooterIcon from './ScooterIcon'
 
 /* ═══════════════════════════════════════════════════════════════
    SEGUIMIENTO DEL PEDIDO  (/p/NN-4821-a1b2c3d4e5)
-   Lo abre el cliente desde el SMS o al terminar de pedir. Se
+   Lo abre el cliente desde el correo, la app o al terminar de pedir. Se
    actualiza solo cada 15 s mientras el pedido está en marcha.
    ═══════════════════════════════════════════════════════════════ */
 
@@ -49,11 +49,11 @@ function headline(order) {
       return order.dispatchedAt
         ? { title: '¡Va de camino!', sub: order.etaAt ? `Llega hacia las ${hourOf(order.etaAt)}.` : 'Llega en unos minutos.' }
         : { title: 'Listo, saliendo del horno', sub: 'El repartidor sale enseguida.' }
-    case 'horno': return { title: 'Lo estamos preparando', sub: delivery ? 'En cuanto salga, va para tu casa.' : 'Te avisamos por SMS cuando esté listo.' }
+    case 'horno': return { title: 'Lo estamos preparando', sub: delivery ? 'En cuanto salga, va para tu casa.' : 'Esta página se actualiza sola cuando esté listo.' }
     default:
       return order.scheduledFor
         ? { title: 'Pedido programado', sub: 'Lo tenemos apuntado y empezamos a hacerlo a su hora.' }
-        : { title: 'Lo estamos preparando', sub: delivery ? 'En cuanto salga del horno, va para tu casa.' : 'Te avisamos por SMS cuando esté listo.' }
+        : { title: 'Lo estamos preparando', sub: delivery ? 'En cuanto salga del horno, va para tu casa.' : 'Esta página se actualiza sola cuando esté listo.' }
   }
 }
 
@@ -79,7 +79,7 @@ export default function OrderTracking({ token }) {
           forgetLastOrder(token)
           return
         }
-        /* Si llega desde el SMS, también queda a mano en la cabecera. */
+        /* Si llega desde el correo, también queda a mano en la cabecera. */
         rememberLastOrder(token, data.order.ref)
         timer = setTimeout(load, POLL_MS)
       } catch {
@@ -94,7 +94,7 @@ export default function OrderTracking({ token }) {
     return (
       <section className="shell py-20 text-center">
         <h1 className="font-display italic font-bold text-4xl text-tomate">{error}</h1>
-        <p className="mt-3 text-carbon/70">Revisa el enlace del SMS o llama a tu Nonno.</p>
+        <p className="mt-3 text-carbon/70">Revisa el enlace del correo o llama a tu Nonno.</p>
         <button onClick={() => navigate('/carta')} className="btn-retro mt-8"><span>Ver la carta</span></button>
       </section>
     )

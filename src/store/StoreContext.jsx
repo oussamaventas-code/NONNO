@@ -20,7 +20,7 @@ import { getProduct } from '../data/menu'
 
 /* coords: punto de entrega localizado. tier: tramo de distancia elegido
    a mano cuando no se pudo localizar (plan B). */
-const EMPTY_CUSTOMER = { name: '', phone: '', address: '', coords: null, tier: null, notes: '' }
+const EMPTY_CUSTOMER = { name: '', phone: '', email: '', marketing: false, address: '', coords: null, tier: null, notes: '' }
 
 const initialState = {
   locationId: null,

@@ -14,6 +14,7 @@ import StickyOrderBar from './components/StickyOrderBar'
 import Toasts from './components/Toasts'
 import AccountDrawer from './components/AccountDrawer'
 import OrderTracking from './components/OrderTracking'
+import NewPassword from './components/NewPassword'
 import { useEffect } from 'react'
 import { useStore } from './store/StoreContext'
 import { usePath, navigate } from './lib/router'
@@ -49,6 +50,8 @@ export default function App() {
       <main>
         {path.startsWith('/p/') ? (
           <OrderTracking token={decodeURIComponent(path.slice(3))} />
+        ) : path === '/cuenta/contrasena' ? (
+          <NewPassword />
         ) : path === '/carta' ? (
           <Menu />
         ) : path === '/pedir' ? (

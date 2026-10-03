@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { db, isConfigured } from './_lib/supabase.js'
 import { requireSession, SCOPE_ALL } from './_lib/auth.js'
-import { notifyCustomer } from './_lib/sms.js'
 import { getLocation } from '../src/data/locations.js'
 
 /**
@@ -10,8 +9,7 @@ import { getLocation } from '../src/data/locations.js'
  *   { location, action: 'undo', routeId }          deshacer una salida marcada por error
  *
  * Al salir, los pedidos quedan fijos en su salida (ya no se reorganizan),
- * pasan a "listo" si cocina no lo había marcado y el cliente recibe el
- * SMS de "sale ya".
+ * pasan a "listo" si cocina no lo había marcado.
  */
 export default async function handler(req, res) {
   if (!isConfigured()) return res.status(503).json({ error: 'Base de datos no configurada.' })
@@ -50,7 +48,7 @@ async function dispatch(req, res, locationId) {
     return res.status(409).json({ error: 'Algún pedido ya ha salido o ha cambiado. Actualiza y vuelve a intentarlo.' })
   }
 
-  /* No se manda a nadie a repartir (ni se le avisa por SMS) una pizza
+  /* No se manda a nadie a repartir una pizza
      que todavía no está hecha: cocina tiene que haberla marcado lista
      antes de que esta salida pueda confirmarse. */
   const notReady = found.filter((o) => o.status !== 'listo')
@@ -66,16 +64,7 @@ async function dispatch(req, res, locationId) {
     .in('id', ids).select('*')
   if (updError) throw updError
 
-  /* SMS de "sale ya" a cada cliente. Un fallo no para el reparto. */
-  const orders = await Promise.all(updated.map(async (o) => {
-    try {
-      const sms = await notifyCustomer(db(), o, 'listo')
-      return sms ? { ...o, sms } : o
-    } catch {
-      return o
-    }
-  }))
-  return res.status(200).json({ routeId, orders })
+  return res.status(200).json({ routeId, orders: updated })
 }
 
 async function undo(req, res, locationId) {

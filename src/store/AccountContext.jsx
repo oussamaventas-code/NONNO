@@ -46,26 +46,23 @@ export function AccountProvider({ children }) {
 
   useEffect(() => { refresh() }, [refresh])
 
-  /* Se entra solo con el móvil (sin código) */
-  const login = useCallback(async (phone, name) => {
-    const result = await call('POST', { action: 'login', phone, name })
+  /* Correo y contraseña. Lo que entra (o se crea) deja la sesión en una cookie. */
+  const after = useCallback(async (result) => {
     if (result.ok) await refresh()
     return result
   }, [refresh])
 
-  const sendCode = useCallback((phone) => call('POST', { action: 'send-code', phone }), [])
+  const register = useCallback((fields) => call('POST', { action: 'register', ...fields }).then(after), [after])
+  const login = useCallback((email, password) => call('POST', { action: 'login', email, password }).then(after), [after])
+  const forgot = useCallback((email) => call('POST', { action: 'forgot', email }), [])
+  const resetPassword = useCallback((token, password) => call('POST', { action: 'reset', token, password }).then(after), [after])
 
-  const verify = useCallback(async (phone, code, name) => {
-    const result = await call('POST', { action: 'verify', phone, code, name })
-    if (result.ok) await refresh()
-    return result
-  }, [refresh])
-
-  const updateName = useCallback(async (name) => {
-    const result = await call('POST', { action: 'update', name })
+  const updateAccount = useCallback(async (patch) => {
+    const result = await call('POST', { action: 'update', ...patch })
     if (result.ok) setAccount((a) => ({ ...a, customer: result.data.customer }))
     return result
   }, [])
+  const updateName = useCallback((name) => updateAccount({ name }), [updateAccount])
 
   const logout = useCallback(async () => {
     await call('POST', { action: 'logout' })
@@ -80,8 +77,8 @@ export function AccountProvider({ children }) {
     isOpen: open,
     openAccount: () => setOpen(true),
     closeAccount: () => setOpen(false),
-    refresh, login, sendCode, verify, updateName, logout,
-  }), [status, account, open, refresh, login, sendCode, verify, updateName, logout])
+    refresh, register, login, forgot, resetPassword, updateAccount, updateName, logout,
+  }), [status, account, open, refresh, register, login, forgot, resetPassword, updateAccount, updateName, logout])
 
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>
 }

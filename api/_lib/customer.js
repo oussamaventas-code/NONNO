@@ -1,13 +1,14 @@
-import { createHmac, randomInt, timingSafeEqual, randomBytes } from 'node:crypto'
+import { createHmac, createHash, timingSafeEqual, randomBytes, scrypt } from 'node:crypto'
+import { promisify } from 'node:util'
 import { db } from './supabase.js'
-import { mobileNumber } from './sms.js'
-import { LOYALTY, pointsFor } from '../../src/data/loyalty.js'
+import { mobileNumber } from '../../src/lib/customerLookup.js'
+import { pointsFor } from '../../src/data/loyalty.js'
 
 /* ═══════════════════════════════════════════════════════════════
    CLUB NONNO — cuentas de cliente (servidor)
 
-   El cliente entra con su móvil y un código que le llega por SMS.
-   La sesión es una cookie httpOnly firmada, igual que la del panel
+   El cliente entra con su correo y su contraseña (la contraseña se
+   guarda cifrada con scrypt, nunca tal cual). La sesión es una cookie httpOnly firmada, igual que la del panel
    pero con otro nombre y otro secreto: una cosa no abre la otra.
 
    Variables en Vercel:
@@ -18,13 +19,13 @@ import { LOYALTY, pointsFor } from '../../src/data/loyalty.js'
    los pedidos siguen funcionando exactamente igual.
    ═══════════════════════════════════════════════════════════════ */
 
-const COOKIE = 'nonno_cliente'
+/* Nombre nuevo: las sesiones de cuando se entraba solo con el móvil
+   dejan de valer y hay que entrar con correo y contraseña. */
+const COOKIE = 'nonno_cuenta'
 const MAX_AGE = 60 * 60 * 24 * 180 // 180 días
 
-export const CODE_TTL_MIN = 10
-export const MAX_ATTEMPTS = 5          // intentos por código
-export const RESEND_SECONDS = 60       // espera entre dos SMS al mismo móvil
-export const MAX_SENDS_PER_HOUR = 5    // SMS por móvil y hora
+export const RESET_TTL_MIN = 60
+export const MIN_PASSWORD = 6
 
 const secret = () =>
   process.env.CUSTOMER_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || ''
@@ -48,11 +49,8 @@ export const isMissingTable = (error) =>
 
 // ── Sesión ─────────────────────────────────────────────────────
 
-/* verified: se entró con el código del SMS. Solo así se pueden canjear
-   puntos (entrar solo con el móvil deja ver la cuenta, no gastarla).
-   Va dentro de la parte firmada: no se puede falsificar. */
-export function createCustomerCookie(customerId, { verified = false } = {}) {
-  const body = `${Date.now()}.${randomBytes(6).toString('hex')}${verified ? '.v' : ''}~${customerId}`
+export function createCustomerCookie(customerId) {
+  const body = `${Date.now()}.${randomBytes(6).toString('hex')}~${customerId}`
   return [
     `${COOKIE}=${body}~${sign(body)}`,
     'HttpOnly', 'Secure', 'SameSite=Lax', 'Path=/', `Max-Age=${MAX_AGE}`,
@@ -61,8 +59,8 @@ export function createCustomerCookie(customerId, { verified = false } = {}) {
 
 export const clearCustomerCookie = () => `${COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`
 
-/** @returns {{ id: string, verified: boolean }|null} sesión válida del cliente */
-export function readCustomerSession(req) {
+/** @returns {string|null} id del cliente con sesión válida */
+export function readCustomerId(req) {
   if (!secret()) return null
   const match = (req.headers?.cookie || '').split(';').map((c) => c.trim()).find((c) => c.startsWith(`${COOKIE}=`))
   if (!match) return null
@@ -72,21 +70,35 @@ export function readCustomerSession(req) {
   if (!safeEqual(signature, sign(`${issued}~${id}`))) return null
   const at = Number(issued.split('.')[0])
   if (!at || Date.now() - at > MAX_AGE * 1000) return null
-  return { id, verified: issued.endsWith('.v') }
+  return id
 }
 
-/** @returns {string|null} id del cliente con sesión válida */
-export const readCustomerId = (req) => readCustomerSession(req)?.id || null
+// ── Contraseñas ───────────────────────────────────────────────
 
-// ── Códigos por SMS ────────────────────────────────────────────
+const scryptAsync = promisify(scrypt)
 
-export const newCode = () => String(randomInt(0, 10 ** LOYALTY.codeLength)).padStart(LOYALTY.codeLength, '0')
+/** "scrypt$sal$huella": la base de datos nunca ve la contraseña. */
+export async function hashPassword(password) {
+  const salt = randomBytes(16).toString('hex')
+  const hash = await scryptAsync(String(password), salt, 64)
+  return `scrypt$${salt}$${hash.toString('hex')}`
+}
 
-/** Huella del código ligada al móvil: la tabla nunca guarda el código. */
-export const hashCode = (phone, code) => createHmac('sha256', `codigo:${secret()}`).update(`${phone}:${code}`).digest('hex')
+export async function passwordMatches(password, stored) {
+  const [kind, salt, hex] = String(stored || '').split('$')
+  if (kind !== 'scrypt' || !salt || !hex) return false
+  const hash = await scryptAsync(String(password), salt, 64)
+  return safeEqual(hash.toString('hex'), hex)
+}
 
-export const codeMatches = (row, phone, code) =>
-  Boolean(row && /^\d+$/.test(String(code)) && safeEqual(row.code_hash, hashCode(phone, String(code))))
+// ── Enlace para cambiar la contraseña ─────────────────────────
+
+/** Token al azar para el enlace; en la base de datos solo su huella. */
+export const newResetToken = () => randomBytes(32).toString('base64url')
+export const hashToken = (token) => createHash('sha256').update(String(token)).digest('hex')
+
+/** Correo en minúsculas y sin espacios. */
+export const normalizeEmail = (email) => String(email || '').trim().toLowerCase().slice(0, 160)
 
 // ── Clientes y puntos ─────────────────────────────────────────
 
