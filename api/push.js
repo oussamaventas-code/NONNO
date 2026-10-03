@@ -1,14 +1,26 @@
 import { db, isConfigured } from './_lib/supabase.js'
 import { requireSession } from './_lib/auth.js'
-import { pushConfigured } from './_lib/push.js'
+import { pushConfigured, remindClose } from './_lib/push.js'
+import { getStoreStatuses } from './_lib/store.js'
+import { LOCATIONS } from '../src/data/locations.js'
 
 /**
  * Suscripción del panel a las notificaciones.
  *   GET    → clave pública y si el push está disponible
  *   POST   → registrar este navegador
  *   DELETE → dar de baja este navegador
+ *   GET ?cron=cierre → recordatorio nocturno de cerrar (cron de Vercel, ver vercel.json)
  */
 export default async function handler(req, res) {
+  if (req.method === 'GET' && req.query?.cron === 'cierre') {
+    /* Vercel manda "Authorization: Bearer CRON_SECRET": nadie más puede lanzarlo */
+    if (!process.env.CRON_SECRET || req.headers?.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
+      return res.status(401).json({ error: 'No autorizado' })
+    }
+    if (!isConfigured()) return res.status(503).json({ error: 'Base de datos no configurada.' })
+    return res.status(200).json(await remindClose(await getStoreStatuses(), LOCATIONS))
+  }
+
   if (req.method === 'GET') {
     return res.status(200).json({
       enabled: pushConfigured(),

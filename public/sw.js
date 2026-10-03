@@ -1,6 +1,6 @@
 /* Service worker del panel de cocina.
-   Solo hace una cosa: recibir el aviso de pedido nuevo y mostrarlo,
-   aunque el panel esté cerrado. No cachea nada. */
+   Solo hace una cosa: recibir los avisos (pedido nuevo, "¿cerramos?")
+   y mostrarlos aunque el panel esté cerrado. No cachea nada. */
 
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()))
@@ -17,7 +17,8 @@ self.addEventListener('push', (event) => {
       renotify: true,
       requireInteraction: true,
       vibrate: [200, 100, 200],
-      data: { url: '/admin' },
+      icon: '/app/icono-192.png',
+      data: { url: data.url || '/admin' },
     })
   )
 })

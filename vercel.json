@@ -3,8 +3,12 @@
   "rewrites": [
     { "source": "/api/menu", "destination": "/api/store-status?resource=menu" },
     { "source": "/api/cash", "destination": "/api/billing?resource=cash" },
+    { "source": "/api/cierre", "destination": "/api/push?cron=cierre" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/cierre", "schedule": "0 22 * * *" }
   ],
   "headers": [
     {

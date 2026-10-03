@@ -20,8 +20,17 @@ const ruta = window.location.pathname.replace(/\/+$/, '')
 const seccion = ['/admin', '/pantalla'].find((b) => ruta === b || ruta.startsWith(`${b}/`))
 const sedeEnRuta = seccion && ruta.startsWith(`${seccion}/`) ? ruta.slice(seccion.length + 1) : null
 
-/* La web del cliente se puede instalar como app; el panel no. */
+/* La web del cliente se instala como app. El panel también, con su
+   propio icono ("Nonno Panel"): en iPhone es la única forma de que le
+   lleguen al jefe las notificaciones (pedido nuevo, "¿cerramos?"). */
 if (!seccion) setupInstall()
+else if (seccion === '/admin') {
+  const add = (tag, attrs) => document.head.appendChild(Object.assign(document.createElement(tag), attrs))
+  add('link', { rel: 'manifest', href: '/manifest-panel.webmanifest' })
+  add('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' })
+  add('meta', { name: 'apple-mobile-web-app-title', content: 'Nonno Panel' })
+  document.querySelector('link[rel="apple-touch-icon"]')?.setAttribute('href', '/app/apple-touch-icon.png')
+}
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
