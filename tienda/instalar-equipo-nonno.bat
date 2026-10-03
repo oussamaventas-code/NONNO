@@ -29,7 +29,7 @@ echo.
 if "%ROL%"=="" (
   echo  Que quieres montar?
   echo    1 = COCINA   ^(las comandas salen solas en la impresora de cocina^)
-  echo    2 = TPV      ^(el ticket del cliente en la impresora del mostrador^)
+  echo    2 = TPV      ^(el ticket del cliente sale solo en la impresora del mostrador^)
   echo.
   set /p "OPC=  Escribe 1 o 2 y pulsa Enter: "
   if "!OPC!"=="1" set "ROL=cocina"
@@ -69,12 +69,15 @@ if /i "%ROL%"=="cocina" (
 ) else (
   set "NOMBRE=Nonno TPV"
   set "IMPRESORA=la impresora del MOSTRADOR"
-  set "EXTRA="
+  set "EXTRA=--disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows"
 )
 
 set "NONNO_PERFIL=%LocalAppData%\Nonno\%ROL%"
 set "NONNO_CHROME=%CHROME%"
-set "NONNO_URL=%URL%"
+rem El panel se monta solo con ?equipo=cocina o ?equipo=tpv
+set "SEP=?"
+if not "%URL:?=%"=="%URL%" set "SEP=&"
+set "NONNO_URL=%URL%%SEP%equipo=%ROL%"
 set "NONNO_NOMBRE=%NOMBRE%"
 set "NONNO_EXTRA=%EXTRA%"
 
@@ -105,11 +108,11 @@ echo.
 echo  Ahora:
 echo    1. Abre "%NOMBRE%" e inicia sesion en el panel ^(solo la primera vez^).
 if /i "%ROL%"=="cocina" (
-  echo    2. Pestana COCINA y en el menu: "Comandas automaticas: SI".
-  echo    3. Dejala abierta ^(puede estar minimizada^).
+  echo    2. Ya esta: cada pedido nuevo saca sus comandas solo.
 ) else (
-  echo    2. Pestana MOSTRADOR. Al cobrar, marca imprimir ticket.
+  echo    2. Ya esta: cada pedido de la web o del telefono saca el ticket del cliente solo.
 )
+echo    3. Dejala abierta ^(puede estar minimizada^).
 if /i "%ROL%"=="cocina" (
   echo.
   echo  Si aun no has montado el TPV, vuelve a abrir este instalador y elige 2.

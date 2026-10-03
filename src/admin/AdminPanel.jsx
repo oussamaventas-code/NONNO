@@ -10,7 +10,7 @@ import { useMenuOverrides } from '../hooks/useMenuOverrides'
 import Billing from './Billing'
 import Discounts from './Discounts'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
-import { printTicket } from './printTicket'
+import { printTicket, printReceipt } from './printTicket'
 import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus, testSms } from './api'
 import { useOrderAlert } from './useOrderAlert'
 import KitchenBoard from './KitchenBoard'
@@ -59,6 +59,7 @@ const POLL_MS = 4000
 const PREF_VIEW = 'nonno.panel.view'
 const PREF_DEVICE = 'nonno.panel.device'
 const PREF_AUTOPRINT = 'nonno.panel.autoprint'
+const PREF_AUTORECEIPT = 'nonno.panel.autoreceipt'
 const readPref = (key, fallback) => {
   try {
     const raw = localStorage.getItem(key)
@@ -70,6 +71,27 @@ const readPref = (key, fallback) => {
 const writePref = (key, value) => {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch { /* modo privado: solo dura la sesión */ }
 }
+
+/* El icono que crea el instalador de la tienda abre el panel con
+   ?equipo=cocina o ?equipo=tpv: ese Chrome queda montado para siempre
+   (cada icono tiene su perfil y su impresora) sin tocar ningún ajuste.
+     cocina → pestañas de cocina y comandas automáticas
+     tpv    → mostrador y ticket del cliente automático */
+;(() => {
+  try {
+    const url = new URL(window.location.href)
+    const equipo = url.searchParams.get('equipo')
+    if (equipo === 'cocina') {
+      writePref(PREF_DEVICE, 'cocina'); writePref(PREF_VIEW, 'cocina')
+      writePref(PREF_AUTOPRINT, true); writePref(PREF_AUTORECEIPT, false)
+    } else if (equipo === 'tpv') {
+      writePref(PREF_DEVICE, 'mostrador'); writePref(PREF_VIEW, 'mostrador')
+      writePref(PREF_AUTOPRINT, false); writePref(PREF_AUTORECEIPT, true)
+    } else return
+    url.searchParams.delete('equipo')
+    window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+  } catch { /* sin URL o sin almacenamiento: se queda como estaba */ }
+})()
 
 /* Últimos pedidos cargados, por si se abre el panel sin conexión. */
 const cacheKey = (scope) => `nonno.panel.cache.${scope}`
@@ -124,6 +146,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const [testPhone, setTestPhone] = useState('')
   const [testResult, setTestResult] = useState(null)
   const [autoPrint, setAutoPrint] = useState(() => readPref(PREF_AUTOPRINT, false))
+  const [autoReceipt, setAutoReceipt] = useState(() => readPref(PREF_AUTORECEIPT, false))
 
   /* Carta corregida (precios, ocultos, agotados): el mostrador vende con ella.
      `menuVersion` repinta el panel cuando cambia. */
@@ -137,6 +160,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const firstLoad = useRef(true)
   const printedKeys = useRef(new Set())
   const autoPrintOn = useRef(false)
+  const autoReceiptOn = useRef(false)
 
   /* ── Carga y sondeo ──────────────────────────────────────────── */
   const load = useCallback(async () => {
@@ -167,6 +191,12 @@ export default function AdminPanel({ scope, onSignedOut }) {
           printTicket(o)
           updateOrder(o.id, { printed: true }).catch(() => {})
         })
+      }
+      /* Ticket del cliente automático (equipo del mostrador): sale una vez
+         por cada pedido nuevo de la web o del teléfono. Los del mostrador
+         ya lo sacan al cobrar. */
+      if (!firstLoad.current && autoReceiptOn.current) {
+        fresh.filter((o) => o.status === 'nuevo' && o.channel !== 'mostrador').forEach((o) => printReceipt(o))
       }
       firstLoad.current = false
 
@@ -346,6 +376,9 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const toggleAutoPrint = () => {
     setAutoPrint((on) => { writePref(PREF_AUTOPRINT, !on); return !on })
   }
+  const toggleAutoReceipt = () => {
+    setAutoReceipt((on) => { writePref(PREF_AUTORECEIPT, !on); return !on })
+  }
 
   const handleLogout = async () => {
     await logout().catch(() => {})
@@ -371,7 +404,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const modeTabs = DEVICE_MODES.find((m) => m.id === deviceMode)?.tabs
   const tabs = ALL_TABS.filter((t) => (!modeTabs || modeTabs.includes(t.id)) && (!['facturacion', 'hoy', 'descuentos'].includes(t.id) || esDireccion))
   const view = tabs.some((t) => t.id === viewPref) ? viewPref : tabs[0].id
-  autoPrintOn.current = autoPrint && view === 'cocina'
+  autoPrintOn.current = autoPrint
+  autoReceiptOn.current = autoReceipt
 
   /* Móvil: barra de abajo (4 secciones fijas y «Más» con el resto) */
   const needsMore = tabs.length > MOBILE_SLOTS + 1
@@ -662,6 +696,14 @@ export default function AdminPanel({ scope, onSignedOut }) {
                     className={['ptab w-full justify-start', autoPrint ? '!bg-albahaca !border-albahaca !text-masa' : ''].join(' ')}
                   >
                     <Printer className="w-4 h-4" /> {autoPrint ? 'Comandas automáticas: SÍ' : 'Comandas automáticas: NO'}
+                  </button>
+                  <button
+                    onClick={toggleAutoReceipt}
+                    aria-pressed={autoReceipt}
+                    title="Imprime el ticket del cliente de cada pedido nuevo de la web o del teléfono en la impresora de este equipo"
+                    className={['ptab w-full justify-start', autoReceipt ? '!bg-albahaca !border-albahaca !text-masa' : ''].join(' ')}
+                  >
+                    <Printer className="w-4 h-4" /> {autoReceipt ? 'Tickets de cliente automáticos: SÍ' : 'Tickets de cliente automáticos: NO'}
                   </button>
                   {pushState === 'activo' ? (
                     <span className="ptab w-full justify-start !border-albahaca !text-albahaca pointer-events-none">

@@ -40,20 +40,21 @@ En el TPV ve a *Configuración → Bluetooth y dispositivos → Impresoras y esc
    - En *Destino*, elige **la impresora de COCINA**. Si no está en la lista, pulsa *Ver más…*
    - Pulsa **Imprimir**.
    - Cuando salga el papel, **cierra esa ventana**.
-5. Aparece en el escritorio el icono **"Nonno Cocina"**. Ábrelo, **inicia sesión**, ve a la pestaña **Cocina** y en el menú pon **Comandas automáticas: SÍ**.
+5. Aparece en el escritorio el icono **"Nonno Cocina"**. Ábrelo e **inicia sesión** (solo la primera vez). Ya está: abre la pestaña Cocina y las **comandas salen solas**, no hay que tocar ningún ajuste.
 6. Puedes minimizarla, pero **no la cierres**. Se abre sola cada vez que se enciende el ordenador.
 
 ## 3. Montar "Nonno TPV"
 
 1. Vuelve a abrir **`instalar-equipo-nonno.bat`** y escribe **2** (TPV).
 2. En la prueba de impresión, elige **la impresora del MOSTRADOR** y pulsa Imprimir.
-3. Abre el icono **"Nonno TPV"**, inicia sesión y ve a la pestaña **Mostrador**.
+3. Abre el icono **"Nonno TPV"** e inicia sesión. Ya está: cada pedido de la web o del teléfono saca **solo** el ticket del cliente en el mostrador. Los que se hacen en el mostrador lo sacan al cobrar.
+4. Puedes minimizarla, pero **no la cierres**.
 
 ## 4. Prueba final
 
 1. Haz un pedido de prueba desde el móvil con entrante, pizza y bebida.
 2. En **cocina** tienen que salir solas **3 etiquetas**: ENTRANTES, PIZZAS · HORNO y BEBIDAS.
-3. En **Nonno TPV**, cobra el pedido marcando imprimir. En el **mostrador** sale el ticket con logo.
+3. En el **mostrador** sale solo el ticket del cliente con logo.
 4. Cancela el pedido de prueba.
 
 ---
@@ -63,7 +64,8 @@ En el TPV ve a *Configuración → Bluetooth y dispositivos → Impresoras y esc
 | Pasa esto | Haz esto |
 |---|---|
 | La comanda sale en el mostrador (o al revés) | Has elegido la impresora equivocada en la prueba. Vuelve a abrir el instalador para ese icono y elige la buena. |
-| En cocina no sale nada | ¿Está abierta **Nonno Cocina** (aunque sea minimizada), en la pestaña **Cocina** y con **Comandas automáticas: SÍ**? ¿La impresora tiene papel? |
+| En cocina no sale nada | ¿Está abierta **Nonno Cocina** (aunque sea minimizada)? En su menú ⚙ tiene que poner **Comandas automáticas: SÍ**. ¿La impresora tiene papel? |
+| En el mostrador no sale el ticket | ¿Está abierta **Nonno TPV**? En su menú ⚙ tiene que poner **Tickets de cliente automáticos: SÍ**. |
 | Sale la ventana de "Imprimir" | Has abierto el panel desde el Chrome normal. Ábrelo desde los iconos **Nonno Cocina** o **Nonno TPV**. |
 | Antes iba y ya no | La impresora ha cambiado de IP (pasa si se reinicia el router). Imprime su hoja de configuración y compara la IP. Lo mejor es pedir a quien os puso el router que **reserve la IP** de cada impresora. |
 | Sale girado o en 2 trozos | En *Preferencias de impresión* de esa impresora: **Vertical** y el tamaño de papel correcto (rollo de 80 mm). |

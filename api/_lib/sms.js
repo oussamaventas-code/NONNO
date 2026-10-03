@@ -4,10 +4,10 @@ import { hourOf } from '../../src/lib/kitchenSlots.js'
 import { trackToken, trackPath } from '../../src/lib/tracking.js'
 import { mobileNumber } from '../../src/lib/customerLookup.js'
 
-/* Enlace para seguir el pedido. Solo si SITE_URL está puesto en Vercel
-   (p. ej. https://lapizzadenonno.es): sin él, el SMS va como antes. */
+/* Enlace para seguir el pedido: SITE_URL si está puesto en Vercel
+   (p. ej. https://lapizzadenonno.es); si no, el dominio de producción. */
 const trackUrl = (order) => {
-  const base = String(process.env.SITE_URL || '').replace(/\/+$/, '')
+  const base = siteBase()
   const token = trackToken(order)
   return base && token ? `${base}${trackPath(token)}` : ''
 }
