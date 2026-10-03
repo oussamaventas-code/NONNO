@@ -35,10 +35,17 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    /* Letra algo más grande (lo pidió el cliente): todo va en rem, así
+       que escala la web y el panel a la vez. Los tickets van en px. */
+    font-size: 106.25%;
     /* El scroll suave depende del reloj de animación del navegador:
        si se pausa (pestaña en segundo plano, ahorro de energía en iOS)
        los enlaces del menú dejan de llevar a ninguna parte. Cada salto
        decide su propio comportamiento desde JS. */
+  }
+
+  @media (min-width: 1024px) {
+    html { font-size: 112.5%; }
   }
 
   body {
