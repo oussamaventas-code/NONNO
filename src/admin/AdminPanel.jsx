@@ -743,7 +743,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
                         {testResult.ok
                           ? testResult.via === 'whatsapp'
                             ? 'Enviado por WhatsApp. Si en un minuto no llega, mira Twilio → Monitor → Logs.'
-                            : `SMS enviado por ${testResult.provider === 'twilio' ? 'Twilio' : 'el Android del local'}. Mira el móvil.`
+                            : `SMS enviado por ${{ twilio: 'Twilio', telnyx: 'Telnyx' }[testResult.provider] || 'el Android del local'}. Mira el móvil.`
                           : testResult.error || (testResult.skipped === 'no-es-movil' ? 'Ese número no es un móvil.' : 'No ha salido.')}
                       </p>
                     )}

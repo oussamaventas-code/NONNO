@@ -36,12 +36,18 @@ const DEFAULT_URL = 'https://api.sms-gate.app/3rdparty/v1/messages'
    Si están sus tres variables, se usa Twilio en vez del Android:
      TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
      TWILIO_FROM  → número de Twilio (+1…) o nombre de remitente (NONNO) */
+/* TELNYX (más barato que Twilio). Si están sus variables va primero y,
+   si falla, el SMS sale por Twilio:
+     TELNYX_API_KEY, TELNYX_MESSAGING_PROFILE_ID
+     TELNYX_FROM  → nombre de remitente (NONNO) o número de Telnyx (+…) */
+const telnyxConfigured = () =>
+  Boolean(process.env.TELNYX_API_KEY && process.env.TELNYX_MESSAGING_PROFILE_ID && process.env.TELNYX_FROM)
 const twilioConfigured = () =>
   Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM)
 const gatewayConfigured = () =>
   Boolean(process.env.SMS_GATEWAY_USER && process.env.SMS_GATEWAY_PASSWORD)
 
-export const smsConfigured = () => twilioConfigured() || gatewayConfigured()
+export const smsConfigured = () => telnyxConfigured() || twilioConfigured() || gatewayConfigured()
 
 /* ═══════════════════════════════════════════════════════════════
    WHATSAPP (Twilio) — va primero si está configurado; el SMS queda
@@ -76,7 +82,7 @@ const waTemplate = (key) => (whatsappConfigured() && process.env[WA_TEMPLATES[ke
 
 /** Qué vía de envío está activa, para enseñarlo en el panel */
 export const smsProvider = () =>
-  waTemplate('listo') ? 'whatsapp' : twilioConfigured() ? 'twilio' : gatewayConfigured() ? 'android' : null
+  waTemplate('listo') ? 'whatsapp' : telnyxConfigured() ? 'telnyx' : twilioConfigured() ? 'twilio' : gatewayConfigured() ? 'android' : null
 
 /** Móvil español en formato +34XXXXXXXXX, o null si no es un móvil (los fijos no reciben SMS). */
 export { mobileNumber }
@@ -143,6 +149,12 @@ export async function sendSms(phone, text) {
   const to = mobileNumber(phone)
   if (!to) return { ok: false, at, skipped: 'no-es-movil' }
 
+  if (telnyxConfigured()) {
+    const sent = await sendTelnyx(to, text, at)
+    if (sent.ok || !twilioConfigured()) return sent
+    /* Telnyx falló: de reserva, Twilio (se apunta por qué falló el primero) */
+    return { ...(await sendTwilio(to, text, at)), fallbackFrom: sent.error }
+  }
   if (twilioConfigured()) return sendTwilio(to, text, at)
 
   try {
@@ -161,6 +173,30 @@ export async function sendSms(phone, text) {
   }
 }
 
+async function sendTelnyx(to, text, at) {
+  try {
+    const res = await fetch('https://api.telnyx.com/v2/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.TELNYX_API_KEY}` },
+      body: JSON.stringify({
+        from: process.env.TELNYX_FROM,
+        to,
+        text,
+        messaging_profile_id: process.env.TELNYX_MESSAGING_PROFILE_ID,
+      }),
+      signal: AbortSignal.timeout(5000),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      const e = data.errors?.[0] || {}
+      return { ok: false, at, provider: 'telnyx', error: `telnyx ${e.code || res.status}: ${String(e.detail || e.title || '').slice(0, 120)}` }
+    }
+    return { ok: true, at, provider: 'telnyx' }
+  } catch (err) {
+    return { ok: false, at, provider: 'telnyx', error: err?.name === 'TimeoutError' ? 'telnyx no responde' : 'sin conexion con telnyx' }
+  }
+}
+
 async function sendTwilio(to, text, at) {
   const sid = process.env.TWILIO_ACCOUNT_SID
   try {
@@ -174,11 +210,11 @@ async function sendTwilio(to, text, at) {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
       /* El motivo exacto de Twilio (número sin verificar en la prueba, país no permitido…) */
-      return { ok: false, at, error: `twilio ${data.code || res.status}: ${String(data.message || '').slice(0, 120)}` }
+      return { ok: false, at, provider: 'twilio', error: `twilio ${data.code || res.status}: ${String(data.message || '').slice(0, 120)}` }
     }
-    return { ok: true, at }
+    return { ok: true, at, provider: 'twilio' }
   } catch (err) {
-    return { ok: false, at, error: err?.name === 'TimeoutError' ? 'twilio no responde' : 'sin conexion con twilio' }
+    return { ok: false, at, provider: 'twilio', error: err?.name === 'TimeoutError' ? 'twilio no responde' : 'sin conexion con twilio' }
   }
 }
 

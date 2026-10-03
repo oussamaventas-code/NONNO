@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     if (!provider) return res.status(200).json({ ok: false, error: 'No hay ninguna vía de avisos configurada en Vercel (ni WhatsApp, ni Twilio SMS, ni el Android).' })
     if (!mobileNumber(req.body.phone)) return res.status(400).json({ ok: false, error: 'Escribe un móvil español (6XX o 7XX).' })
     const result = await sendTestAviso(req.body.phone)
-    return res.status(200).json({ ...result, provider: result.via === 'sms' && provider === 'whatsapp' ? (twilioSms() ? 'twilio' : 'android') : provider })
+    return res.status(200).json({ ...result, provider: result.via === 'whatsapp' ? 'whatsapp' : result.provider || (provider === 'whatsapp' ? (twilioSms() ? 'twilio' : 'android') : provider) })
   }
 
   if (req.method === 'POST') {
