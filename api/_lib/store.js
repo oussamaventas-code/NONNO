@@ -1,5 +1,5 @@
 import { db } from './supabase.js'
-import { serviceDay } from '../../src/lib/orderNumber.js'
+import { serviceDay, serviceDayRange } from '../../src/lib/orderNumber.js'
 
 /* ═══════════════════════════════════════════════════════════════
    Apertura de la tienda por sede. Única fuente de verdad: la web
@@ -39,8 +39,16 @@ const withDough = (row, used) => {
 /** Masas gastadas hoy por sede: { sangonera: 42 } */
 async function doughUsed(locationIds) {
   if (!locationIds.length) return {}
-  const { data, error } = await db().from('orders').select('location_id, pizza_count')
-    .in('location_id', locationIds).eq('service_day', serviceDay()).neq('status', 'cancelado')
+  const day = serviceDay()
+  const read = (byColumn) => {
+    const q = db().from('orders').select('location_id, pizza_count').in('location_id', locationIds).neq('status', 'cancelado')
+    if (byColumn) return q.eq('service_day', day)
+    const [from, to] = serviceDayRange(day)
+    return q.gte('created_at', new Date(from).toISOString()).lt('created_at', new Date(to).toISOString())
+  }
+  let { data, error } = await read(true)
+  /* Sin la columna service_day (supabase/numero-pedido.sql): por la hora del pedido */
+  if (['42703', 'PGRST204'].includes(error?.code)) ({ data, error } = await read(false))
   if (error) {
     console.error('Error contando las masas:', error)
     return {}
