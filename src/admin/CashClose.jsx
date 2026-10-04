@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Banknote, CreditCard, Check, AlertTriangle, Wallet } from 'lucide-react'
 import { price } from '../lib/format'
-import { madridDay } from '../lib/stock'
+import { serviceDay } from '../lib/orderNumber'
 import { hourOf } from '../lib/kitchenSlots'
 import { getLocation } from '../data/locations'
 import { fetchCash, saveCash } from './api'
@@ -11,6 +11,9 @@ import { fetchCash, saveCash } from './api'
    Al acabar el servicio: el panel dice cuánto debería haber en
    efectivo y en tarjeta según los pedidos cobrados, el empleado
    escribe lo que ha contado y queda guardado con la diferencia.
+   La caja es de la NOCHE (día de servicio, cambia a las 05:00): cerrar
+   a las 00:30 sigue siendo la caja de esa noche. Antes de cerrar dice
+   qué pedidos faltan por cobrar o por entregar, con su número.
    ═══════════════════════════════════════════════════════════════ */
 
 const num = (v) => {
@@ -25,7 +28,7 @@ const asInput = (n) => Number(n).toFixed(2).replace('.', ',')
 
 export default function CashClose({ locationIds, onError }) {
   const [locId, setLocId] = useState(locationIds[0])
-  const [day, setDay] = useState(madridDay())
+  const [day, setDay] = useState(serviceDay())
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [cash, setCash] = useState('')
@@ -57,6 +60,10 @@ export default function CashClose({ locationIds, onError }) {
   /* Efectivo que debe haber en el cajón: el fondo fijo más lo cobrado en efectivo */
   const float = data?.float ?? 150
   const cashDue = expected ? Math.round((expected.cash + float) * 100) / 100 : 0
+  /* El cierre guardado se hizo con otras cuentas (alguien cobró o deshizo un cobro después) */
+  const stale = Boolean(data?.closing && expected) && (
+    Math.abs(Number(data.closing.expected_cash) - cashDue) > 0.005
+    || Math.abs(Number(data.closing.expected_card) - expected.card) > 0.005)
   const cashN = num(cash)
   const cardN = num(card)
   const ready = cash !== '' && card !== '' && cashN !== null && cardN !== null
@@ -93,7 +100,7 @@ export default function CashClose({ locationIds, onError }) {
         <input
           type="date"
           value={day}
-          max={madridDay()}
+          max={serviceDay()}
           onChange={(e) => e.target.value && setDay(e.target.value)}
           aria-label="Día del cierre"
           className="pfield !w-auto !py-2 text-sm"
@@ -113,6 +120,11 @@ export default function CashClose({ locationIds, onError }) {
               <p className="mono text-tomate flex items-center gap-1.5"><Banknote className="w-4 h-4" /> DEBE HABER EN LA CAJA</p>
               <p className="mt-1 font-serif italic font-semibold text-4xl text-carbon">{price(cashDue)}</p>
               <p className="mono normal-case text-carbon/60 mt-1">{price(float)} de fondo + {price(expected.cash)} cobrados en efectivo</p>
+              {expected.cashDelivery > 0 && (
+                <p className="mono normal-case text-carbon/60 mt-1">
+                  De ese efectivo, <strong className="text-carbon">{price(expected.cashDelivery)}</strong> lo cobraron los repartidores: tiene que estar ya en el cajón.
+                </p>
+              )}
             </div>
             <div className="pcard p-5">
               <p className="mono text-tomate flex items-center gap-1.5"><CreditCard className="w-4 h-4" /> TARJETA ESPERADA</p>
@@ -120,11 +132,32 @@ export default function CashClose({ locationIds, onError }) {
             </div>
           </div>
 
-          {expected.pendingCount > 0 && (
-            <p className="flex items-start gap-2 rounded-md border border-horno bg-horno/10 px-4 py-3 text-sm font-semibold text-carbon">
-              <AlertTriangle className="w-5 h-5 text-horno flex-shrink-0" />
-              Hay {expected.pendingCount} pedido{expected.pendingCount === 1 ? '' : 's'} sin cobrar por {price(expected.pending)}. No cuentan en la caja: cóbralos antes de cerrar.
+          {stale && (
+            <p className="flex items-start gap-2 rounded-md border border-tomate bg-tomate/10 px-4 py-3 text-sm font-semibold text-tomate">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+              Desde el cierre se han cobrado o cambiado pedidos: lo esperado ya no es lo que se guardó. Vuelve a contar y cierra otra vez.
             </p>
+          )}
+
+          {(expected.unpaid?.length > 0 || expected.open?.length > 0) && (
+            <div className="rounded-md border border-horno bg-horno/10 px-4 py-3 text-sm text-carbon">
+              <p className="flex items-start gap-2 font-semibold">
+                <AlertTriangle className="w-5 h-5 text-horno flex-shrink-0" />
+                Antes de cerrar, resuelve estos pedidos en Mostrador o Reparto (cóbralos, entrégalos o cancélalos si no vinieron). Mientras tanto no cuentan en la caja.
+              </p>
+              <ul className="mt-2 flex flex-col gap-1">
+                {[...new Map([...(expected.unpaid || []), ...(expected.open || [])].map((o) => [o.id, o])).values()].map((o) => {
+                  const unpaid = expected.unpaid?.some((u) => u.id === o.id)
+                  const pending = [unpaid && 'sin cobrar', o.status !== 'entregado' && 'sin entregar'].filter(Boolean).join(' y ')
+                  return (
+                    <li key={o.id} className="flex flex-wrap items-baseline justify-between gap-x-3 border-t border-horno/30 pt-1">
+                      <span><strong className="font-mono">{o.ref}</strong> · {o.name} · {o.mode === 'delivery' ? 'domicilio' : 'recoger'}</span>
+                      <span className="font-semibold text-tomate">{price(o.total)} · {pending}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
           )}
 
           <div className="pcard p-5 flex flex-col gap-4">

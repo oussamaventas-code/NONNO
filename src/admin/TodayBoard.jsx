@@ -3,7 +3,7 @@ import { Power, AlertTriangle, Eye, MapPinOff, Wallet, ChevronRight, CheckCircle
 import { LOCATIONS } from '../data/locations'
 import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
-import { madridDay } from '../lib/stock'
+import { serviceDay } from '../lib/orderNumber'
 import { fetchBilling, fetchCash } from './api'
 import DoughControl from './DoughControl'
 
@@ -23,7 +23,7 @@ export default function TodayBoard({ orders, storeStatuses, onDoughSaved, onOpen
   const [now, setNow] = useState(Date.now())
 
   const loadMoney = useCallback(async () => {
-    const day = madridDay()
+    const day = serviceDay()
     try {
       const results = await Promise.all(LOCATIONS.map(async (l) => {
         const [bill, box] = await Promise.all([

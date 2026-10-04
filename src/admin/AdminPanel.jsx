@@ -16,6 +16,7 @@ import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushS
 import { useOrderAlert } from './useOrderAlert'
 import KitchenBoard from './KitchenBoard'
 import { price } from '../lib/format'
+import { isThisServiceDay } from '../lib/orderNumber'
 import { LOCATIONS } from '../data/locations'
 
 /* Pestañas del panel y qué equipo ve cuáles. Cada ordenador o tablet
@@ -164,8 +165,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
   /* ── Carga y sondeo ──────────────────────────────────────────── */
   const load = useCallback(async () => {
     try {
-      /* La dirección ve las dos sedes: necesita más margen */
-      const { orders: list } = await fetchOrders(esDireccion ? 160 : 80)
+      const { orders: list } = await fetchOrders()
       setError(null)
 
       const fresh = list.filter((o) => !knownIds.current.has(o.id))
@@ -451,7 +451,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
   }, [undo])
 
   const today = porSede.filter(
-    (o) => new Date(o.created_at).toDateString() === new Date().toDateString()
+    (o) => isThisServiceDay(o)
       && o.status !== 'cancelado'
   )
   const facturado = today.reduce((sum, o) => sum + Number(o.total || 0), 0)
@@ -789,6 +789,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
             defaultLocationId={locationIds[0]}
             onSaved={upsertOrder}
             onError={setError}
+            onGoReparto={tabs.some((t) => t.id === 'reparto') ? () => changeView('reparto') : undefined}
           />
         ) : (
           <KitchenBoard

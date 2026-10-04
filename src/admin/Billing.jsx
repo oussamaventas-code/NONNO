@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Euro, Package, Truck, Globe, Store, Phone, Banknote, CreditCard, Clock3 } from 'lucide-react'
 import { price } from '../lib/format'
-import { madridDay } from '../lib/stock'
+import { serviceDay } from '../lib/orderNumber'
 import { fetchBilling } from './api'
 import { CANCEL_LABEL } from './CancelReasons'
 
@@ -31,7 +31,7 @@ const PRESETS = (today) => ({
 })
 
 export default function Billing({ locationId, onError }) {
-  const today = madridDay()
+  const today = serviceDay()
   const [preset, setPreset] = useState('hoy')
   const [custom, setCustom] = useState({ from: today, to: today })
   const [data, setData] = useState(null)

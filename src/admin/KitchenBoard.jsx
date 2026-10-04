@@ -5,13 +5,16 @@ import { hourOf } from '../lib/kitchenSlots'
 import { printTicket } from './printTicket'
 import OrderCard from './OrderCard'
 import CancelReasons from './CancelReasons'
+import { isThisServiceDay } from '../lib/orderNumber'
 
 /* ═══════════════════════════════════════════════════════════════
    TABLERO DE COCINA
    Dos franjas: EN PREPARACIÓN → LISTOS. Un pedido entra ya en
    preparación (en la base sigue siendo "nuevo"; "horno" de pedidos
-   antiguos cuenta igual) y avanza con UN botón grande: LISTO y luego
-   ENTREGADO. Lo urgente sube arriba y cambia de color: amarillo
+   antiguos cuenta igual) y avanza con UN botón grande: LISTO. Cocina
+   no entrega lo que falta por cobrar: los de recoger se cobran y
+   entregan en el mostrador, y los de domicilio los lleva Reparto. Solo
+   un pedido de recoger ya pagado se puede dar por ENTREGADO desde aquí. Lo urgente sube arriba y cambia de color: amarillo
    cuando quedan pocos minutos, rojo cuando ya se ha pasado su hora.
    Un pedido nuevo parpadea (y suena) hasta que se toca la tarjeta.
    En el móvil las franjas son dos pestañas; en pantalla grande, dos
@@ -46,8 +49,7 @@ export default function KitchenBoard({ orders, busyId, onStatus, onUpdated }) {
 
   const active = orders.filter(colOf)
   const finished = orders.filter((o) => ['entregado', 'cancelado'].includes(o.status))
-  const todayStr = new Date().toDateString()
-  const finishedToday = finished.filter((o) => new Date(o.created_at).toDateString() === todayStr)
+  const finishedToday = finished.filter((o) => isThisServiceDay(o))
 
   return (
     <div>
@@ -131,6 +133,8 @@ function KitchenCard({ order, col, now, busy, onStatus, onUpdated }) {
   const delivery = order.mode === 'delivery'
   /* Pedido programado para dentro de mucho: aparece, pero sin urgencia ni alarma */
   const farOff = Boolean(order.scheduled_for) && col.id === 'prep' && left !== null && left > 45
+  /* Ya listo: lo que falta no es de cocina (lo cobra el mostrador o lo lleva reparto) */
+  const handOff = col.id === 'listo' && (delivery || order.payment_status !== 'pagado')
 
   return (
     <article
@@ -233,14 +237,20 @@ function KitchenCard({ order, col, now, busy, onStatus, onUpdated }) {
 
         {/* Acción principal */}
         <div className="mt-4 flex flex-col gap-2">
-          <button
-            onClick={() => onStatus(order.id, col.next, order.seen_at ? {} : { seen: true })}
-            disabled={busy}
-            className={`btn w-full ${col.btn} text-crema min-h-[64px] !text-lg disabled:opacity-50`}
-          >
-            <span className="btn-layer bg-forno" />
-            <span className="btn-label">{col.action}</span>
-          </button>
+          {handOff ? (
+            <p className="flex min-h-[64px] items-center justify-center gap-2 rounded-md border-2 border-dashed border-tomate/50 px-3 text-center font-sans font-extrabold uppercase tracking-wide text-tomate">
+              {delivery ? <><Truck className="w-5 h-5" /> Para reparto</> : <><Euro className="w-5 h-5" /> Cobrar en mostrador</>}
+            </p>
+          ) : (
+            <button
+              onClick={() => onStatus(order.id, col.next, order.seen_at ? {} : { seen: true })}
+              disabled={busy}
+              className={`btn w-full ${col.btn} text-crema min-h-[64px] !text-lg disabled:opacity-50`}
+            >
+              <span className="btn-layer bg-forno" />
+              <span className="btn-label">{col.action}</span>
+            </button>
+          )}
         </div>
 
         {/* Lo demás, a un toque */}

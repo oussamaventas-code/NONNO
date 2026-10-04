@@ -5,6 +5,7 @@ import { hourOf } from '../lib/kitchenSlots'
 import { updateOrder } from './api'
 import { printReceipt } from './printTicket'
 import { useOrderAlert } from './useOrderAlert'
+import { isThisServiceDay } from '../lib/orderNumber'
 import OrderEditor from './OrderEditor'
 import ChargeDialog from './ChargeDialog'
 
@@ -13,10 +14,14 @@ import ChargeDialog from './ChargeDialog'
    Los pedidos de la sede agrupados por lo que hay que HACER con ellos:
      LISTOS PARA ENTREGAR → arriba, en verde; suena al salir de cocina
      EN COCINA            → con lo que les falta
+     PARA REPARTO         → los de domicilio ya hechos: los lleva Reparto
      ENTREGADOS SIN COBRAR → para que no se escape ninguno
    Lo ya cerrado (cobrado y entregado, cancelado) queda plegado abajo.
-   Cobrar un pedido LISTO de recogida lo da también por entregado: si
-   se cobra en el mostrador es que el cliente se lo lleva.
+
+   Quién hace qué: los de RECOGER se cobran y entregan aquí (cobrar un
+   pedido listo ya lo da por entregado; sin cobrar no se puede entregar).
+   Los de DOMICILIO los entrega y cobra Reparto, al volver el repartidor.
+   Así cada euro entra por un solo sitio y la caja cuadra.
    ═══════════════════════════════════════════════════════════════ */
 
 const CHANNEL = {
@@ -28,7 +33,7 @@ const CHANNEL = {
 const UNDO_MS = 10000
 
 const isActive = (o) => !['entregado', 'cancelado'].includes(o.status)
-const isToday = (o) => new Date(o.created_at).toDateString() === new Date().toDateString()
+const isToday = (o) => isThisServiceDay(o)
 const isPaid = (o) => o.payment_status === 'pagado'
 const inKitchen = (o) => ['nuevo', 'horno'].includes(o.status)
 
@@ -51,7 +56,7 @@ function matches(o, q) {
     || (digits.length >= 3 && String(o.customer_phone || '').replace(/\D/g, '').includes(digits))
 }
 
-export default function Counter({ orders, locationIds, defaultLocationId, onSaved, onError }) {
+export default function Counter({ orders, locationIds, defaultLocationId, onSaved, onError, onGoReparto }) {
   const [search, setSearch] = useState('')
   const [showDone, setShowDone] = useState(false)
   const [editor, setEditor] = useState(null) // { order?, channel }
@@ -95,8 +100,10 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
 
   const today = orders.filter((o) => isToday(o) || isActive(o)).filter((o) => matches(o, search))
   const byTime = (a, b) => Date.parse(a.ready_at || a.created_at) - Date.parse(b.ready_at || b.created_at)
-  const listos = today.filter((o) => o.status === 'listo').sort(byTime)
+  const isDelivery = (o) => o.mode === 'delivery'
+  const listos = today.filter((o) => o.status === 'listo' && !isDelivery(o)).sort(byTime)
   const cocina = today.filter(inKitchen).sort(byTime)
+  const reparto = today.filter((o) => o.status === 'listo' && isDelivery(o)).sort(byTime)
   const sinCobrar = today.filter((o) => o.status === 'entregado' && !isPaid(o)).sort(byTime)
   const hechos = today
     .filter((o) => o.status === 'cancelado' || (o.status === 'entregado' && isPaid(o)))
@@ -148,7 +155,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
     await patch(order, { status: from, ...(wasPaid ? {} : { paymentStatus: 'pendiente' }) })
   }
 
-  const empty = !listos.length && !cocina.length && !sinCobrar.length
+  const empty = !listos.length && !cocina.length && !reparto.length && !sinCobrar.length
   const card = (o, tone) => (
     <OrderRow
       key={o.id}
@@ -161,6 +168,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
       onDeliver={() => deliver(o)}
       onEdit={() => setEditor({ order: o })}
       onUnpay={() => patch(o, { paymentStatus: 'pendiente' })}
+      onGoReparto={onGoReparto}
     />
   )
 
@@ -213,6 +221,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
 
       <Group title="Listos para entregar" tone="listo" count={listos.length}>{listos.map((o) => card(o, 'listo'))}</Group>
       <Group title="En cocina" tone="cocina" count={cocina.length}>{cocina.map((o) => card(o, 'cocina'))}</Group>
+      <Group title="Para reparto" tone="reparto" count={reparto.length}>{reparto.map((o) => card(o, 'reparto'))}</Group>
       <Group title="Entregados sin cobrar" tone="cobrar" count={sinCobrar.length}>{sinCobrar.map((o) => card(o, 'cobrar'))}</Group>
 
       {hechos.length > 0 && (
@@ -267,6 +276,7 @@ const GROUP_TONE = {
   listo: 'text-albahaca',
   cocina: 'text-horno',
   cobrar: 'text-tomate',
+  reparto: 'text-carbon',
 }
 
 function Group({ title, tone, count, children }) {
@@ -287,10 +297,11 @@ const STRIPE = {
   listo: 'border-l-[8px] !border-albahaca',
   cocina: 'border-l-[8px] !border-horno',
   cobrar: 'border-l-[8px] !border-tomate',
+  reparto: 'border-l-[8px] !border-carbon/40',
   hecho: 'opacity-70',
 }
 
-function OrderRow({ o, tone, now, flash, busy, onCharge, onDeliver, onEdit, onUnpay }) {
+function OrderRow({ o, tone, now, flash, busy, onCharge, onDeliver, onEdit, onUnpay, onGoReparto }) {
   const ch = CHANNEL[o.channel] || CHANNEL.web
   const paid = isPaid(o)
   const delivery = o.mode === 'delivery'
@@ -302,11 +313,14 @@ function OrderRow({ o, tone, now, flash, busy, onCharge, onDeliver, onEdit, onUn
   const time = o.ready_at && active ? minutesText(o.ready_at, now) : null
 
   /* Qué es lo más probable que haya que hacer con este pedido.
-     Listo y de recogida: cobrar = entregar (un solo botón). */
-  const canCharge = !local && !paid && o.status !== 'cancelado'
-  const canDeliver = !local && active
+     Recogida lista: cobrar = entregar (un solo botón). Recogida sin
+     cobrar no se entrega. Domicilio: lo entrega y cobra Reparto; aquí
+     solo se cobra si se quedó entregado sin cobrar. */
+  const canCharge = !local && !paid && o.status !== 'cancelado' && (!delivery || o.status === 'entregado')
+  const canDeliver = !local && active && !delivery && paid
   const handOver = !local && active && o.status === 'listo' && !delivery
   const primary = handOver ? (paid ? 'entregar' : 'cobrar-entregar') : canCharge ? 'cobrar' : null
+  const toReparto = !local && active && delivery
 
   return (
     <li className={['pcard p-4 sm:p-5', STRIPE[tone] || '', flash ? 'animate-pulse ring-4 ring-albahaca' : ''].join(' ')}>
@@ -369,6 +383,9 @@ function OrderRow({ o, tone, now, flash, busy, onCharge, onDeliver, onEdit, onUn
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {canDeliver && primary !== 'entregar' && primary !== 'cobrar-entregar' && (
           <button onClick={onDeliver} disabled={busy} className="ptab soft"><PackageCheck className="w-4 h-4" /> Entregado</button>
+        )}
+        {toReparto && onGoReparto && (
+          <button onClick={onGoReparto} className="ptab soft"><Truck className="w-4 h-4" /> {o.dispatched_at ? 'En la calle · ver reparto' : 'Lo lleva reparto'}</button>
         )}
         {editable && <button onClick={onEdit} disabled={busy} className="ptab soft"><Pencil className="w-4 h-4" /> Editar</button>}
         <button onClick={() => printReceipt(o)} className="ptab soft"><Printer className="w-4 h-4" /> Ticket</button>

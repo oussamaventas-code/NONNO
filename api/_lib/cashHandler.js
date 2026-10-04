@@ -1,8 +1,7 @@
 import { db, isConfigured } from './supabase.js'
 import { requireSession, SCOPE_ALL } from './auth.js'
 import { getLocation } from '../../src/data/locations.js'
-import { madridDay } from '../../src/lib/stock.js'
-import { madridTime } from '../../src/lib/kitchenSlots.js'
+import { serviceDay, serviceDayRange } from '../../src/lib/orderNumber.js'
 
 /**
  * CIERRE DE CAJA
@@ -20,7 +19,6 @@ import { madridTime } from '../../src/lib/kitchenSlots.js'
  */
 const DAY = /^\d{4}-\d{2}-\d{2}$/
 const round = (n) => Math.round((Number(n) || 0) * 100) / 100
-const dayStartMs = (dateStr) => madridTime(Date.parse(`${dateStr}T12:00:00Z`), '00:00')
 const MISSING_TABLE = '42P01'
 
 /* Fondo de caja: el efectivo que siempre se queda en el cajón (150 €). Lo
@@ -28,26 +26,44 @@ const MISSING_TABLE = '42P01'
    efectivo, y lo que se retira es lo contado menos el fondo. */
 const CASH_FLOAT = Number(process.env.CASH_FLOAT) || 150
 
-/** Lo cobrado ese día en la sede, por forma de pago. */
+/**
+ * Lo cobrado esa noche en la sede, por forma de pago. La noche es el
+ * día de servicio (de 05:00 a 05:00): cerrar la caja a las 00:30 sigue
+ * siendo la caja de esa noche. Devuelve también lo que impide cerrar
+ * bien: pedidos sin cobrar y pedidos que aún no se han entregado.
+ */
 async function expectedFor(locationId, day) {
-  const from = dayStartMs(day)
+  const [from, to] = serviceDayRange(day)
   const { data, error } = await db()
     .from('orders')
-    .select('total, payment_status, payment_method, status')
+    .select('id, ref, customer_name, mode, total, payment_status, payment_method, status')
     .eq('location_id', locationId)
     .neq('status', 'cancelado')
     .gte('created_at', new Date(from).toISOString())
-    .lt('created_at', new Date(from + 24 * 3600 * 1000).toISOString())
+    .lt('created_at', new Date(to).toISOString())
+    .order('created_at', { ascending: true })
     .limit(5000)
   if (error) throw error
 
-  const out = { cash: 0, card: 0, pending: 0, pendingCount: 0, orders: data.length }
+  const out = { cash: 0, cashDelivery: 0, card: 0, pending: 0 }
+  const brief = (o) => ({ id: o.id, ref: o.ref, name: o.customer_name, mode: o.mode, status: o.status, total: round(o.total) })
+  const unpaid = []
+  const open = []
   for (const o of data) {
     const total = Number(o.total) || 0
-    if (o.payment_status !== 'pagado') { out.pending += total; out.pendingCount += 1 } else if (o.payment_method === 'tarjeta') out.card += total
-    else out.cash += total
+    if (o.status !== 'entregado') open.push(brief(o))
+    if (o.payment_status !== 'pagado') { out.pending += total; unpaid.push(brief(o)) } else if (o.payment_method === 'tarjeta') out.card += total
+    else {
+      out.cash += total
+      /* Efectivo cobrado en la puerta: lo trae el repartidor al volver */
+      if (o.mode === 'delivery') out.cashDelivery += total
+    }
   }
-  return { cash: round(out.cash), card: round(out.card), pending: round(out.pending), pendingCount: out.pendingCount, orders: out.orders }
+  return {
+    cash: round(out.cash), cashDelivery: round(out.cashDelivery), card: round(out.card),
+    pending: round(out.pending), pendingCount: unpaid.length, orders: data.length,
+    unpaid, open,
+  }
 }
 
 const money = (v) => {
@@ -68,7 +84,7 @@ export default async function cashHandler(req, res) {
   if (session.scope !== SCOPE_ALL && session.scope !== locationId) {
     return res.status(403).json({ error: 'No puedes ver la caja de otra sede.' })
   }
-  const day = DAY.test(source.day || '') ? source.day : madridDay()
+  const day = DAY.test(source.day || '') ? source.day : serviceDay()
 
   try {
     if (req.method === 'GET') {

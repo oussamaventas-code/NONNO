@@ -1,8 +1,7 @@
 import { db, isConfigured } from './_lib/supabase.js'
 import { requireSession, SCOPE_ALL } from './_lib/auth.js'
 import { getLocation } from '../src/data/locations.js'
-import { madridDay } from '../src/lib/stock.js'
-import { madridTime } from '../src/lib/kitchenSlots.js'
+import { serviceDay, serviceDayRange } from '../src/lib/orderNumber.js'
 import cashHandler from './_lib/cashHandler.js'
 
 /**
@@ -23,8 +22,6 @@ const bucket = () => ({ orders: 0, revenue: 0 })
 const add = (b, total) => { b.orders += 1; b.revenue += Number(total) || 0 }
 const rounded = (b) => ({ orders: b.orders, revenue: round(b.revenue) })
 
-/** Instante 00:00 en Madrid del día `dateStr` (YYYY-MM-DD). */
-const dayStartMs = (dateStr) => madridTime(Date.parse(`${dateStr}T12:00:00Z`), '00:00')
 
 /**
  * Agregación pura, sin red: fácil de probar. `rows` son filas de
@@ -52,7 +49,8 @@ export function aggregateBilling(allRows) {
     if (o.payment_status === 'pagado') summary.collected += total
     else summary.pending += total
 
-    const day = madridDay(Date.parse(o.created_at))
+    /* Día de servicio (cambia a las 05:00): lo de las 00:30 es de esa noche */
+    const day = o.service_day || serviceDay(Date.parse(o.created_at))
     if (!byDay.has(day)) byDay.set(day, bucket())
     add(byDay.get(day), total)
 
@@ -128,7 +126,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Método no permitido' })
   }
 
-  const today = madridDay()
+  const today = serviceDay()
   const from = DAY.test(req.query?.from || '') ? req.query.from : today
   const to = DAY.test(req.query?.to || '') ? req.query.to : today
   if (from > to) return res.status(400).json({ error: 'El rango de fechas no es válido.' })
@@ -140,8 +138,8 @@ export default async function handler(req, res) {
     let query = db()
       .from('orders')
       .select(columns)
-      .gte('created_at', new Date(dayStartMs(from)).toISOString())
-      .lt('created_at', new Date(dayStartMs(to) + 24 * 3600 * 1000).toISOString())
+      .gte('created_at', new Date(serviceDayRange(from)[0]).toISOString())
+      .lt('created_at', new Date(serviceDayRange(to)[1]).toISOString())
       .order('created_at', { ascending: true })
       .limit(10000)
     if (locationId) query = query.eq('location_id', locationId)

@@ -12,7 +12,7 @@ import { forcedSlot } from '../src/lib/kitchenSlots.js'
 import { getLocation } from '../src/data/locations.js'
 import { phonePattern, phoneKey, summarizeCustomer } from '../src/lib/customerLookup.js'
 import { trackToken, parseTrackToken, keyMatches } from '../src/lib/tracking.js'
-import { serviceDay, nextNumber } from '../src/lib/orderNumber.js'
+import { serviceDay, serviceDayRange, nextNumber } from '../src/lib/orderNumber.js'
 import { guard, clientIp } from './_lib/limiter.js'
 
 const reply = (row, staff) => ({
@@ -281,20 +281,32 @@ export default async function handler(req, res) {
     const limit = Math.min(200, Math.max(1, Number(req.query?.limit) || 60))
     const since = req.query?.since
 
-    let query = db()
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(limit)
+    /* ?today=1 (el panel): TODOS los pedidos de esta noche más los que
+       sigan abiertos de antes. Con un tope fijo, en una noche fuerte se
+       quedaban fuera pedidos y el mostrador no cuadraba con la caja. */
+    const today = Boolean(req.query?.today)
+    const read = (tonight) => {
+      let query = db().from('orders').select('*').order('created_at', { ascending: false })
+      if (tonight) {
+        const start = new Date(serviceDayRange(serviceDay())[0]).toISOString()
+        query = query.or(`created_at.gte."${start}",status.in.(nuevo,horno,listo)`).limit(1000)
+      } else {
+        query = query.limit(today ? 200 : limit)
+      }
+      /* El filtro por sede sale de la SESIÓN, nunca de lo que pida el
+         navegador: quien entra con la clave de una sede no puede ver la
+         otra ni manipulando la petición. */
+      if (session.scope !== SCOPE_ALL) query = query.eq('location_id', session.scope)
+      if (since) query = query.gt('created_at', since)
+      return query
+    }
 
-    /* El filtro por sede sale de la SESIÓN, nunca de lo que pida el
-       navegador: quien entra con la clave de una sede no puede ver la
-       otra ni manipulando la petición. */
-    if (session.scope !== SCOPE_ALL) query = query.eq('location_id', session.scope)
-
-    if (since) query = query.gt('created_at', since)
-
-    const { data, error } = await query
+    let { data, error } = await read(today)
+    /* Si la consulta de "esta noche" fallara, el panel no se queda vacío */
+    if (error && today) {
+      console.error('Error leyendo los pedidos de esta noche, se usa la lista simple:', error)
+      ;({ data, error } = await read(false))
+    }
     if (error) {
       console.error('Error leyendo pedidos:', error)
       return res.status(500).json({ error: 'No hemos podido cargar los pedidos.' })

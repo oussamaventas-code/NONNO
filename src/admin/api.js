@@ -19,7 +19,8 @@ export const login = (password) =>
 
 export const logout = () => request('/api/session', { method: 'DELETE' })
 
-export const fetchOrders = (limit = 60) => request(`/api/orders?limit=${limit}`)
+/** Todos los pedidos de esta noche (día de servicio) y los que sigan abiertos. */
+export const fetchOrders = () => request('/api/orders?today=1')
 
 export const updateOrder = (id, patch) =>
   request(`/api/orders/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })

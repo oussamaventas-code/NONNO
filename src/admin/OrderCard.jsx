@@ -1,4 +1,4 @@
-import { Printer, Truck, Package, Phone, MapPin, Clock, Euro, CircleDollarSign } from 'lucide-react'
+import { Printer, Truck, Package, Phone, MapPin, Clock, Euro } from 'lucide-react'
 import { price } from '../lib/format'
 import { printTicket } from './printTicket'
 import { hourOf } from '../lib/kitchenSlots'
@@ -176,20 +176,7 @@ export default function OrderCard({ order, onStatus, onUpdated, busy }) {
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          {order.mode === 'pickup' && (
-            <button
-              onClick={() => onStatus(order.id, null, { paymentStatus: order.payment_status === 'pagado' ? 'pendiente' : 'pagado' })}
-              disabled={busy}
-              className="btn border border-tomate bg-transparent text-tomate px-5 disabled:opacity-50"
-              title="Cambiar estado de pago"
-            >
-              <span className="btn-layer bg-tomate/10" />
-              <span className="btn-label">
-                <CircleDollarSign className="w-4 h-4" />
-                {order.payment_status === 'pagado' ? 'MARCAR PENDIENTE' : 'MARCAR PAGADO'}
-              </span>
-            </button>
-          )}
+          {/* El cobro (con efectivo o tarjeta) se hace solo en el mostrador o en reparto */}
 
           {step.next && (
             <button
