@@ -5,6 +5,7 @@
     { "source": "/api/cash", "destination": "/api/billing?resource=cash" },
     { "source": "/api/cierre", "destination": "/api/push?cron=cierre" },
     { "source": "/api/driver", "destination": "/api/routes?resource=driver" },
+    { "source": "/api/print", "destination": "/api/display?resource=print" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],

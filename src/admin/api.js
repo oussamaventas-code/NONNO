@@ -54,6 +54,14 @@ export const saveDriver = (locationId, driver) =>
 export const removeDriver = (id) =>
   request('/api/driver', { method: 'POST', body: JSON.stringify({ action: 'remove', id }) })
 
+/* Nonno Impresora (programa del local que imprime sin Chrome) */
+const printAction = (body) => request('/api/print', { method: 'POST', body: JSON.stringify(body) })
+export const queuePrint = (orderId, kind) => printAction({ action: 'job', orderId, kind })
+export const printTest = (location, role) => printAction({ action: 'test', location, role })
+export const printRetry = (location) => printAction({ action: 'retry', location })
+export const printTakeover = (location) => printAction({ action: 'takeover', location })
+export const printInstallKey = (location) => printAction({ action: 'key', location })
+
 export const fetchDisplay = (locationId) =>
   request(`/api/display?location=${encodeURIComponent(locationId)}`)
 

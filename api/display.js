@@ -1,14 +1,19 @@
 import { db, isConfigured } from './_lib/supabase.js'
 import { requireSession, SCOPE_ALL } from './_lib/auth.js'
 import { getLocation } from '../src/data/locations.js'
+import printHandler from './_lib/printJobs.js'
 
 /**
  * GET /api/display?location=sangonera
  * Datos para la pantalla del local (TV): solo pedidos PARA RECOGER que
  * están en preparación o listos. Lo justo para que el cliente se
  * reconozca: número y nombre abreviado. Nunca teléfono ni dirección.
+ *
+ * /api/print (Nonno Impresora) llega aquí con ?resource=print por una
+ * reescritura de vercel.json, para no gastar otra función.
  */
 export default async function handler(req, res) {
+  if (req.query?.resource === 'print') return printHandler(req, res)
   if (!isConfigured()) {
     return res.status(503).json({ error: 'El sistema todavía no está conectado a la base de datos.' })
   }

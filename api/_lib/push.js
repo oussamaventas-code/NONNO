@@ -85,3 +85,14 @@ export async function remindClose(statuses, locations) {
   })))
   return { open: open.map((l) => l.id), sent: results.reduce((n, r) => n + (r.sent || 0), 0) }
 }
+
+/** La impresora (o el ordenador) de una sede no responde con la tienda abierta. */
+export function notifyPrinterDown(locationId, locationName, pending) {
+  return sendToScopes([locationId], {
+    title: `Impresora sin conexión · ${locationName}`,
+    body: pending
+      ? `${pending} papel${pending === 1 ? '' : 'es'} sin imprimir. Mira el ordenador del local o imprime desde el panel.`
+      : 'El programa Nonno Impresora no responde. Mira que el ordenador del local esté encendido.',
+    url: `/admin/${locationId}`,
+  })
+}

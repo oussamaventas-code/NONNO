@@ -4,6 +4,7 @@ import { sanitizeOrder, validateOrder, PAYMENT_METHODS } from '../_lib/order.js'
 import { assignSlot, SLOT_ERRORS } from '../_lib/slots.js'
 import { settleOrderPoints } from '../_lib/customer.js'
 import { loadMenu } from '../_lib/menu.js'
+import { enqueue } from '../_lib/printJobs.js'
 
 
 const STATUSES = ['nuevo', 'horno', 'listo', 'entregado', 'cancelado']
@@ -92,6 +93,8 @@ export default async function handler(req, res) {
   /* Club Nonno: suma los puntos al entregar y los devuelve al cancelar.
      Nunca bloquea el cambio de estado. */
   if (status === 'entregado' || status === 'cancelado') await settleOrderPoints(data)
+  /* Cocina ya tenía la comanda en papel: le sale un aviso de CANCELADO */
+  if (status === 'cancelado' && data.printed_at) await enqueue(data, ['cancelado'])
 
   return res.status(200).json({ order: data })
 }
@@ -161,5 +164,7 @@ async function editOrder(req, res, id, scoped) {
     })
   }
 
+  /* La comanda nueva, marcada MODIFICADO, sale sola en cocina */
+  await enqueue(assigned.row, ['comanda'])
   return res.status(200).json({ order: assigned.row })
 }

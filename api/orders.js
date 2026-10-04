@@ -4,6 +4,8 @@ import { notifyNewOrder } from './_lib/push.js'
 import { sendMail, orderMail } from './_lib/mail.js'
 import { sanitizeOrder, validateOrder, newRef } from './_lib/order.js'
 import { isStoreOpen, doughStatus, doughProblem } from './_lib/store.js'
+import { enqueueNewOrder, printersStatus } from './_lib/printJobs.js'
+import { LOCATIONS } from '../src/data/locations.js'
 import { loadMenu } from './_lib/menu.js'
 import { precheck, assignSlot, SLOT_ERRORS } from './_lib/slots.js'
 import { readCustomerId, getCustomer, movePoints, isMissingTable } from './_lib/customer.js'
@@ -243,6 +245,8 @@ export default async function handler(req, res) {
        si fallan; van a la vez para que el cliente no espere de más. */
     await Promise.all([
       notifyNewOrder(row).catch((err) => console.error('Error enviando la notificación:', err)),
+      /* Nonno Impresora: comandas y ticket a la cola del local (si lo tiene instalado) */
+      enqueueNewOrder(row),
       !staff && row.customer_email ? sendMail({ to: row.customer_email, ...orderMail(row) }) : null,
     ])
 
@@ -312,7 +316,10 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'No hemos podido cargar los pedidos.' })
     }
 
-    return res.status(200).json({ orders: data })
+    /* Estado de Nonno Impresora en cada sede de este panel (y aviso si se cae) */
+    const printers = await printersStatus(session.scope === SCOPE_ALL ? LOCATIONS.map((l) => l.id) : [session.scope])
+      .catch((err) => { console.error('Impresora: estado', err); return {} })
+    return res.status(200).json({ orders: data, printers })
   }
 
   res.setHeader('Allow', 'GET, POST')

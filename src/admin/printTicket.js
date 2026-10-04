@@ -2,6 +2,7 @@ import { price } from '../lib/format'
 import { STATIONS, stationOf } from '../data/menu'
 import { hourOf } from '../lib/kitchenSlots'
 import qrcode from 'qrcode-generator'
+import { queuePrint } from './api'
 /* Logo en blanco y negro puro (la versión neón tiene fondo negro y en
    térmica saldría un borrón). Va incrustado: imprime aunque no haya red. */
 import logoTicket from '../assets/logo-ticket.png?inline'
@@ -280,13 +281,37 @@ export function buildReceiptHtml(order) {
   return page(`Ticket ${order.ref}`, body)
 }
 
-export const printReceipt = (order) => printOne(buildReceiptHtml(order))
+/* ── Nonno Impresora ────────────────────────────────────────────
+   Si el local tiene instalado el programa de impresión, los papeles
+   los imprime él (sin Chrome): aquí solo se piden a la cola. Si no lo
+   tiene, se imprime desde el navegador como siempre. El panel avisa
+   de qué sedes lo tienen con cada carga de pedidos. */
+let agents = {}
+export const setPrintAgents = (map) => { agents = map || {} }
+/** ¿Imprime este pedido el programa del local? (los pedidos sin enviar, no) */
+export const viaAgent = (order) => Boolean(agents[order?.location_id]) && /^[0-9a-f-]{36}$/i.test(String(order?.id || ''))
 
-/**
- * Comanda de cocina: una etiqueta por sección con líneas, una tras otra.
- * Devuelve false si el navegador bloqueó la primera ventana.
- */
-export async function printTicket(order) {
+const browserReceipt = (order) => printOne(buildReceiptHtml(order))
+async function browserTicket(order) {
   const results = await Promise.all(buildTicketSet(order).map((t) => printOne(t.html)))
   return results.every(Boolean)
+}
+
+/** Ticket del cliente: al programa del local si lo hay; si falla, por el navegador. */
+export async function printReceipt(order, { browser = false } = {}) {
+  if (!browser && viaAgent(order)) {
+    try { if ((await queuePrint(order.id, 'ticket')).queued) return true } catch { /* plan B: navegador */ }
+  }
+  return browserReceipt(order)
+}
+
+/**
+ * Comanda de cocina (una hoja por sección). Devuelve false si el
+ * navegador bloqueó la impresión.
+ */
+export async function printTicket(order, { browser = false } = {}) {
+  if (!browser && viaAgent(order)) {
+    try { if ((await queuePrint(order.id, 'comanda')).queued) return true } catch { /* plan B: navegador */ }
+  }
+  return browserTicket(order)
 }

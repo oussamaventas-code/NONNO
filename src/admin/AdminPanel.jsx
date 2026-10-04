@@ -11,7 +11,8 @@ import { useMenuOverrides } from '../hooks/useMenuOverrides'
 import Billing from './Billing'
 import Discounts from './Discounts'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
-import { printTicket, printReceipt } from './printTicket'
+import { printTicket, printReceipt, setPrintAgents, viaAgent } from './printTicket'
+import { PrinterBanner, PrinterSettings } from './PrinterStatus'
 import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus } from './api'
 import { useOrderAlert } from './useOrderAlert'
 import KitchenBoard from './KitchenBoard'
@@ -132,6 +133,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const [loading, setLoading] = useState(true)
   const [pushState, setPushState] = useState('desconocido')
   const [storeStatuses, setStoreStatuses] = useState({})
+  /* Nonno Impresora de cada sede (programa del local que imprime sin Chrome) */
+  const [printers, setPrinters] = useState({})
   const [togglingStore, setTogglingStore] = useState(null)
   /* Cada equipo recuerda su papel: el ordenador de cocina y el del
      mostrador imprimen cosas distintas en su propia impresora. La
@@ -165,7 +168,10 @@ export default function AdminPanel({ scope, onSignedOut }) {
   /* ── Carga y sondeo ──────────────────────────────────────────── */
   const load = useCallback(async () => {
     try {
-      const { orders: list } = await fetchOrders()
+      const { orders: list, printers: agents } = await fetchOrders()
+      /* Las sedes con Nonno Impresora no imprimen desde aquí: lo hace el programa del local */
+      setPrintAgents(agents)
+      setPrinters(agents || {})
       setError(null)
 
       const fresh = list.filter((o) => !knownIds.current.has(o.id))
@@ -182,7 +188,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
          activo sin imprimir sale una vez, y otra vez si se modifica.
          Al abrir el panel no se imprime lo que ya había. */
       const pendingPrint = list.filter((o) =>
-        !o.printed_at && !['entregado', 'cancelado'].includes(o.status)
+        !o.printed_at && !['entregado', 'cancelado'].includes(o.status) && !viaAgent(o)
         && !printedKeys.current.has(printKey(o)))
       pendingPrint.forEach((o) => printedKeys.current.add(printKey(o)))
       if (!firstLoad.current && autoPrintOn.current) {
@@ -195,7 +201,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
          por cada pedido nuevo de la web o del teléfono. Los del mostrador
          ya lo sacan al cobrar. */
       if (!firstLoad.current && autoReceiptOn.current) {
-        fresh.filter((o) => o.status === 'nuevo' && o.channel !== 'mostrador').forEach((o) => printReceipt(o))
+        fresh.filter((o) => o.status === 'nuevo' && o.channel !== 'mostrador' && !viaAgent(o)).forEach((o) => printReceipt(o))
       }
       firstLoad.current = false
 
@@ -479,6 +485,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
           </p>
         </div>
       )}
+      <PrinterBanner printers={printers} locationIds={locationIds} orders={orders} onError={setError} />
       {queue.length > 0 && (
         <div className="bg-queso text-carbon border-y border-tomate px-4 py-2 text-sm">
           <p className="font-semibold text-center">
@@ -697,6 +704,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
                   </div>
                   <p className="mono normal-case text-carbon/50 mt-1.5">{DEVICE_MODES.find((m) => m.id === deviceMode)?.hint}</p>
                 </div>
+
+                <PrinterSettings printers={printers} locationIds={locationIds} onError={setError} />
 
                 <div className="flex flex-col gap-2">
                   <p className="mono text-tomate">AJUSTES</p>
