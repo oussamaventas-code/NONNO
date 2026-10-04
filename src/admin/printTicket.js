@@ -1,6 +1,7 @@
 import { price } from '../lib/format'
 import { STATIONS, stationOf } from '../data/menu'
 import { hourOf } from '../lib/kitchenSlots'
+import qrcode from 'qrcode-generator'
 /* Logo en blanco y negro puro (la versión neón tiene fondo negro y en
    térmica saldría un borrón). Va incrustado: imprime aunque no haya red. */
 import logoTicket from '../assets/logo-ticket.png?inline'
@@ -101,6 +102,9 @@ const STYLE = `
   .field { margin: 2px 0; }
   .foot { font-size: 11px; text-align: center; margin-top: 8px; }
   .logo { display: block; width: 20mm; margin: 0 auto 1px; }
+  .qr { text-align: center; margin: 6px 0 2px; }
+  .qr svg { width: 30mm; height: 30mm; }
+  .qr div { font-size: 10px; }
   .thanks { font-size: 13px; font-weight: bold; text-align: center; margin-top: 4px; }
 `
 
@@ -250,6 +254,19 @@ function printOne(html) {
 export const printDocument = (title, bodyHtml) => printOne(page(title, bodyHtml))
 
 /** Ticket de cliente del mostrador: un único ticket completo, sin secciones de cocina. */
+/**
+ * QR del repartidor: va en el ticket de los pedidos a domicilio. Al
+ * llegar a la casa lo escanea con la cámara del móvil, se abre su
+ * portal con ESE pedido y marca entregado y cobrado (efectivo/tarjeta).
+ */
+export function driverQr(order) {
+  if (order.mode !== 'delivery' || !/^[0-9a-f-]{36}$/i.test(String(order.id || '')) || typeof window === 'undefined') return ''
+  const qr = qrcode(0, 'M')
+  qr.addData(`${window.location.origin}/repartidor?p=${order.id}`)
+  qr.make()
+  return `<div class="qr">${qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true })}<div>REPARTIDOR: ESCANEA AL ENTREGAR</div></div>`
+}
+
 export function buildReceiptHtml(order) {
   const body = `
     ${ticketHead(order, { logo: true })}
@@ -258,7 +275,8 @@ export function buildReceiptHtml(order) {
     ${breakdown(order)}
     <div class="total"><span>TOTAL</span><span>${esc(price(order.total))}</span></div>
     <div class="rule"></div>
-    ${ticketFoot(order, { full: true, customer: true })}`
+    ${ticketFoot(order, { full: true, customer: true })}
+    ${driverQr(order)}`
   return page(`Ticket ${order.ref}`, body)
 }
 

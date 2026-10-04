@@ -125,6 +125,16 @@ export default function CashClose({ locationIds, onError }) {
                   De ese efectivo, <strong className="text-carbon">{price(expected.cashDelivery)}</strong> lo cobraron los repartidores: tiene que estar ya en el cajón.
                 </p>
               )}
+              {expected.byDriver?.length > 0 && (
+                <ul className="mt-2 flex flex-col gap-0.5 text-sm">
+                  {expected.byDriver.map((d) => (
+                    <li key={d.name} className="flex justify-between gap-3 border-t border-tomate/20 pt-0.5">
+                      <span className="text-carbon/80">{d.name} entrega</span>
+                      <strong className="text-carbon">{price(d.cash)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className="pcard p-5">
               <p className="mono text-tomate flex items-center gap-1.5"><CreditCard className="w-4 h-4" /> TARJETA ESPERADA</p>

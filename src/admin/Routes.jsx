@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import { Map as MapIcon, Printer, Send, Phone, AlertTriangle, Undo2, Banknote, CreditCard, Check, Truck } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Map as MapIcon, Printer, Send, Phone, AlertTriangle, Undo2, Banknote, CreditCard, Check, Truck, UserPlus, Trash2, Smartphone } from 'lucide-react'
 import { getLocation } from '../data/locations'
 import { planTrips, bestOrder, tripTimes, mapsRouteUrl } from '../lib/routes'
 import { hourOf } from '../lib/kitchenSlots'
 import { price } from '../lib/format'
-import { routeAction, updateOrder } from './api'
+import { routeAction, updateOrder, fetchDrivers, saveDriver, removeDriver } from './api'
 import { printDocument, esc } from './printTicket'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -12,6 +12,9 @@ import { printDocument, esc } from './printTicket'
    "Por salir": el sistema agrupa los pedidos a domicilio en salidas
    y ordena las paradas. "Sale el reparto" las fija y
    pasan a "En reparto", donde se marcan entregadas (y cobradas).
+   Si la sede tiene repartidores dados de alta, al salir se elige quién
+   la lleva: esas paradas le salen en su móvil (/repartidor) y él las
+   marca entregadas y cobradas escaneando el QR del ticket.
    ═══════════════════════════════════════════════════════════════ */
 
 const isOpen = (o) => !['entregado', 'cancelado'].includes(o.status)
@@ -20,6 +23,20 @@ const km1 = (n) => `${Number(n).toLocaleString('es-ES', { maximumFractionDigits:
 export default function Routes({ orders, locationIds, onSaved, onError }) {
   const locId = locationIds.find((id) => getLocation(id)?.services.delivery)
   const [busy, setBusy] = useState(null)
+  const [drivers, setDrivers] = useState([])
+  const [driversOff, setDriversOff] = useState(false)
+
+  const loadDrivers = useCallback(async () => {
+    if (!locId) return
+    try {
+      setDrivers((await fetchDrivers(locId)).drivers)
+      setDriversOff(false)
+    } catch (err) {
+      /* Sin supabase/repartidores.sql: el reparto sigue como siempre */
+      if (err.status === 503) setDriversOff(err.message)
+    }
+  }, [locId])
+  useEffect(() => { loadDrivers() }, [loadDrivers])
 
   if (!locId) {
     return <p className="py-16 text-center font-serif italic font-semibold text-lg text-tomate">Esta sede no hace reparto a domicilio.</p>
@@ -45,8 +62,8 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
     try { await fn() } catch (err) { onError(err.message) } finally { setBusy(null) }
   }
 
-  const dispatch = (trip) => run(trip.id, async () => {
-    const { orders: updated } = await routeAction(locId, 'dispatch', { ids: trip.stops.map((s) => s.id) })
+  const dispatch = (trip, driverId) => run(trip.id, async () => {
+    const { orders: updated } = await routeAction(locId, 'dispatch', { ids: trip.stops.map((s) => s.id), ...(driverId ? { driverId } : {}) })
     updated.forEach(onSaved)
   })
 
@@ -112,18 +129,37 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
                       <span className="btn-layer bg-tomate/10" />
                       <span className="btn-label"><Printer className="w-4 h-4" /> HOJA DE RUTA</span>
                     </button>
-                    <button
-                      onClick={() => dispatch(trip)}
-                      disabled={busy === trip.id || notReady.length > 0}
-                      title={notReady.length ? `Espera a que cocina marque listo: ${notReady.map((s) => s.ref).join(', ')}` : undefined}
-                      className="btn flex-1 min-w-[11rem] bg-tomate text-crema disabled:opacity-50"
-                    >
-                      <span className="btn-layer bg-horno" />
-                      <span className="btn-label">
-                        <Send className="w-4 h-4" />
-                        {busy === trip.id ? 'GUARDANDO…' : notReady.length ? 'FALTA POR HORNEAR' : 'SALE EL REPARTO'}
-                      </span>
-                    </button>
+                    {drivers.length > 0 && !notReady.length ? (
+                      <div className="basis-full">
+                        <p className="mono normal-case text-carbon/60 mb-1.5">¿Quién lo lleva?</p>
+                        <div className="flex flex-wrap gap-2">
+                          {drivers.map((d) => (
+                            <button
+                              key={d.id}
+                              onClick={() => dispatch(trip, d.id)}
+                              disabled={busy === trip.id}
+                              className="btn flex-1 min-w-[8rem] bg-tomate text-crema disabled:opacity-50"
+                            >
+                              <span className="btn-layer bg-horno" />
+                              <span className="btn-label"><Send className="w-4 h-4" /> {busy === trip.id ? 'GUARDANDO…' : `SALE ${d.name.toUpperCase()}`}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => dispatch(trip)}
+                        disabled={busy === trip.id || notReady.length > 0}
+                        title={notReady.length ? `Espera a que cocina marque listo: ${notReady.map((s) => s.ref).join(', ')}` : undefined}
+                        className="btn flex-1 min-w-[11rem] bg-tomate text-crema disabled:opacity-50"
+                      >
+                        <span className="btn-layer bg-horno" />
+                        <span className="btn-label">
+                          <Send className="w-4 h-4" />
+                          {busy === trip.id ? 'GUARDANDO…' : notReady.length ? 'FALTA POR HORNEAR' : 'SALE EL REPARTO'}
+                        </span>
+                      </button>
+                    )}
                   </div>
                 </TripCard>
               )
@@ -146,7 +182,7 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
                 title="En la calle"
                 trip={route}
                 origin={origin}
-                header={`Salió a las ${hourOf(route.departAt)} · quedan ${route.stops.length} parada(s)`}
+                header={`${route.stops[0]?.driver_name ? `${route.stops[0].driver_name} · ` : ''}salió a las ${hourOf(route.departAt)} · quedan ${route.stops.length} parada(s)`}
                 stopActions={(s) => (
                   s.payment_status === 'pagado' ? (
                     <SmallButton onClick={() => deliver(s)} disabled={busy === s.id} icon={Check}>Entregado</SmallButton>
@@ -172,7 +208,82 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
           </div>
         )}
       </section>
+
+      <Drivers locId={locId} drivers={drivers} off={driversOff} onChange={setDrivers} onError={onError} />
     </div>
+  )
+}
+
+/* ── Repartidores de la sede: nombre + PIN de 4 cifras para su portal ── */
+function Drivers({ locId, drivers, off, onChange, onError }) {
+  const [name, setName] = useState('')
+  const [pin, setPin] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [editing, setEditing] = useState(null) // id al que se le cambia el PIN
+  const [busy, setBusy] = useState(false)
+
+  const act = async (fn) => {
+    setBusy(true)
+    try { onChange((await fn()).drivers); return true } catch (err) { onError(err.message); return false } finally { setBusy(false) }
+  }
+  const add = async (e) => {
+    e.preventDefault()
+    if (await act(() => saveDriver(locId, { name, pin }))) { setName(''); setPin('') }
+  }
+  const digits = (v) => v.replace(/\D/g, '').slice(0, 4)
+
+  return (
+    <section className="pcard p-5">
+      <h2 className="font-sans font-extrabold uppercase text-xl text-tomate flex items-center gap-2"><Smartphone className="w-5 h-5" /> Repartidores</h2>
+      <p className="mono normal-case text-carbon/60 mt-1">
+        Cada uno entra desde su móvil en <strong className="text-carbon">{window.location.host}/repartidor</strong> con su PIN. Al llegar escanea el QR del ticket y marca entregado y cobrado (efectivo o tarjeta).
+      </p>
+      {off ? (
+        <p className="palert mt-3">{off}</p>
+      ) : (
+        <>
+          <ul className="mt-4 flex flex-col gap-2">
+            {drivers.length === 0 && <li className="text-carbon/60">Aún no hay repartidores. Da de alta al primero abajo.</li>}
+            {drivers.map((d) => (
+              <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-tomate/30 px-3 py-2">
+                <span className="font-bold text-carbon">{d.name}</span>
+                {editing === d.id ? (
+                  <form
+                    onSubmit={async (e) => { e.preventDefault(); if (await act(() => saveDriver(locId, { id: d.id, name: d.name, pin: newPin }))) { setEditing(null); setNewPin('') } }}
+                    className="flex gap-2"
+                  >
+                    <input value={newPin} onChange={(e) => setNewPin(digits(e.target.value))} inputMode="numeric" placeholder="PIN nuevo" aria-label="PIN nuevo" className="pfield !py-1.5 w-28 text-sm" autoFocus />
+                    <button disabled={busy || newPin.length !== 4} className="ptab soft disabled:opacity-40">Guardar</button>
+                    <button type="button" onClick={() => { setEditing(null); setNewPin('') }} className="ptab soft">No</button>
+                  </form>
+                ) : (
+                  <span className="flex gap-2">
+                    <button onClick={() => { setEditing(d.id); setNewPin('') }} className="ptab soft">Cambiar PIN</button>
+                    <button
+                      onClick={() => { if (window.confirm(`¿Dar de baja a ${d.name}? Ya no podrá entrar en el portal.`)) act(() => removeDriver(d.id)) }}
+                      className="ptab soft" aria-label={`Dar de baja a ${d.name}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+          <form onSubmit={add} className="mt-4 flex flex-wrap items-end gap-2">
+            <label className="flex-1 min-w-[9rem]">
+              <span className="mono normal-case text-xs text-carbon/60">Nombre</span>
+              <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} className="mt-1 pfield !py-2 text-sm" />
+            </label>
+            <label className="w-28">
+              <span className="mono normal-case text-xs text-carbon/60">PIN (4 cifras)</span>
+              <input value={pin} onChange={(e) => setPin(digits(e.target.value))} inputMode="numeric" className="mt-1 pfield !py-2 text-sm" />
+            </label>
+            <button disabled={busy || !name.trim() || pin.length !== 4} className="ptab disabled:opacity-40"><UserPlus className="w-4 h-4" /> Dar de alta</button>
+          </form>
+        </>
+      )}
+    </section>
   )
 }
 

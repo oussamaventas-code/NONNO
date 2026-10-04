@@ -34,21 +34,26 @@ const CASH_FLOAT = Number(process.env.CASH_FLOAT) || 150
  */
 async function expectedFor(locationId, day) {
   const [from, to] = serviceDayRange(day)
-  const { data, error } = await db()
+  const read = (columns) => db()
     .from('orders')
-    .select('id, ref, customer_name, mode, total, payment_status, payment_method, status')
+    .select(columns)
     .eq('location_id', locationId)
     .neq('status', 'cancelado')
     .gte('created_at', new Date(from).toISOString())
     .lt('created_at', new Date(to).toISOString())
     .order('created_at', { ascending: true })
     .limit(5000)
+  const BASE = 'id, ref, customer_name, mode, total, payment_status, payment_method, status'
+  let { data, error } = await read(`${BASE}, driver_name`)
+  /* Sin supabase/repartidores.sql todavía: sin el nombre del repartidor */
+  if (['42703', 'PGRST204'].includes(error?.code)) ({ data, error } = await read(BASE))
   if (error) throw error
 
   const out = { cash: 0, cashDelivery: 0, card: 0, pending: 0 }
   const brief = (o) => ({ id: o.id, ref: o.ref, name: o.customer_name, mode: o.mode, status: o.status, total: round(o.total) })
   const unpaid = []
   const open = []
+  const byDriver = new Map()
   for (const o of data) {
     const total = Number(o.total) || 0
     if (o.status !== 'entregado') open.push(brief(o))
@@ -56,13 +61,19 @@ async function expectedFor(locationId, day) {
     else {
       out.cash += total
       /* Efectivo cobrado en la puerta: lo trae el repartidor al volver */
-      if (o.mode === 'delivery') out.cashDelivery += total
+      if (o.mode === 'delivery') {
+        out.cashDelivery += total
+        const who = o.driver_name || 'Sin repartidor asignado'
+        byDriver.set(who, (byDriver.get(who) || 0) + total)
+      }
     }
   }
   return {
     cash: round(out.cash), cashDelivery: round(out.cashDelivery), card: round(out.card),
     pending: round(out.pending), pendingCount: unpaid.length, orders: data.length,
     unpaid, open,
+    /* Lo que tiene que entregar cada repartidor al volver */
+    byDriver: [...byDriver].map(([name, cash]) => ({ name, cash: round(cash) })).sort((a, b) => b.cash - a.cash),
   }
 }
 

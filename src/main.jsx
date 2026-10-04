@@ -10,14 +10,16 @@ import './styles/index.css'
    la web pública, que es la que tiene que abrir rápido en un móvil. */
 const Admin = lazy(() => import('./admin/Admin'))
 const DisplayBoard = lazy(() => import('./admin/DisplayBoard'))
+const DriverPortal = lazy(() => import('./driver/DriverPortal'))
 
 /* /admin        → login normal
    /admin/sangonera, /admin/santo-angel → cada local tiene su enlace.
    /pantalla/sangonera → pantalla de pedidos para la TV del local.
+   /repartidor   → portal del repartidor (PIN, escanear el QR del ticket, cobrar).
    La dirección solo decide qué se ve en el login: quien manda sigue
    siendo la contraseña. */
 const ruta = window.location.pathname.replace(/\/+$/, '')
-const seccion = ['/admin', '/pantalla'].find((b) => ruta === b || ruta.startsWith(`${b}/`))
+const seccion = ['/admin', '/pantalla', '/repartidor'].find((b) => ruta === b || ruta.startsWith(`${b}/`))
 const sedeEnRuta = seccion && ruta.startsWith(`${seccion}/`) ? ruta.slice(seccion.length + 1) : null
 
 /* La web del cliente se instala como app. El panel también, con su
@@ -30,6 +32,12 @@ else if (seccion === '/admin') {
   add('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' })
   add('meta', { name: 'apple-mobile-web-app-title', content: 'Nonno Panel' })
   document.querySelector('link[rel="apple-touch-icon"]')?.setAttribute('href', '/app/apple-touch-icon.png')
+} else if (seccion === '/repartidor') {
+  const add = (tag, attrs) => document.head.appendChild(Object.assign(document.createElement(tag), attrs))
+  add('link', { rel: 'manifest', href: '/manifest-reparto.webmanifest' })
+  add('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' })
+  add('meta', { name: 'apple-mobile-web-app-title', content: 'Nonno Reparto' })
+  document.title = 'Nonno · Repartidores'
 }
 
 createRoot(document.getElementById('root')).render(
@@ -42,7 +50,7 @@ createRoot(document.getElementById('root')).render(
           </div>
         }
       >
-        {seccion === '/pantalla'
+        {seccion === '/repartidor' ? <DriverPortal /> : seccion === '/pantalla'
           ? <Admin sedeEnRuta={sedeEnRuta} base="/pantalla" title="PANTALLA DE PEDIDOS" Inside={DisplayBoard} />
           : <Admin sedeEnRuta={sedeEnRuta} />}
       </Suspense>

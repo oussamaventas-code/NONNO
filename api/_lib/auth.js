@@ -121,3 +121,40 @@ export function requireSession(req, res) {
   }
   return session
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Sesión del REPARTIDOR (portal /repartidor). Entra con el PIN que
+   le da la dirección y solo ve y cobra los repartos de su sede. Va
+   en otra cookie: el móvil del repartidor no abre el panel.
+   ═══════════════════════════════════════════════════════════════ */
+
+const DRIVER_COOKIE = 'nonno_reparto'
+const DRIVER_MAX_AGE = 60 * 60 * 24 * 30 // 30 días: no se le pide el PIN cada noche
+
+/** Huella del PIN (no se guarda el PIN): igual PIN en la misma sede → misma huella. */
+export const pinHash = (locationId, pin) => sign(`pin~${locationId}~${pin}`)
+
+export function createDriverCookie(driverId) {
+  const body = `${Date.now()}.${randomBytes(6).toString('hex')}~${driverId}`
+  return [
+    `${DRIVER_COOKIE}=${body}~${sign(`driver~${body}`)}`,
+    'HttpOnly', 'Secure', 'SameSite=Lax', 'Path=/', `Max-Age=${DRIVER_MAX_AGE}`,
+  ].join('; ')
+}
+
+export const clearDriverCookie = () => `${DRIVER_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`
+
+/** Id del repartidor de la cookie, o null. Si se le da de baja, deja de valer (se comprueba en la base). */
+export function readDriverId(req) {
+  if (!secret()) return null
+  const raw = req.headers?.cookie || ''
+  const match = raw.split(';').map((c) => c.trim()).find((c) => c.startsWith(`${DRIVER_COOKIE}=`))
+  if (!match) return null
+  const parts = match.slice(DRIVER_COOKIE.length + 1).split('~')
+  if (parts.length !== 3) return null
+  const [issued, driverId, signature] = parts
+  if (!safeEqual(signature, sign(`driver~${issued}~${driverId}`))) return null
+  const at = Number(issued.split('.')[0])
+  if (!at || Date.now() - at > DRIVER_MAX_AGE * 1000) return null
+  return driverId
+}

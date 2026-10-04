@@ -47,6 +47,13 @@ export const stockAction = (locationId, action, data) =>
 export const routeAction = (locationId, action, data) =>
   request('/api/routes', { method: 'POST', body: JSON.stringify({ location: locationId, action, ...data }) })
 
+/* Repartidores de una sede (portal /repartidor con PIN) */
+export const fetchDrivers = (locationId) => request(`/api/driver?list=${encodeURIComponent(locationId)}`)
+export const saveDriver = (locationId, driver) =>
+  request('/api/driver', { method: 'POST', body: JSON.stringify({ action: 'save', location: locationId, ...driver }) })
+export const removeDriver = (id) =>
+  request('/api/driver', { method: 'POST', body: JSON.stringify({ action: 'remove', id }) })
+
 export const fetchDisplay = (locationId) =>
   request(`/api/display?location=${encodeURIComponent(locationId)}`)
 
