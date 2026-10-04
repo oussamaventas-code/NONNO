@@ -13,12 +13,14 @@ rem  impresora de cocina) y otra para TPV (ticket del cliente a la del
 rem  mostrador).
 rem
 rem  Uso: doble clic y responder. O bien:
-rem    instalar-equipo-nonno.bat cocina https://tuweb/admin/sangonera
+rem    instalar-equipo-nonno.bat cocina https://nonno-beta.vercel.app/admin/sangonera
 rem ================================================================
 
 set "ROL=%~1"
 set "URL=%~2"
 set "AQUI=%~dp0"
+rem Direccion de la web. Si algun dia cambia el dominio, se cambia solo aqui.
+set "WEB=https://nonno-beta.vercel.app"
 
 echo.
 echo  ==============================================
@@ -42,11 +44,19 @@ if /i not "%ROL%"=="cocina" if /i not "%ROL%"=="tpv" (
 
 if "%URL%"=="" (
   echo.
-  echo  Pega la direccion del panel de esta sede
-  echo  ^(ejemplo: https://lapizzadenonno.com/admin/sangonera^)
-  set /p "URL=  Direccion: "
+  echo  De que local es este ordenador?
+  echo    1 = SANGONERA LA VERDE
+  echo    2 = SANTO ANGEL
+  echo.
+  set /p "SEDE=  Escribe 1 o 2 y pulsa Enter: "
+  if "!SEDE!"=="1" set "URL=%WEB%/admin/sangonera"
+  if "!SEDE!"=="2" set "URL=%WEB%/admin/santo-angel"
 )
-if "%URL%"=="" ( echo  Falta la direccion. & pause & exit /b 1 )
+rem Sin espacios sueltos: un espacio delante rompe el icono
+set "URL=%URL: =%"
+if "%URL%"=="" ( echo  Opcion no valida. Vuelve a abrirlo. & pause & exit /b 1 )
+echo.
+echo  Panel: %URL%
 
 rem --- Buscar Chrome ---
 set "CHROME="

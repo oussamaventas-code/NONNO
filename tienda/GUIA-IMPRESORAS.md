@@ -35,7 +35,7 @@ En el TPV ve a *Configuración → Bluetooth y dispositivos → Impresoras y esc
 
 1. Copia la carpeta `tienda` al TPV (con un USB o descargándola de GitHub).
 2. Doble clic en **`instalar-equipo-nonno.bat`**.
-3. Escribe **1** (Cocina) y pega la dirección del panel de esa sede, por ejemplo `https://TU-WEB/admin/sangonera`.
+3. Escribe **1** (Cocina) y luego el local: **1** Sangonera o **2** Santo Ángel.
 4. Se abre una **prueba de impresión**:
    - En *Destino*, elige **la impresora de COCINA**. Si no está en la lista, pulsa *Ver más…*
    - Pulsa **Imprimir**.
