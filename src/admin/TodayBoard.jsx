@@ -5,6 +5,7 @@ import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
 import { madridDay } from '../lib/stock'
 import { fetchBilling, fetchCash } from './api'
+import DoughControl from './DoughControl'
 
 /* ═══════════════════════════════════════════════════════════════
    HOY — la pantalla del jefe
@@ -16,7 +17,7 @@ import { fetchBilling, fetchCash } from './api'
 const MONEY_POLL_MS = 60000
 const isActive = (o) => !['entregado', 'cancelado'].includes(o.status)
 
-export default function TodayBoard({ orders, storeStatuses, onOpenSede, onError }) {
+export default function TodayBoard({ orders, storeStatuses, onDoughSaved, onOpenSede, onError }) {
   const [money, setMoney] = useState({})
   const [cash, setCash] = useState({})
   const [now, setNow] = useState(Date.now())
@@ -106,6 +107,10 @@ export default function TodayBoard({ orders, storeStatuses, onOpenSede, onError 
                       <p className="mt-1 text-[0.65rem] font-bold uppercase tracking-wide text-carbon/60">{k.label}</p>
                     </div>
                   ))}
+                </div>
+
+                <div className="mt-2">
+                  <DoughControl locationId={loc.id} status={storeStatuses[loc.id]} editable onSaved={onDoughSaved} onError={onError} />
                 </div>
 
                 <div className="mt-3 flex flex-col gap-1.5 text-sm">

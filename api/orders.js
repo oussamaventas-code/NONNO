@@ -3,7 +3,7 @@ import { requireSession, readSession, SCOPE_ALL } from './_lib/auth.js'
 import { notifyNewOrder } from './_lib/push.js'
 import { sendMail, orderMail } from './_lib/mail.js'
 import { sanitizeOrder, validateOrder, newRef } from './_lib/order.js'
-import { isStoreOpen } from './_lib/store.js'
+import { isStoreOpen, doughStatus, doughProblem } from './_lib/store.js'
 import { loadMenu } from './_lib/menu.js'
 import { precheck, assignSlot, SLOT_ERRORS } from './_lib/slots.js'
 import { readCustomerId, getCustomer, movePoints, isMissingTable } from './_lib/customer.js'
@@ -131,6 +131,12 @@ export default async function handler(req, res) {
     /* Primer filtro: si ya no cabe, ni se guarda. */
     if (!offlineAt) {
       try {
+        /* Masas del día: cuando se acaban no se vende ni una pizza más,
+           tampoco en el mostrador (la dirección puede subir el número). */
+        const noDough = doughProblem(await doughStatus(order.location_id), order.pizza_count, { staff })
+        if (noDough) {
+          return res.status(409).json({ code: 'dough', error: noDough })
+        }
         const plan = await precheck(order.location_id, order.pizza_count, order.scheduled_for)
         if (!plan.ok) return res.status(409).json({ code: 'full', error: SLOT_ERRORS[plan.reason] })
       } catch (err) {

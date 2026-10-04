@@ -6,6 +6,7 @@ import Stock from './Stock'
 import Carta from './Carta'
 import CashClose from './CashClose'
 import TodayBoard from './TodayBoard'
+import DoughControl from './DoughControl'
 import { useMenuOverrides } from '../hooks/useMenuOverrides'
 import Billing from './Billing'
 import Discounts from './Discounts'
@@ -282,6 +283,10 @@ export default function AdminPanel({ scope, onSignedOut }) {
     const timer = setInterval(loadStoreStatus, 15000)
     return () => clearInterval(timer)
   }, [loadStoreStatus])
+
+  const storeSaved = useCallback((locationId, status) => {
+    setStoreStatuses((prev) => ({ ...prev, [locationId]: status }))
+  }, [])
 
   const toggleStore = async (locationId, next) => {
     setTogglingStore(locationId)
@@ -628,6 +633,11 @@ export default function AdminPanel({ scope, onSignedOut }) {
               ) : <span />}
               <span className="mono normal-case text-carbon/60">
                 <strong className="text-carbon">{today.length}</strong> pedidos hoy · <strong className="text-carbon">{price(facturado)}</strong>
+                {locationIds.length === 1 && storeStatuses[locationIds[0]]?.dough_left != null && (
+                  <> · <strong className={storeStatuses[locationIds[0]].dough_left === 0 ? 'text-tomate' : 'text-carbon'}>
+                    {storeStatuses[locationIds[0]].dough_left === 0 ? 'SIN MASAS' : `${storeStatuses[locationIds[0]].dough_left} masas`}
+                  </strong></>
+                )}
               </span>
             </div>
           )}
@@ -662,6 +672,9 @@ export default function AdminPanel({ scope, onSignedOut }) {
                             {s.name} · {s.abierta ? 'ABIERTA (tocar para cerrar)' : 'CERRADA (tocar para abrir)'}
                           </button>
                         )}
+                        <div className="mt-1.5">
+                          <DoughControl locationId={s.id} status={storeStatuses[s.id]} editable={esDireccion} onSaved={storeSaved} onError={setError} />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -750,6 +763,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
           <TodayBoard
             orders={orders}
             storeStatuses={storeStatuses}
+            onDoughSaved={storeSaved}
             onOpenSede={(id) => { setSedeVista(id); changeView('cocina') }}
             onError={setError}
           />

@@ -77,9 +77,9 @@ export const SHOWCASE_TABS = [
   {
     id: 'postres',
     label: 'POSTRES',
-    categories: ['calzones-dulces'],
+    categories: ['calzones-dulces', 'nonnitos-dulces'],
     text: [
-      'El final dulce: calzones horneados y rellenos para los que siempre dejan hueco para el postre.',
+      'El final dulce: calzones y nonnitos recién horneados para los que siempre dejan hueco para el postre.',
     ],
   },
 ]
@@ -94,6 +94,7 @@ export const CATEGORY_BLURBS = {
   calzones: 'La pizza doblada sobre sí misma y cerrada en el horno. Todo el relleno dentro, caliente hasta el último bocado.',
   entrantes: 'Para abrir boca mientras sale la pizza, o para compartir en el centro de la mesa.',
   'calzones-dulces': 'El final dulce: masa horneada y rellena para los que siempre dejan hueco para el postre.',
+  'nonnitos-dulces': 'Bocaditos de nuestra masa recién horneados y bañados en tu crema favorita. Para compartir (o no).',
   bebidas: 'Frías y listas para acompañar la pizza.',
 }
 

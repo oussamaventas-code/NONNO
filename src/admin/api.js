@@ -60,6 +60,10 @@ export const fetchStoreStatus = () => request('/api/store-status')
 export const setStoreStatus = (locationId, isOpen) =>
   request('/api/store-status', { method: 'PATCH', body: JSON.stringify({ locationId, isOpen }) })
 
+/** Masas del día de una sede (solo dirección). null = sin límite. */
+export const setDoughLimit = (locationId, doughLimit) =>
+  request('/api/store-status', { method: 'PATCH', body: JSON.stringify({ locationId, doughLimit }) })
+
 export const getPushConfig = () => request('/api/push')
 
 export const savePushSubscription = (subscription, label) =>

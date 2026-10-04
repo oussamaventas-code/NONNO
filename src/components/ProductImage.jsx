@@ -5,6 +5,7 @@ import { img, srcSet } from '../data/images'
 const ICON = {
   bebidas: CupSoda,
   'calzones-dulces': Cookie,
+  'nonnitos-dulces': Cookie,
   entrantes: UtensilsCrossed,
 }
 
