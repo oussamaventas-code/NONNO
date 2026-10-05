@@ -7,8 +7,8 @@ import { applyDiscounts, isLive } from '../lib/discounts.js'
    MENÚ — CARTA OFICIAL DE LA PIZZA DE NONNO
 
    Nombres, ingredientes y precios transcritos de la carta impresa.
-   Las fotos son de banco (elegidas a mano por plato, no genéricas):
-   sustituir por fotografía propia en src/data/images.js.
+   Las fotografías propias de los platos se asignan en src/data/images.js;
+   se conserva una imagen editorial cuando no hay una coincidencia clara.
 
    ESQUEMA DE PRODUCTO
    ───────────────────
@@ -305,7 +305,7 @@ export const PRODUCTS = [
     name: 'Ovni de camembert',
     description: '6 unidades.',
     ingredients: [],
-    image: PHOTO.cheeses,
+    image: PHOTO.camembertBites,
     price: 4.9,
     vegetarian: true,
   },
@@ -347,7 +347,7 @@ export const PRODUCTS = [
     name: 'Tostarica',
     description: 'Base de masa horneada, crema de avellana y galleta Tosta Rica triturada.',
     ingredients: ['Crema de avellana', 'Galleta Tosta Rica triturada'],
-    image: PHOTO.nutellaCrepe,
+    image: PHOTO.tostaricaDessert,
     price: 8.9,
     vegetarian: true,
   },

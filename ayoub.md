@@ -9,7 +9,7 @@
 - **Impresión automática:** cola de comandas/tickets en Supabase, agente de Windows para impresoras térmicas ESC/POS, instalación por sede desde un código del panel y deduplicación/reintentos para evitar copias al recuperar la conexión. Al editar o cancelar un pedido se gestionan las comandas que aún están pendientes.
 - **Avisos al cliente:** eventos de pedido recibido, listo para recoger, salida a reparto y cancelación; WhatsApp con plantillas de Twilio y fallback a SMS si Twilio rechaza la solicitud de WhatsApp; estado, reintento manual y prueba SMS desde el panel.
 - **Mantenimiento:** registro mensual por sede con fecha, responsable, tareas, incidencias y estado realizado/previsto.
-- **Fotos de carta:** 34 fotos coincidentes con productos de la carpeta `C:\Users\Ayoub\Desktop\Work\Webs\IMAGES` se integraron en versiones WebP responsive de 600 y 1200 px. También se añadieron imágenes a los productos de la carta que antes no tenían.
+- **Fotos de carta:** 35 fotos con correspondencia clara con productos de `C:\Users\Ayoub\Desktop\Work\Webs\IMAGES` se integraron en WebP de 600 y 1200 px. Se ajustaron las tarjetas para mantener el encuadre sin estirar ni cortar las fotos y se corrigieron dos asociaciones de producto.
 - **Mostrador y carta:** guía integrada para atender pedidos por teléfono y mejoras de textos, reglas del Club Nonno y avisos relacionados con alérgenos. Los datos de las sedes se conservaron como estaban.
 - **Operación y presentación:** documentación actualizada para los nuevos flujos, protección de cabeceras web y correcciones de reintentos para que una respuesta perdida no deje sin recuperar la impresión automática.
 - **Documentación:** puesta al día de `PEDIDOS.md`, guía de instalación de impresoras y este resumen.
@@ -28,7 +28,7 @@ Las instrucciones completas están en `tienda/nonno-impresora/LEEME.txt` y `tien
 
 ### Actualizar las fotos de la carta
 
-Los productos leen sus fotos desde `src/data/images.js`; los archivos propios se guardan en `public/fotos/pizzas/` como `nombre-600.webp` y `nombre-1200.webp`. Al cambiar una foto, conserva ambos tamaños y el identificador `own:nombre` para que carta, detalle y pedido usen la misma imagen optimizada. Incrementa `OWN_REVISION` en `src/data/images.js` para que los navegadores carguen la versión nueva.
+Los productos leen sus fotos desde `src/data/images.js`; los archivos propios se guardan en `public/fotos/pizzas/` como `nombre-600.webp` y `nombre-1200.webp`. Al cambiar una foto, conserva ambos tamaños y el identificador `own:nombre` para que carta, detalle y pedido usen la misma imagen optimizada. Las tarjetas mantienen la proporción y contienen la foto completa. Incrementa `OWN_REVISION` en `src/data/images.js` para que los navegadores carguen la versión nueva.
 
 ### Activar avisos al cliente
 
@@ -53,7 +53,7 @@ Desde la carpeta del proyecto: `npm install` y `npm run dev`. La vista de carta 
 - Instalar el agente en el equipo real de cada local y probar con sus impresoras, una comanda, ticket, reintento, edición y cancelación.
 - Configurar y comprobar SMS/WhatsApp con credenciales reales. No se han enviado mensajes de prueba ni pedidos reales desde este trabajo.
 - Confirmar con Nonno la matriz oficial de alérgenos y contaminación cruzada y revisar las fotos aprobadas de los productos. El código no inventa esos datos.
-- La carpeta no trae una coincidencia clara para todos los productos ni para las fotos de los locales y secciones de marca; esas imágenes conservan su origen actual. Las fotos de refrescos concretos (Fanta/Zero) no se asociaron a opciones que la carta aún no ofrece por separado.
+- La carpeta no trae una coincidencia clara para todos los productos ni para las fotos de los locales y secciones de marca; esas imágenes conservan su origen actual. Se dejaron sin asignar fotos duplicadas, la imagen vacía y la pizza de nombre desconocido cuando no podía verificarse el producto. Fanta y Zero tampoco se añadieron como opciones nuevas de bebida.
 - Revisar los datos fiscales y las condiciones definitivas del Club Nonno que recoge el checklist del proyecto.
 
 ## Límites de esta entrega

@@ -1,10 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════
    LIBRERÍA DE IMÁGENES
-   Todas las URLs son reales (Unsplash) y han sido verificadas.
-   Centralizadas aquí para poder sustituirlas por FOTOGRAFÍA PROPIA
-   de Nonno sin tocar ni un componente.
-
-   TODO: REEMPLAZAR POR FOTOGRAFÍA REAL DEL RESTAURANTE.
+   Las fotos propias de platos usan ids 'own:' y sus variantes locales.
+   Se mantienen fotos editoriales/de banco donde la carpeta de Nonno
+   no contiene una imagen que corresponda al contenido.
    ═══════════════════════════════════════════════════════════════ */
 
 const UNSPLASH = 'https://images.unsplash.com/photo-'
@@ -31,7 +29,7 @@ export const srcSet = (id, widths = [640, 960, 1400, 1920]) =>
    exportadas en OWN_WIDTHS. Se sirve la menor que cubra el ancho pedido. */
 const OWN = 'own:'
 const OWN_WIDTHS = [600, 1200]
-const OWN_REVISION = '20261005'
+const OWN_REVISION = '20261005-2'
 const isOwn = (id) => typeof id === 'string' && id.startsWith(OWN)
 const ownSrc = (id, w) => {
   const width = OWN_WIDTHS.find((x) => x >= w) || OWN_WIDTHS[OWN_WIDTHS.length - 1]
@@ -49,7 +47,7 @@ export const PHOTO = {
   tomato: '1592924357228-91a4daadcfea', // tomates en rama
   cheesePull: '1541745537411-b8046dc6d66c', // hilo de queso macro
   oliveOil: '1474979266404-7eaacbcd87c5', // aceite y aceitunas
-  cheeses: 'own:ovni-camembert',
+  cheeses: '1628088062854-d1870b4553da', // tabla de quesos variados
   table: '1481931098730-318b6f776db0', // mesa servida
   slicePull: '1520201163981-8cc95007dd2a', // porción levantada con queso
 
@@ -127,7 +125,8 @@ export const PHOTO = {
   helado: '1551024506-0bccd828d307',
   cookies: '1499636136210-6f4ee915583e',
   oreoDessert: 'own:calzone-oreo',
-  nutellaCrepe: 'own:calzone-tostarica',
+  nutellaCrepe: '1515467837915-15c4777ba46a',
+  tostaricaDessert: 'own:calzone-tostarica',
   pistachoDessert: 'own:calzone-pistacho',
   lotusDessert: 'own:calzone-lotus',
 }

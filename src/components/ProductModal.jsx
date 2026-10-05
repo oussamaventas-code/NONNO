@@ -120,7 +120,7 @@ export default function ProductModal() {
         </button>
 
         <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className={product.image ? 'relative h-52 sm:h-64' : 'relative h-36'}>
+        <div className={product.image ? 'relative w-full aspect-[4/3] overflow-hidden bg-crema' : 'relative h-36'}>
           <ProductImage
             image={product.image}
             category={product.category}

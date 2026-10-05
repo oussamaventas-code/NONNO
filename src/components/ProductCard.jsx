@@ -20,7 +20,7 @@ export default function ProductCard({ product, onOpen }) {
       <div className="frame-in flex flex-row sm:flex-col">
       <button
         onClick={() => onOpen(product.id)}
-        className="relative w-[34%] sm:w-full flex-shrink-0 aspect-square sm:aspect-[4/3] overflow-hidden bg-tomate/10 border-r sm:border-r-0 sm:border-b border-tomate"
+        className="relative self-center w-[34%] sm:w-full flex-shrink-0 aspect-square overflow-hidden bg-tomate/10 border-r sm:border-r-0 sm:border-b border-tomate"
         aria-label={`Ver ${product.name}`}
       >
         <ProductImage
@@ -29,7 +29,7 @@ export default function ProductCard({ product, onOpen }) {
           alt={product.name}
           widths={[400, 600, 800, 1200]}
           sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
-          className="h-full w-full transition-transform duration-700 ease-magnetic group-hover:scale-105"
+          className="h-full w-full"
         />
         {soldOut && (
           <span className="absolute inset-0 flex items-center justify-center bg-forno/55">

@@ -25,6 +25,10 @@ export default function ProductImage({ image, category, alt, width = 500, widths
     )
   }
 
+  const fit = typeof image === 'string' && image.startsWith('own:')
+    ? 'object-contain bg-crema'
+    : 'object-cover'
+
   return (
     <img
       src={img(image, width, 80)}
@@ -33,7 +37,7 @@ export default function ProductImage({ image, category, alt, width = 500, widths
       alt={alt}
       loading="lazy"
       onError={() => setFailed(true)}
-      className={`object-cover ${className}`}
+      className={`${fit} ${className}`}
     />
   )
 }

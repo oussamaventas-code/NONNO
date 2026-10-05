@@ -89,7 +89,7 @@ export default function MenuShowcase() {
                     width={600}
                     widths={[400, 600, 900]}
                     sizes="(min-width: 640px) 27rem, 16rem"
-                    className="h-full w-full transition-transform duration-700 ease-magnetic group-hover:scale-105"
+                    className="h-full w-full"
                   />
                   {/* Pegatina de precio */}
                   <span className="absolute top-3 right-3 flex items-center justify-center w-[4.5rem] h-[4.5rem] sm:w-20 sm:h-20 rounded-full bg-queso border border-tomate outline outline-1 outline-offset-[-5px] outline-tomate rotate-12 font-display font-bold text-tomate text-base sm:text-lg leading-none shadow-[2px_2px_0_0_rgb(var(--c-tomate))]">
