@@ -108,6 +108,8 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
         <p className="font-mono font-bold text-[3vw] leading-none text-tomate">{hourOf(now)}</p>
       </header>
 
+      <div className="checker" aria-hidden="true" />
+
       <main className="flex-1 min-h-0 grid grid-cols-[1fr_18vw]">
         {/* LO IMPORTANTE: ya puedes recoger. Número enorme y nombre. */}
         <section className="min-h-0 px-[3vw] py-[3vh] flex flex-col">
@@ -151,7 +153,7 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
           ) : (
             <ul className="mt-[2vh] grid grid-cols-2 gap-[0.8vw] content-start">
               {preparing.slice(0, MAX_PREP).map((o) => (
-                <li key={o.id} className="rounded-lg border border-tomate/50 py-[1vh] text-center font-mono font-bold text-[2.2vw] leading-none neon-amarillo">
+                <li key={o.id} className="pcard py-[1.2vh] text-center font-mono font-bold text-[2.2vw] leading-none neon-amarillo">
                   {splitRef(o.ref).number}
                 </li>
               ))}

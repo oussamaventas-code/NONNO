@@ -40,14 +40,14 @@
       href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500;1,700&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,600..900,0..100,0..1;1,9..144,600..900,0..100,0..1&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400;1,600;1,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <!-- Tema negro en toda la web. El panel (/admin) va en claro salvo
-         que ese equipo haya elegido el modo noche (⚙ del panel).
+    <!-- Tema negro (neón) en toda la web, panel incluido. En el panel
+         cada equipo puede pasar a modo día con el botón ☀ (o en ⚙).
          Se pone antes de pintar para que no haya parpadeo. -->
     <script>
       (function () {
         var negro = true;
         if (/^\/admin(\/|$)/.test(location.pathname)) {
-          try { negro = localStorage.getItem('nonno.panel.tema') === '"negro"'; } catch (e) { negro = false; }
+          try { negro = localStorage.getItem('nonno.panel.tema') !== '"claro"'; } catch (e) { negro = true; }
         }
         if (negro) document.documentElement.classList.add('tema-negro');
         else document.querySelector('meta[name="theme-color"]').setAttribute('content', '#FFFAE9');

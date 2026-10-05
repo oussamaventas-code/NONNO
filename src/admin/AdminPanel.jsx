@@ -69,7 +69,7 @@ const PREF_VIEW = 'nonno.panel.view'
 const PREF_DEVICE = 'nonno.panel.device'
 const PREF_AUTOPRINT = 'nonno.panel.autoprint'
 const PREF_AUTORECEIPT = 'nonno.panel.autoreceipt'
-/* Modo día (claro, por defecto) o noche (el negro de la web). Lo lee
+/* Modo noche (el negro neón de la web, por defecto) o día (claro). Lo lee
    también index.html antes de pintar, para que no parpadee. */
 const PREF_TEMA = 'nonno.panel.tema'
 const readPref = (key, fallback) => {
@@ -157,7 +157,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
   const [confirmClose, setConfirmClose] = useState(null)
   const [autoPrint, setAutoPrint] = useState(() => readPref(PREF_AUTOPRINT, false))
   const [autoReceipt, setAutoReceipt] = useState(() => readPref(PREF_AUTORECEIPT, false))
-  const [tema, setTema] = useState(() => readPref(PREF_TEMA, 'claro'))
+  const [tema, setTema] = useState(() => readPref(PREF_TEMA, 'negro'))
 
   /* Carta corregida (precios, ocultos, agotados): el mostrador vende con ella.
      `menuVersion` repinta el panel cuando cambia. */
