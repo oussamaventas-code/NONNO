@@ -1,4 +1,5 @@
 import { PHOTO } from './images'
+import { LOCATIONS } from './locations'
 
 /* ═══════════════════════════════════════════════════════════════
    CONTENIDO EDITORIAL
@@ -142,8 +143,14 @@ export const ORDER_BAND = {
    Las dos primeras son datos proporcionados (valoraciones mostradas).
    Las dos últimas son de marca, etiquetadas como tales. */
 export const METRICS = [
-  { id: 'sangonera', value: 4.9, suffix: '★', decimals: 1, label: 'VALORACIÓN EN SANGONERA', note: '179 reseñas' },
-  { id: 'santo-angel', value: 5.0, suffix: '★', decimals: 1, label: 'VALORACIÓN EN SANTO ÁNGEL', note: '33 reseñas' },
+  ...LOCATIONS.map((location) => ({
+    id: location.id,
+    value: location.rating,
+    suffix: '★',
+    decimals: 1,
+    label: `VALORACIÓN EN ${location.name.toUpperCase()}`,
+    note: `${location.reviews} reseñas`,
+  })),
   { id: 'sedes', value: 2, suffix: '', decimals: 0, label: 'SEDES', note: 'Murcia' },
   { id: 'ganas', value: null, display: '∞', label: 'GANAS DE PIZZA', note: 'Dato no científico' },
 ]
@@ -151,7 +158,7 @@ export const METRICS = [
 /* ── PROCESO ───────────────────────────────────────────────────── */
 export const PROCESS = [
   { id: '01', title: 'ELIGE', text: 'Explora el menú y encuentra la tuya. O la de todos.' },
-  { id: '02', title: 'PERSONALIZA', text: 'Tamaño, extras y esa nota que lo cambia todo.' },
+  { id: '02', title: 'PERSONALIZA', text: 'Quita ingredientes, añade extras y deja una nota para cocina.' },
   { id: '03', title: 'DISFRUTA', text: 'La recoges o te la llevamos. Lo demás es cosa tuya.' },
 ]
 

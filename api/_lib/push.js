@@ -18,7 +18,7 @@ function configure() {
   if (!publicKey || !privateKey) return false
 
   webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT || 'mailto:pedidos@lapizzadenonno.example',
+    process.env.VAPID_SUBJECT || 'https://nonno-beta.vercel.app',
     publicKey,
     privateKey
   )

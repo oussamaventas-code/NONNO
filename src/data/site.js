@@ -18,8 +18,8 @@ export const SITE = {
     title: 'La Pizza de Nonno | Pizza artesanal y pedidos online',
     description:
       'Pizza artesanal en Sangonera la Verde y Santo Angel. Masa, fuego e ingredientes de verdad. Elige tu sede, personaliza tu pizza y pide online.',
-    // TODO: REEMPLAZAR CON EL DOMINIO REAL
-    url: 'https://lapizzadenonno.example/',
+    // Debe coincidir con el canonical y las etiquetas Open Graph de index.html.
+    url: 'https://nonno-beta.vercel.app/',
   },
 
   /* ── CAPA DE INTEGRACIÓN DE PEDIDOS ────────────────────────────

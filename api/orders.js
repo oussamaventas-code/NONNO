@@ -5,6 +5,7 @@ import { sendMail, orderMail } from './_lib/mail.js'
 import { sanitizeOrder, validateOrder, newRef } from './_lib/order.js'
 import { isStoreOpen, doughStatus, doughProblem } from './_lib/store.js'
 import { enqueueNewOrder, printersStatus } from './_lib/printJobs.js'
+import { sendCustomerNotification } from './_lib/customerNotifications.js'
 import { LOCATIONS } from '../src/data/locations.js'
 import { loadMenu } from './_lib/menu.js'
 import { precheck, assignSlot, SLOT_ERRORS } from './_lib/slots.js'
@@ -115,7 +116,13 @@ export default async function handler(req, res) {
     /* Mismo pedido reenviado (reintento, o cola del mostrador sin
        conexión): se devuelve el que ya existe en vez de duplicarlo. */
     const existing = await findByClientKey(order.client_key)
-    if (existing) return res.status(200).json(reply(existing, staff))
+    if (existing) {
+      /* Reintentar la cola si el pedido se guardó pero la respuesta HTTP se
+         perdió. Solo se imprime cuando cocina ya asignó hora al pedido; si
+         otra petición lo encuentra mientras se confirma, la original lo hará. */
+      if (existing.ready_at) await enqueueNewOrder(existing)
+      return res.status(200).json(reply(existing, staff))
+    }
 
     /* Pedido que el mostrador tomó SIN CONEXIÓN y ya salió en papel a
        cocina: se registra aunque el horno ya no tenga hueco, porque
@@ -183,7 +190,13 @@ export default async function handler(req, res) {
       if (error?.code !== '23505') break
       /* Dos envíos del mismo pedido a la vez: gana uno, el otro lo recoge. */
       const dup = await findByClientKey(order.client_key)
-      if (dup) return res.status(200).json(reply(dup, staff))
+      if (dup) {
+        /* Igual que en el reintento normal: si ya tiene franja, recupera
+           la cola por si la respuesta original se perdió. dedupe_key evita
+           que dos peticiones simultáneas impriman dos veces. */
+        if (dup.ready_at) await enqueueNewOrder(dup)
+        return res.status(200).json(reply(dup, staff))
+      }
     }
 
     if (error) {
@@ -247,6 +260,8 @@ export default async function handler(req, res) {
       notifyNewOrder(row).catch((err) => console.error('Error enviando la notificación:', err)),
       /* Nonno Impresora: comandas y ticket a la cola del local (si lo tiene instalado) */
       enqueueNewOrder(row),
+      /* Mensaje transaccional al cliente; un fallo del proveedor no tumba el pedido. */
+      order.channel === 'mostrador' ? null : sendCustomerNotification(row, 'recibido'),
       !staff && row.customer_email ? sendMail({ to: row.customer_email, ...orderMail(row) }) : null,
     ])
 

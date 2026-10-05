@@ -174,6 +174,11 @@ export default function ProductModal() {
             </div>
           )}
 
+          <p className="mt-5 rounded-md border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm leading-relaxed text-carbon/75">
+            <strong className="text-carbon">¿Alergia o intolerancia?</strong>{' '}
+            La matriz de alérgenos y trazas aún no está confirmada por Nonno. Consulta con la sede antes de pedir; no podemos confirmar desde aquí que un plato esté libre de contacto cruzado.
+          </p>
+
           {/* Ingredientes: se quitan tocándolos */}
           {product.ingredients?.length > 0 && (
             <div className="mt-6">
@@ -199,7 +204,7 @@ export default function ProductModal() {
                       aria-pressed={!off}
                       aria-label={off ? `Añadir ${ing}` : `Quitar ${ing}`}
                       className={[
-                        'group flex items-center gap-1.5 rounded-md border px-3 py-2 min-h-[40px] text-sm font-semibold transition-all duration-300 ease-magnetic',
+                        'group flex items-center gap-1.5 rounded-md border px-3 py-2 min-h-[48px] text-sm font-semibold transition-all duration-300 ease-magnetic',
                         off
                           ? 'border-tomate bg-tomate/10 text-tomate line-through'
                           : 'border-tomate/40 bg-masa text-carbon',
@@ -251,7 +256,7 @@ export default function ProductModal() {
             <div className="flex items-center gap-1 rounded-md border border-tomate/50 p-1">
               <button
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="w-10 h-10 rounded-md flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors disabled:opacity-30"
+                className="w-12 h-12 rounded-md flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors disabled:opacity-30"
                 disabled={qty <= 1}
                 aria-label="Quitar unidad"
               >
@@ -260,7 +265,7 @@ export default function ProductModal() {
               <span className="w-8 text-center font-sans font-bold text-carbon">{qty}</span>
               <button
                 onClick={() => setQty((q) => q + 1)}
-                className="w-10 h-10 rounded-md flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors"
+                className="w-12 h-12 rounded-md flex items-center justify-center text-tomate hover:bg-tomate/10 transition-colors"
                 aria-label="Añadir unidad"
               >
                 <Plus className="w-4 h-4" />

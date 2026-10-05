@@ -3,6 +3,7 @@ import { db, isConfigured } from './_lib/supabase.js'
 import { requireSession, SCOPE_ALL } from './_lib/auth.js'
 import { getLocation } from '../src/data/locations.js'
 import driverHandler from './_lib/driverHandler.js'
+import { sendCustomerNotification } from './_lib/customerNotifications.js'
 
 /**
  * POST /api/routes  (solo panel)
@@ -78,6 +79,8 @@ async function dispatch(req, res, locationId) {
     .update({ dispatched_at: new Date().toISOString(), route_id: routeId, status: 'listo', ...(driver ? { driver_id: driver.id, driver_name: driver.name } : {}) })
     .in('id', ids).select('*')
   if (updError) throw updError
+
+  await Promise.all(updated.map((order) => sendCustomerNotification(order, 'reparto')))
 
   return res.status(200).json({ routeId, orders: updated })
 }

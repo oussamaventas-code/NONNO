@@ -25,7 +25,12 @@ export const FAQ = [
   {
     id: 'personalizar',
     q: '¿Puedo personalizar mi pizza?',
-    a: 'Sí. Elige tamaño, añade extras y deja una nota con lo que necesites. El precio se actualiza mientras la configuras, sin sorpresas al final.',
+    a: 'Las pizzas tienen un único tamaño de 33 cm. Puedes quitar ingredientes, añadir toppings y dejar una nota para cocina. Algunos platos ofrecen ración y media ración.',
+  },
+  {
+    id: 'alergenos',
+    q: '¿Dónde consulto los alérgenos?',
+    a: 'La web todavía no tiene una matriz de alérgenos y trazas confirmada por Nonno. Si tienes una alergia o intolerancia, consulta con la sede antes de pedir; no podemos confirmar desde aquí que un plato esté libre de contacto cruzado.',
   },
   {
     id: 'tiempo',

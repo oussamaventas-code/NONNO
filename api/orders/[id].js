@@ -4,7 +4,8 @@ import { sanitizeOrder, validateOrder, PAYMENT_METHODS } from '../_lib/order.js'
 import { assignSlot, SLOT_ERRORS } from '../_lib/slots.js'
 import { settleOrderPoints } from '../_lib/customer.js'
 import { loadMenu } from '../_lib/menu.js'
-import { enqueue } from '../_lib/printJobs.js'
+import { enqueue, cancelPendingOrderJobs } from '../_lib/printJobs.js'
+import { sendCustomerNotification } from '../_lib/customerNotifications.js'
 
 
 const STATUSES = ['nuevo', 'horno', 'listo', 'entregado', 'cancelado']
@@ -93,8 +94,16 @@ export default async function handler(req, res) {
   /* Club Nonno: suma los puntos al entregar y los devuelve al cancelar.
      Nunca bloquea el cambio de estado. */
   if (status === 'entregado' || status === 'cancelado') await settleOrderPoints(data)
-  /* Cocina ya tenía la comanda en papel: le sale un aviso de CANCELADO */
-  if (status === 'cancelado' && data.printed_at) await enqueue(data, ['cancelado'])
+  if (status === 'cancelado') {
+    let kitchenMayHaveTheOrder = Boolean(data.printed_at)
+    try { kitchenMayHaveTheOrder = (await cancelPendingOrderJobs(data)) || kitchenMayHaveTheOrder }
+    catch (err) { console.error('No se pudo cancelar la impresión pendiente:', err) }
+    /* Cancela papeles viejos y deja un aviso idempotente si la comanda
+       ya salió o estaba en vuelo cuando se anuló el pedido. */
+    if (kitchenMayHaveTheOrder) await enqueue(data, ['cancelado'], { automatic: true })
+    await sendCustomerNotification(data, 'cancelado')
+  }
+  if (status === 'listo' && data.mode === 'pickup') await sendCustomerNotification(data, 'listo')
 
   return res.status(200).json({ order: data })
 }
@@ -163,6 +172,10 @@ async function editOrder(req, res, id, scoped) {
       error: `${SLOT_ERRORS[assigned.reason] || 'No hemos podido actualizar el pedido.'} El pedido se queda como estaba.`,
     })
   }
+
+  /* No dejar en la cola la comanda anterior si cocina aún no la había sacado. */
+  try { await cancelPendingOrderJobs(current) }
+  catch (err) { console.error('No se pudo cancelar la comanda antigua:', err) }
 
   /* La comanda nueva, marcada MODIFICADO, sale sola en cocina */
   await enqueue(assigned.row, ['comanda'])

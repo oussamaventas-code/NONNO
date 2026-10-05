@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, RefreshCw, LogOut, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro, BookOpen, Settings, Maximize, Undo2, Wallet, LayoutDashboard, Percent, MoreHorizontal, X } from 'lucide-react'
+import { Bell, BellOff, RefreshCw, LogOut, Power, ChefHat, Store, Printer, ClipboardList, Truck, Euro, BookOpen, Settings, Maximize, Undo2, Wallet, LayoutDashboard, Percent, MoreHorizontal, X, Wrench } from 'lucide-react'
 import Counter from './Counter'
 import Routes from './Routes'
 import Stock from './Stock'
@@ -10,9 +10,11 @@ import DoughControl from './DoughControl'
 import { useMenuOverrides } from '../hooks/useMenuOverrides'
 import Billing from './Billing'
 import Discounts from './Discounts'
+import Maintenance from './Maintenance'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
 import { printTicket, printReceipt, setPrintAgents, viaAgent } from './printTicket'
 import { PrinterBanner, PrinterSettings } from './PrinterStatus'
+import { CustomerNotificationBanner, CustomerNotificationSettings } from './CustomerNotifications'
 import { fetchOrders, updateOrder, createOrder, logout, getPushConfig, savePushSubscription, fetchStoreStatus, setStoreStatus } from './api'
 import { useOrderAlert } from './useOrderAlert'
 import KitchenBoard from './KitchenBoard'
@@ -30,6 +32,7 @@ const ALL_TABS = [
   { id: 'mostrador', label: 'Mostrador', Icon: Store },
   { id: 'reparto', label: 'Reparto', Icon: Truck },
   { id: 'stock', label: 'Stock', Icon: ClipboardList },
+  { id: 'mantenimiento', label: 'Mantenimiento', Icon: Wrench },
   { id: 'caja', label: 'Caja', Icon: Wallet },
   { id: 'carta', label: 'Carta', Icon: BookOpen },
   /* Solo dirección: es dinero, no algo que vea el mostrador de un local. */
@@ -45,8 +48,8 @@ const MOBILE_SLOTS = 4
 
 const DEVICE_MODES = [
   { id: 'completo', label: 'Todo', hint: 'Enseña todas las pestañas.', tabs: null },
-  { id: 'cocina', label: 'Cocina', hint: 'Solo el tablero del horno y el stock.', tabs: ['cocina', 'stock'] },
-  { id: 'mostrador', label: 'Mostrador', hint: 'TPV, reparto, caja, carta y facturación.', tabs: ['mostrador', 'reparto', 'caja', 'carta', 'facturacion', 'descuentos'] },
+  { id: 'cocina', label: 'Cocina', hint: 'Solo el tablero del horno, el stock y el mantenimiento.', tabs: ['cocina', 'stock', 'mantenimiento'] },
+  { id: 'mostrador', label: 'Mostrador', hint: 'TPV, reparto, caja, carta y mantenimiento.', tabs: ['mostrador', 'reparto', 'caja', 'carta', 'mantenimiento', 'facturacion', 'descuentos'] },
 ]
 
 /* Cada cuánto vuelve a sonar un pedido nuevo que nadie ha marcado como visto */
@@ -469,7 +472,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
       <div className={`md:hidden h-1.5 ${sede?.banda || 'bg-tomate'}`} aria-hidden="true" />
       {/* Cinta de sede: imposible confundir de cocina */}
       <p className={`hidden md:block ${sede?.banda || 'bg-tomate'} ${sede?.texto || 'text-crema'} text-center font-sans font-medium uppercase text-[0.72rem] sm:text-sm h-9 leading-9 px-3 truncate`}>
-        {{ hoy: 'HOY', mostrador: 'MOSTRADOR', stock: 'STOCK', reparto: 'REPARTO', caja: 'CIERRE DE CAJA', carta: 'CARTA', facturacion: 'FACTURACIÓN', descuentos: 'DESCUENTOS' }[view] || 'COCINA'} · {sede ? sede.nombre : 'TODAS LAS SEDES'}
+        {{ hoy: 'HOY', mostrador: 'MOSTRADOR', stock: 'STOCK', mantenimiento: 'MANTENIMIENTO', reparto: 'REPARTO', caja: 'CIERRE DE CAJA', carta: 'CARTA', facturacion: 'FACTURACIÓN', descuentos: 'DESCUENTOS' }[view] || 'COCINA'} · {sede ? sede.nombre : 'TODAS LAS SEDES'}
       </p>
       <div className="checker hidden md:block" aria-hidden="true" />
 
@@ -486,6 +489,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
         </div>
       )}
       <PrinterBanner printers={printers} locationIds={locationIds} orders={orders} onError={setError} />
+      <CustomerNotificationBanner orders={porSede} onError={setError} onRetried={load} />
       {queue.length > 0 && (
         <div className="bg-queso text-carbon border-y border-tomate px-4 py-2 text-sm">
           <p className="font-semibold text-center">
@@ -706,6 +710,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
                 </div>
 
                 <PrinterSettings printers={printers} locationIds={locationIds} onError={setError} />
+                {esDireccion && <CustomerNotificationSettings locationIds={locationIds} onError={setError} />}
 
                 <div className="flex flex-col gap-2">
                   <p className="mono text-tomate">AJUSTES</p>
@@ -768,6 +773,8 @@ export default function AdminPanel({ scope, onSignedOut }) {
 
         {view === 'descuentos' && esDireccion ? (
           <Discounts onError={setError} onChanged={refreshMenu} />
+        ) : view === 'mantenimiento' ? (
+          <Maintenance locationIds={locationIds} onError={setError} />
         ) : view === 'hoy' && esDireccion ? (
           <TodayBoard
             orders={orders}

@@ -82,7 +82,11 @@ Con el panel abierto en el ordenador del local, el aviso sonoro ya cubre el caso
 
 ## SMS al cliente (gratis, desde un Android del local)
 
-El cliente recibe un SMS al confirmar el pedido (con la hora), otro cuando cocina lo marca **listo** (o "sale ya" si es a domicilio) y otro si se **cancela**. A quien pide en el mostrador solo le llega el de "listo".
+El envío automático ya está integrado en la API. Ejecuta una vez [`supabase/notificaciones-cliente.sql`](supabase/notificaciones-cliente.sql) en Supabase para guardar el estado y los reintentos. Los avisos son: **recibido** al crear pedidos web o telefónicos, **listo** al marcar para recoger, **reparto** al registrar la salida del repartidor y **cancelado** al anular. Los pedidos creados directamente en mostrador no reciben el aviso de recibido.
+
+Si un aviso falla, el panel lo muestra arriba y permite reintentarlo. En **⚙ → Avisos a clientes** se ve qué canales están configurados y se puede enviar un SMS de prueba al móvil indicado. La prueba envía un mensaje real y puede tener coste.
+
+El mensaje se marca como enviado cuando SMS Gateway o Twilio lo acepta; eso no garantiza que el operador ya lo haya entregado al móvil.
 
 Los SMS salen desde un móvil Android del local con su propia tarifa: si la tarifa incluye SMS, no cuesta nada.
 
@@ -96,7 +100,7 @@ Para que no falle durante el servicio:
 - El móvil tiene que estar **encendido, cargando y con cobertura o wifi**.
 - En Ajustes → Batería, quita la **optimización de batería** a la app, o Android la dormirá.
 
-**Sin Android: Twilio (de pago).** Si en Vercel están `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` y `TWILIO_FROM` (número de Twilio o remitente `NONNO`), los SMS salen por Twilio en vez de por el móvil. Unos 0,09 $ por SMS en España. La cuenta de prueba de Twilio solo envía a números verificados en su panel.
+**Sin Android: Twilio (de pago).** Si en Vercel están `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` y `TWILIO_FROM` (número de Twilio o remitente autorizado), los SMS salen por Twilio. La cuenta de prueba de Twilio solo envía a números verificados en su panel.
 
 **Probar:** en el panel, menú ⚙ → "Probar los SMS a clientes": escribe tu móvil y pulsa Enviar.
 
@@ -239,9 +243,9 @@ Estados de un pedido: `nuevo` → `horno` → `listo` → `entregado`. También 
 
 ## Avisos por WhatsApp (Twilio)
 
-Si está configurado, el cliente recibe los avisos por **WhatsApp**. Si no tiene WhatsApp o el mensaje no llega, sale automáticamente el **SMS** de siempre (si hay SMS configurado). El panel dice por dónde salió cada aviso.
+Si está configurado, el cliente recibe los avisos por **WhatsApp**. Si Twilio rechaza la solicitud inicial de WhatsApp, el servidor intenta el **SMS** configurado. Si Twilio acepta el mensaje pero el operador no lo entrega después, no hay confirmación de entrega ni reintento automático por SMS; el panel solo puede confirmar la aceptación del proveedor.
 
-WhatsApp solo deja que el negocio escriba primero con **plantillas aprobadas por Meta**. Pasos (una sola vez):
+WhatsApp solo deja que el negocio escriba primero con **plantillas aprobadas por Meta**. El servidor intenta WhatsApp primero y, si Twilio rechaza el envío, recurre al SMS configurado. Una respuesta aceptada por Twilio no confirma la entrega final en el móvil. Pasos de configuración (una sola vez):
 
 1. **Número de WhatsApp del negocio.** En Twilio → *Messaging → Senders → WhatsApp senders* → registra un número (hace falta cuenta de pago y la cuenta de Facebook/Meta Business del negocio). Nombre visible: *La Pizza de Nonno*. El número de prueba `+49…` de Twilio no sirve para clientes.
 2. **Crear las plantillas** en Twilio → *Messaging → Content Template Builder*. Idioma **Spanish (es)**, categoría **Utility**, tipo *Text*, y **Submit for WhatsApp approval**. Copia cada texto tal cual (`{{1}}`, `{{2}}`… son los huecos que rellena la web):
@@ -255,7 +259,7 @@ WhatsApp solo deja que el negocio escriba primero con **plantillas aprobadas por
    | `nonno_codigo` | tipo **Authentication** (el texto lo pone WhatsApp), con botón *Copy code* | `TWILIO_WA_CODIGO` |
 
    Ejemplos que pide Twilio para los huecos: `07` · `Recógelo en Sangonera la Verde a las 21:30` · `22,90 €` · `https://tu-dominio/p/07-a1b2c3d4e5` · `Llega hacia las 22:40` · `968 00 00 00`.
-3. **Vercel → Environment Variables**: `TWILIO_WHATSAPP_FROM` (el número del paso 1, `+34…`) y, por cada plantilla **aprobada**, su identificador `HX…` en la variable de la tabla. Pon también `SITE_URL` (`https://tu-dominio`): con ella llega el enlace de seguimiento y Twilio puede avisar a la web cuando un WhatsApp no se entrega (entonces sale el SMS). **Redeploy**.
+3. **Vercel → Environment Variables**: `TWILIO_WHATSAPP_FROM` (el número del paso 1, `+34…`) y, por cada plantilla **aprobada**, su identificador `HX…` en la variable de la tabla. Pon también `SITE_URL` (`https://tu-dominio`) para incluir el enlace de seguimiento en el aviso de pedido recibido. **Redeploy**.
 4. **Probar**: panel → ⚙ → "Probar los avisos a clientes".
 
 Un aviso sin su plantilla configurada sale por SMS, así que se puede activar poco a poco. Precio: Meta cobra cada plantilla de categoría *Utility* más la comisión de Twilio (mira las tarifas de España en Twilio).
@@ -280,6 +284,8 @@ Los pedidos tomados en el mostrador sin conexión mantienen su referencia `SC-�
 | `src/data/loyalty.js` | reglas de los puntos |
 | `api/orders.js` | crear pedido (público) y listarlos (panel) |
 | `api/orders/[id].js` | cambiar estado, marcar impreso |
+| `api/_lib/customerNotifications.js` | avisos SMS/WhatsApp y fallback al SMS |
+| `api/notifications.js` | estado, reintento y prueba manual de avisos |
 | `api/session.js` | entrar y salir del panel |
 | `api/push.js` | alta y baja de avisos |
 | `api/_lib/order.js` | saneado y recálculo de importes |

@@ -62,6 +62,12 @@ export const printRetry = (location) => printAction({ action: 'retry', location 
 export const printTakeover = (location) => printAction({ action: 'takeover', location })
 export const printInstallKey = (location) => printAction({ action: 'key', location })
 
+/* SMS/WhatsApp transaccionales al cliente. */
+const notificationAction = (body) => request('/api/notifications', { method: 'POST', body: JSON.stringify(body) })
+export const fetchNotificationConfig = () => request('/api/notifications')
+export const sendNotificationTest = (location, phone) => notificationAction({ action: 'test', location, phone })
+export const retryCustomerNotification = (orderId, event) => notificationAction({ action: 'retry', orderId, event })
+
 export const fetchDisplay = (locationId) =>
   request(`/api/display?location=${encodeURIComponent(locationId)}`)
 
@@ -113,3 +119,9 @@ export const fetchCash = (locationId, day) => {
 
 export const saveCash = (locationId, day, data) =>
   request('/api/cash', { method: 'POST', body: JSON.stringify({ location: locationId, day, ...data }) })
+
+/** Plan mensual y registro de mantenimiento por sede. */
+export const fetchMaintenance = (locationId, month) =>
+  request(`/api/maintenance?location=${encodeURIComponent(locationId)}&month=${encodeURIComponent(month)}`)
+export const saveMaintenance = (locationId, record) =>
+  request('/api/maintenance', { method: 'POST', body: JSON.stringify({ action: 'save', location: locationId, ...record }) })

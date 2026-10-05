@@ -1,72 +1,50 @@
-# Montar las impresoras en la tienda (sin ayuda)
+# Instalar la impresión automática de Nonno
 
-## Cómo es cada sede
+## Qué hace
 
-- **Un solo ordenador: el TPV** (Windows, el de Repsol, el que tiene pídeme.net).
-- **Dos impresoras**, que ya funcionan con el TPV por Wi-Fi o por cable:
-  - **Cocina**: saca las comandas.
-  - **Mostrador**: saca el ticket del cliente.
+El programa **Nonno Impresora** queda funcionando en el ordenador del local y envía automáticamente cada pedido nuevo a las impresoras configuradas:
 
-En el TPV se abren **dos ventanas de Nonno**, y cada una imprime en su impresora:
+- **Cocina:** una comanda por cada sección que tenga el pedido: ENTRANTES, PIZZAS · HORNO y BEBIDAS.
+- **Mostrador:** el ticket completo del cliente. Los pedidos creados en el mostrador imprimen el ticket al cobrarlos.
 
-| Icono | Qué hace | Impresora |
-|---|---|---|
-| **Nonno Cocina** | Cuando entra un pedido (web, mostrador o teléfono), saca **sola** una etiqueta por sección: ENTRANTES, PIZZAS y BEBIDAS. Puede estar **minimizada**. | Cocina |
-| **Nonno TPV** | La que usáis para tomar pedidos y cobrar. Al cobrar saca el **ticket con logo**. | Mostrador |
+Si el ordenador se desconecta, los trabajos quedan en cola y se intentan imprimir al volver la conexión. Si se pierde la confirmación después de salir el papel, el agente guarda localmente su identificador y reenvía la confirmación sin repetir la impresión. Al editar o cancelar un pedido, se retira de la cola su comanda anterior; si cocina ya podía haberla recibido, sale un aviso de modificación o cancelación. El panel de Nonno muestra el estado de las impresoras y permite enviar una prueba o reintentar trabajos fallidos.
 
-Cada icono es un Chrome aparte que **recuerda su impresora**, así que no se mezclan.
+## Antes de ir al local
 
----
+La web debe estar desplegada y conectada a Supabase. Configura una sola vez:
 
-## 1. Comprobar que Windows ve las dos impresoras
+1. En Supabase → **SQL Editor**, ejecuta [`../supabase/impresora.sql`](../supabase/impresora.sql).
+2. En Vercel → **Environment Variables**, añade `PRINT_AGENT_SECRET` con un valor secreto aleatorio largo y redepliega la web.
+3. Comprueba que las dos sedes existen en `store_status` (se crean con el esquema principal de Supabase).
 
-En el TPV ve a *Configuración → Bluetooth y dispositivos → Impresoras y escáneres*.
+## Instalar en el ordenador del local
 
-- **Si aparecen las dos** (la de cocina y la del mostrador), apunta sus nombres y pasa al paso 2.
-- **Si falta alguna**, puede que pídeme.net imprima directo, sin pasar por Windows. Para añadirla:
-  1. Imprime la **hoja de configuración** de esa impresora. Suele salir dejando pulsado el botón FEED unos segundos con la tapa cerrada. Ahí viene su **IP**, algo como `192.168.1.50`.
-  2. Descarga el **driver de la marca** desde su web oficial (Epson, Star, Bixolon, Xprinter…). La marca y el modelo están en la pegatina de la impresora.
-  3. Instálalo y, cuando pida el puerto, elige **red / TCP/IP** con esa IP. Si no lo pide, ve a *Impresoras y escáneres → Agregar dispositivo → Agregar manualmente → Agregar con dirección TCP/IP*.
-  4. Pulsa **Imprimir página de prueba**.
+Hace falta un ordenador Windows con internet y una impresora térmica de tickets ESC/POS para cocina y otra para mostrador. Se puede conectar por USB o por red TCP/IP (puerto 9100).
 
-> **No cambies la impresora predeterminada ni toques la configuración de pídeme.net.** Así sigue funcionando todo como hasta ahora.
+> Este instalador sirve para impresoras térmicas de tickets. No sirve para impresoras Zebra de etiquetas adhesivas.
 
-## 2. Montar "Nonno Cocina"
+1. Descarga `nonno-impresora.zip` desde **Configuración → Impresoras** del panel, o copia la carpeta `tienda/nonno-impresora` al ordenador del local, y descomprímela.
+2. En el panel, abre **Reparto/Mostrador → ⚙ → Impresoras** y pulsa **Código de instalación** para esa sede.
+3. Ejecuta **`INSTALAR NONNO IMPRESORA.bat`**. Elige la sede y pega el código.
+4. Elige la impresora de cocina y la de mostrador. Para una impresora de red, selecciona `R` e introduce su IP; se usa el puerto 9100 salvo que indiques otro como `192.168.1.50:9100`.
+5. El instalador deja el agente configurado para arrancar al iniciar sesión en Windows. No cierres su tarea programada. Esta preparación se hace una vez por ordenador; desde entonces no hay que abrir la web ni pulsar nada para que salga cada pedido.
 
-1. Copia la carpeta `tienda` al TPV (con un USB o descargándola de GitHub).
-2. Doble clic en **`instalar-equipo-nonno.bat`**.
-3. Escribe **1** (Cocina) y luego el local: **1** Sangonera o **2** Santo Ángel.
-4. Se abre una **prueba de impresión**:
-   - En *Destino*, elige **la impresora de COCINA**. Si no está en la lista, pulsa *Ver más…*
-   - Pulsa **Imprimir**.
-   - Cuando salga el papel, **cierra esa ventana**.
-5. Aparece en el escritorio el icono **"Nonno Cocina"**. Ábrelo e **inicia sesión** (solo la primera vez). Ya está: abre la pestaña Cocina y las **comandas salen solas**, no hay que tocar ningún ajuste.
-6. Puedes minimizarla, pero **no la cierres**. Se abre sola cada vez que se enciende el ordenador.
+## Comprobar que funciona
 
-## 3. Montar "Nonno TPV"
-
-1. Vuelve a abrir **`instalar-equipo-nonno.bat`** y escribe **2** (TPV).
-2. En la prueba de impresión, elige **la impresora del MOSTRADOR** y pulsa Imprimir.
-3. Abre el icono **"Nonno TPV"** e inicia sesión. Ya está: cada pedido de la web o del teléfono saca **solo** el ticket del cliente en el mostrador. Los que se hacen en el mostrador lo sacan al cobrar.
-4. Puedes minimizarla, pero **no la cierres**.
-
-## 4. Prueba final
-
-1. Haz un pedido de prueba desde el móvil con entrante, pizza y bebida.
-2. En **cocina** tienen que salir solas **3 etiquetas**: ENTRANTES, PIZZAS · HORNO y BEBIDAS.
-3. En el **mostrador** sale solo el ticket del cliente con logo.
+1. En el panel, comprueba que Nonno Impresora aparece **Conectada**.
+2. Desde ⚙ → **Impresoras**, manda una prueba a Cocina y otra a Mostrador.
+3. Haz un pedido de prueba con un entrante, una pizza y una bebida. Cocina debe recibir solo las secciones que incluya el pedido; el mostrador debe recibir el ticket completo.
 4. Cancela el pedido de prueba.
-
----
 
 ## Si algo falla
 
-| Pasa esto | Haz esto |
+| Problema | Qué revisar |
 |---|---|
-| La comanda sale en el mostrador (o al revés) | Has elegido la impresora equivocada en la prueba. Vuelve a abrir el instalador para ese icono y elige la buena. |
-| En cocina no sale nada | ¿Está abierta **Nonno Cocina** (aunque sea minimizada)? En su menú ⚙ tiene que poner **Comandas automáticas: SÍ**. ¿La impresora tiene papel? |
-| En el mostrador no sale el ticket | ¿Está abierta **Nonno TPV**? En su menú ⚙ tiene que poner **Tickets de cliente automáticos: SÍ**. |
-| Sale la ventana de "Imprimir" | Has abierto el panel desde el Chrome normal. Ábrelo desde los iconos **Nonno Cocina** o **Nonno TPV**. |
-| Antes iba y ya no | La impresora ha cambiado de IP (pasa si se reinicia el router). Imprime su hoja de configuración y compara la IP. Lo mejor es pedir a quien os puso el router que **reserve la IP** de cada impresora. |
-| Sale girado o en 2 trozos | En *Preferencias de impresión* de esa impresora: **Vertical** y el tamaño de papel correcto (rollo de 80 mm). |
-| Pedidos que entraron con Nonno Cocina cerrada | No se imprimen solos. En la ventana **Nonno Cocina** (no en la del TPV, que imprime en el mostrador), abre el pedido y pulsa **IMPRIMIR COMANDA**. |
+| El instalador dice que el código no es válido | Genera un código nuevo para la misma sede desde el panel. |
+| El panel dice «Sin conexión» | Comprueba que el ordenador está encendido y conectado a internet; vuelve a ejecutar el instalador si hace falta. |
+| Falta la tabla de impresión | Ejecuta `supabase/impresora.sql` en Supabase. |
+| La impresora no aparece en Windows | Instala su controlador o conéctala a la red; para TCP/IP confirma su IP y el puerto RAW 9100. |
+| El trabajo falla o no sale papel | Comprueba papel, conexión y que la impresora elegida corresponde a ese puesto; después pulsa **Reintentar** en el panel. |
+| Sigue sin imprimir | Usa **Imprimir aquí** en el aviso del panel como alternativa temporal y revisa el registro en `%LOCALAPPDATA%\Nonno\impresora\registro.txt`. |
+
+La carpeta `tienda` conserva `instalar-equipo-nonno.bat` como método anterior de impresión desde Chrome. Para instalaciones nuevas, usa el agente descrito en esta guía.

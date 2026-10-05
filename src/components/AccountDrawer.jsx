@@ -56,11 +56,16 @@ export default function AccountDrawer() {
 /* ── Cómo funciona ───────────────────────────────────────────── */
 function Rules() {
   return (
-    <ul className="flex flex-col gap-2 font-sans text-sm text-forno/80">
-      <li className="flex gap-2"><Star className="w-4 h-4 mt-0.5 text-tomate fill-tomate flex-shrink-0" strokeWidth={0} />{LOYALTY.pointsPerEuro} punto por cada euro de tus pedidos, al entregártelos.</li>
-      <li className="flex gap-2"><Gift className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />{LOYALTY.redeemStep} puntos = {price(LOYALTY.stepValue)} de descuento en tu próximo pedido online.</li>
-      <li className="flex gap-2"><Mail className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />Entras con tu correo y tu contraseña, y te mandamos el ticket de cada pedido al correo.</li>
-    </ul>
+    <>
+      <ul className="flex flex-col gap-2 font-sans text-sm text-forno/80">
+        <li className="flex gap-2"><Star className="w-4 h-4 mt-0.5 text-tomate fill-tomate flex-shrink-0" strokeWidth={0} />{LOYALTY.pointsPerEuro} punto por cada euro de tus pedidos, al entregártelos.</li>
+        <li className="flex gap-2"><Gift className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />{LOYALTY.redeemStep} puntos = {price(LOYALTY.stepValue)} de descuento en tu próximo pedido online.</li>
+        <li className="flex gap-2"><Mail className="w-4 h-4 mt-0.5 text-tomate flex-shrink-0" />Entras con tu correo y tu contraseña, y te mandamos el ticket de cada pedido al correo.</li>
+      </ul>
+      <p className="mt-3 border-l-2 border-tomate/40 pl-3 text-xs leading-relaxed text-forno/60">
+        Nonno aún debe confirmar la caducidad de los puntos, los límites y las exclusiones del Club. Consulta con tu sede antes de canjearlos; no aplicaremos condiciones que no estén aprobadas.
+      </p>
+    </>
   )
 }
 

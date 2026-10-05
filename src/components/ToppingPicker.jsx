@@ -88,7 +88,7 @@ export default function ToppingPicker({ extraIds = [], selected, onToggle, size 
               aria-pressed={on}
               className={[
                 'inline-flex items-center gap-1 rounded-md border font-semibold transition-colors',
-                lg ? 'px-3 py-2 min-h-[40px] text-sm' : 'px-2.5 py-1.5 text-xs',
+                lg ? 'px-3 py-3 min-h-[48px] text-sm' : 'px-2.5 py-1.5 text-xs',
                 out ? 'border-tomate/25 bg-masa text-carbon/40 line-through cursor-not-allowed'
                   : on ? 'border-tomate bg-tomate text-masa' : 'border-tomate/40 bg-masa text-carbon hover:border-tomate',
               ].join(' ')}

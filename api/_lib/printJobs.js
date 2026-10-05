@@ -64,25 +64,56 @@ function render(kind, order) {
  * Nunca rompe el pedido: si algo falla, lo apunta y sigue.
  * @returns {Promise<boolean>} true si ha quedado en la cola
  */
-export async function enqueue(order, kinds) {
+export async function enqueue(order, kinds, { automatic = false } = {}) {
   if (!isConfigured() || !kinds.length) return false
   try {
     if (!(await agentInstalled(order.location_id))) return false
     const rows = kinds.map((kind) => {
       const { role, bytes } = render(kind, order)
-      return { location_id: order.location_id, role, kind, order_id: order.id, ref: order.ref, data: Buffer.from(bytes).toString('base64') }
+      return {
+        location_id: order.location_id,
+        role,
+        kind,
+        order_id: order.id,
+        ref: order.ref,
+        data: Buffer.from(bytes).toString('base64'),
+        /* La clave hace idempotente la impresión automática en reintentos
+           HTTP. Las reimpresiones manuales mantienen dedupe_key=null. */
+        dedupe_key: automatic ? `auto:${order.id}:${kind}` : null,
+      }
     })
     const { error } = await db().from('print_jobs').insert(rows)
     if (error) throw error
     return true
   } catch (err) {
-    if (!missing(err)) console.error('No se pudo poner en la cola de impresión:', err)
+    if (!missing(err) && err?.code !== '23505') console.error('No se pudo poner en la cola de impresión:', err)
     return false
   }
 }
 
 /** Pedido nuevo: comandas a cocina y, si no es de mostrador (ese se imprime al cobrar), ticket del cliente. */
-export const enqueueNewOrder = (order) => enqueue(order, order.channel === 'mostrador' ? ['comanda'] : ['comanda', 'ticket'])
+export const enqueueNewOrder = (order) => enqueue(
+  order,
+  order.channel === 'mostrador' ? ['comanda'] : ['comanda', 'ticket'],
+  { automatic: true },
+)
+
+/** Cancela el papel viejo de un pedido anulado y avisa si cocina podía haberlo recibido. */
+export async function cancelPendingOrderJobs(order) {
+  if (!isConfigured() || !order?.id) return false
+  const { data, error } = await db().from('print_jobs').select('kind, status')
+    .eq('location_id', order.location_id).eq('order_id', order.id)
+    .in('kind', ['comanda', 'ticket']).in('status', ['pendiente', 'error', 'impreso', 'navegador'])
+  if (error) { if (missing(error)) return false; throw error }
+
+  const { error: cancelError } = await db().from('print_jobs')
+    .update({ status: 'cancelado', error: 'Pedido cancelado.' })
+    .eq('location_id', order.location_id).eq('order_id', order.id)
+    .in('status', ['pendiente', 'error', 'navegador'])
+  if (cancelError) { if (!missing(cancelError)) throw cancelError }
+
+  return data.some((job) => job.kind === 'comanda' && ['pendiente', 'impreso', 'navegador'].includes(job.status))
+}
 
 /**
  * Estado de la impresora de cada sede para el panel, y aviso al móvil
@@ -160,16 +191,43 @@ async function agent(req, res, action) {
     for (const r of results) {
       const id = Number(r.id)
       if (!Number.isInteger(id)) continue
-      const { data: job } = await db().from('print_jobs').select('id, kind, order_id, attempts')
+      const { data: job, error: readError } = await db().from('print_jobs').select('id, kind, order_id, attempts, status')
         .eq('id', id).eq('location_id', locationId).maybeSingle()
+      if (readError) throw readError
       if (!job) continue
+      if (job.status === 'cancelado') {
+        /* El agente pudo sacar la comanda justo cuando se anuló el pedido. */
+        if (r.ok && job.kind === 'comanda' && job.order_id) {
+          const { data: order, error: orderReadError } = await db().from('orders').select('*').eq('id', job.order_id).eq('location_id', locationId).maybeSingle()
+          if (orderReadError) throw orderReadError
+          if (order?.status === 'cancelado') await enqueue(order, ['cancelado'], { automatic: true })
+        }
+        continue
+      }
+      if (job.status !== 'pendiente') continue
       const attempts = job.attempts + 1
       const patch = r.ok
         ? { status: 'impreso', printed_at: now, attempts, error: null }
         /* Tres fallos seguidos (sin papel, apagada…): se deja en "error" y el panel avisa */
         : { status: attempts >= 3 ? 'error' : 'pendiente', attempts, error: String(r.error || 'Error').slice(0, 300) }
-      await db().from('print_jobs').update(patch).eq('id', id)
-      if (r.ok && job.kind === 'comanda' && job.order_id) await db().from('orders').update({ printed_at: now }).eq('id', job.order_id)
+      const { data: updated, error: updateError } = await db().from('print_jobs').update(patch)
+        .eq('id', id).eq('location_id', locationId).eq('status', 'pendiente').select('id').maybeSingle()
+      if (updateError) throw updateError
+      if (!updated) {
+        const { data: latest, error: latestError } = await db().from('print_jobs').select('status, kind, order_id')
+          .eq('id', id).eq('location_id', locationId).maybeSingle()
+        if (latestError) throw latestError
+        if (r.ok && latest?.status === 'cancelado' && latest.kind === 'comanda' && latest.order_id) {
+          const { data: order, error: orderReadError } = await db().from('orders').select('*').eq('id', latest.order_id).eq('location_id', locationId).maybeSingle()
+          if (orderReadError) throw orderReadError
+          if (order?.status === 'cancelado') await enqueue(order, ['cancelado'], { automatic: true })
+        }
+        continue
+      }
+      if (r.ok && job.kind === 'comanda' && job.order_id) {
+        const { error: orderError } = await db().from('orders').update({ printed_at: now }).eq('id', job.order_id)
+        if (orderError) throw orderError
+      }
     }
     return res.status(200).json({ ok: true })
   }

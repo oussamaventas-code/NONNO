@@ -186,6 +186,20 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
         </button>
       </div>
 
+      <details className="group mt-4 rounded-md border border-tomate/20 bg-masa px-4 py-3">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 font-sans font-bold text-sm text-carbon marker:hidden">
+          <span>Guion rápido para tomar un pedido por teléfono</span><ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
+        </summary>
+        <ol className="mt-3 flex list-decimal flex-col gap-2 pl-5 text-sm text-carbon/75 marker:font-bold marker:text-tomate">
+          <li>Confirma la sede y si el pedido es para recoger o para entregar.</li>
+          <li>Si es entrega, recoge dirección completa y una referencia útil para encontrarla.</li>
+          <li>Apunta cada producto, cantidad, tamaño o ración; confirma extras, ingredientes que se quitan y notas para cocina.</li>
+          <li>Recoge nombre y teléfono de contacto; verifica el número repitiéndolo.</li>
+          <li>Repite el pedido, la dirección si corresponde, el precio, el coste de envío y la hora estimada.</li>
+          <li>Si preguntan por alergias, consulta directamente con el local: la matriz oficial todavía está pendiente.</li>
+        </ol>
+      </details>
+
       {/* Buscador: "el 12", "Juan", "611…" */}
       <div className="relative mt-5">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-carbon/40" />

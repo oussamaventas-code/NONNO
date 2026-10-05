@@ -93,13 +93,18 @@ export function PrinterSettings({ printers, locationIds, onError }) {
   return (
     <div className="flex flex-col gap-2">
       <p className="mono text-tomate">IMPRESORAS</p>
+      <div className="rounded-md border border-tomate/20 bg-masa p-3 text-sm text-carbon/70">
+        <p className="font-semibold text-carbon">Impresión automática, configuración única</p>
+        <p className="mt-1">Activa primero la cola de impresión en Supabase y configura PRINT_AGENT_SECRET en Vercel. Después instala Nonno Impresora una vez en el ordenador Windows conectado a las impresoras. Cada pedido se imprime solo; no hace falta dejar la web abierta ni pulsar Imprimir.</p>
+        <a href="/nonno-impresora.zip" download className="ptab soft mt-3 inline-flex items-center justify-center">Descargar instalador</a>
+      </div>
       {locationIds.map((id) => {
         const s = printers[id]
         return (
           <div key={id} className="rounded-md border border-tomate/30 p-3 text-sm">
             <p className="font-bold text-carbon">{getLocation(id)?.name}</p>
             {!s ? (
-              <p className="text-carbon/60 mt-0.5">Sin Nonno Impresora: imprime este navegador.</p>
+              <p className="text-carbon/60 mt-0.5">Agente todavía sin conexión. Completa la instalación única para activar la impresión automática.</p>
             ) : (
               <>
                 <p className={['mt-0.5 font-semibold', s.online ? 'text-albahaca' : 'text-tomate'].join(' ')}>

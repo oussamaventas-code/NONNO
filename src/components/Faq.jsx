@@ -65,6 +65,7 @@ export default function Faq() {
                 <button
                   onClick={() => toggle(item.id)}
                   aria-expanded={open}
+                  aria-controls={`faq-answer-${item.id}`}
                   className="w-full flex items-center justify-between gap-4 py-5 sm:py-6 text-left"
                 >
                   <span className="font-sans font-bold text-base sm:text-lg text-carbon">{item.q}</span>
@@ -76,7 +77,11 @@ export default function Faq() {
                   </span>
                 </button>
                 <div
+                  id={`faq-answer-${item.id}`}
                   ref={(el) => (bodyRefs.current[item.id] = el)}
+                  aria-hidden={!open}
+                  role="region"
+                  aria-label={item.q}
                   className="overflow-hidden"
                   style={{ height: 0 }}
                 >

@@ -13,16 +13,34 @@
 # ════════════════════════════════════════════════════════════════
 
 $ErrorActionPreference = 'Stop'
-$VERSION = '1.0'
+$VERSION = '1.1'
 $dir = Join-Path $env:LOCALAPPDATA 'Nonno\impresora'
 $cfgPath = Join-Path $dir 'config.json'
 $logPath = Join-Path $dir 'registro.txt'
+$printedPath = Join-Path $dir 'impresos-pendientes.txt'
 
 function Log([string]$msg) {
   try {
     if ((Test-Path $logPath) -and (Get-Item $logPath).Length -gt 1MB) { Move-Item $logPath "$logPath.anterior" -Force }
     Add-Content -Path $logPath -Value ("{0:yyyy-MM-dd HH:mm:ss}  {1}" -f (Get-Date), $msg) -Encoding UTF8
   } catch { }
+}
+
+# Si se imprimió el papel pero se cortó internet antes del ACK, se guarda
+# su id localmente. Al reconectar solo se reenvía el ACK y no sale duplicado.
+$printedJobs = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::Ordinal)
+if (Test-Path $printedPath) {
+  Get-Content $printedPath -ErrorAction SilentlyContinue | ForEach-Object {
+    if ($_) { [void]$printedJobs.Add([string]$_) }
+  }
+}
+function Save-PrintedJobs {
+  try {
+    $tempPath = "$printedPath.tmp"
+    $ids = @($printedJobs | Sort-Object)
+    [IO.File]::WriteAllLines($tempPath, [string[]]$ids)
+    Move-Item -LiteralPath $tempPath -Destination $printedPath -Force
+  } catch { Log "No se pudo guardar el registro local de impresión: $($_.Exception.Message)" }
 }
 
 # Una sola copia a la vez: dos programas imprimirían todo dos veces
@@ -115,10 +133,18 @@ while ($true) {
     $results = @()
     foreach ($job in @($r.jobs)) {
       if (-not $job) { continue }
+      $jobId = [string]$job.id
+      if ($printedJobs.Contains($jobId)) {
+        $results += @{ id = $job.id; ok = $true }
+        Log "Reconfirmo el papel $($job.kind) $($job.ref) sin volver a imprimirlo"
+        continue
+      }
       $target = $cfg.printers.($job.role)
       if (-not $target) { $target = $cfg.printers.cocina }
       try {
         Send-Paper $target "Nonno $($job.kind) $($job.ref)" ([Convert]::FromBase64String($job.data))
+        [void]$printedJobs.Add($jobId)
+        Save-PrintedJobs
         $results += @{ id = $job.id; ok = $true }
         Log "Impreso $($job.kind) $($job.ref) en $target"
       } catch {
@@ -129,6 +155,8 @@ while ($true) {
     if ($results.Count) {
       $ack = @{ action = 'ack'; location = $cfg.location; results = $results } | ConvertTo-Json -Depth 4 -Compress
       Invoke-RestMethod -Uri $url -Method Post -Headers $headers -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes($ack)) -TimeoutSec 20 | Out-Null
+      foreach ($result in @($results | Where-Object { $_.ok })) { [void]$printedJobs.Remove([string]$result.id) }
+      Save-PrintedJobs
       if (@($results | Where-Object { -not $_.ok }).Count) { Start-Sleep -Seconds 5 }
     }
   } catch {

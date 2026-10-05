@@ -1,0 +1,13 @@
+NONNO IMPRESORA — INSTALACIÓN ÚNICA
+
+1. En el panel de Nonno, abre Configuración > Impresoras y descarga este instalador.
+2. Descomprime el archivo completo en el ordenador Windows del local.
+3. En el panel, pulsa «Código de instalación» para esa sede y copia el código.
+4. Ejecuta «INSTALAR NONNO IMPRESORA.bat», pega el código y elige las impresoras de cocina y mostrador.
+5. Manda una prueba desde el panel para comprobar cada impresora.
+
+A partir de ahí, los pedidos se imprimen automáticamente. No hay que abrir la web ni pulsar un botón por pedido. El agente arranca al iniciar sesión en Windows y reintenta los trabajos si vuelve internet tras un corte.
+
+Requisitos: ordenador Windows conectado a internet, una impresora térmica de tickets ESC/POS y la cola de impresión activada en la web y en Supabase. No sirve para impresoras de etiquetas Zebra.
+
+El ordenador debe permanecer encendido y con la sesión del local iniciada durante el servicio. Si el agente pierde conexión, el panel lo indica y conserva los trabajos pendientes. Si se actualiza el agente, vuelve a descargar el ZIP desde el panel.

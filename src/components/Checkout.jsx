@@ -469,10 +469,10 @@ function ClubBox({ account, totals, redeem, redeemMax, onRedeem }) {
             {redeem > 0 ? `Usas ${redeem} puntos: −${price(totals.pointsDiscount)}` : `Puedes usar hasta ${redeemMax} puntos`}
           </span>
           <span className="flex items-center gap-2">
-            <button onClick={() => onRedeem(Math.max(0, redeem - step))} disabled={redeem <= 0} className="w-8 h-8 rounded-full border border-tomate text-tomate flex items-center justify-center disabled:opacity-30" aria-label="Usar menos puntos">
+            <button onClick={() => onRedeem(Math.max(0, redeem - step))} disabled={redeem <= 0} className="w-12 h-12 rounded-full border border-tomate text-tomate flex items-center justify-center disabled:opacity-30" aria-label="Usar menos puntos">
               <Minus className="w-4 h-4" />
             </button>
-            <button onClick={() => onRedeem(Math.min(redeemMax, redeem + step))} disabled={redeem >= redeemMax} className="w-8 h-8 rounded-full bg-tomate text-masa flex items-center justify-center disabled:opacity-30" aria-label="Usar más puntos">
+            <button onClick={() => onRedeem(Math.min(redeemMax, redeem + step))} disabled={redeem >= redeemMax} className="w-12 h-12 rounded-full bg-tomate text-masa flex items-center justify-center disabled:opacity-30" aria-label="Usar más puntos">
               <Plus className="w-4 h-4" />
             </button>
           </span>
@@ -491,6 +491,10 @@ function StepSummary({ lines, totals, location, mode, customer, readyAt }) {
   return (
     <div>
       <h3 className="font-sans font-extrabold uppercase text-xl text-carbon mb-6">Todo listo para confirmar</h3>
+      <p role="note" className="mb-5 rounded-md border border-tomate/30 bg-tomate/5 px-4 py-3 text-sm leading-relaxed text-carbon/75">
+        <strong className="text-carbon">¿Alergia o intolerancia?</strong>{' '}
+        Nonno todavía no ha confirmado la matriz de alérgenos y trazas. Consulta con la sede antes de confirmar; no podemos asegurar desde la web que un plato esté libre de contacto cruzado.
+      </p>
 
       <div className="rounded-2xl border border-carbon/10 divide-y divide-carbon/8">
         <div className="p-4 flex items-center justify-between">

@@ -9,13 +9,16 @@ create table if not exists public.print_jobs (
   order_id    uuid references public.orders(id) on delete cascade,
   ref         text,
   data        text not null,                       -- bytes ESC/POS en base64
-  status      text not null default 'pendiente',   -- pendiente | impreso | error | navegador
+  status      text not null default 'pendiente',   -- pendiente | impreso | error | navegador | cancelado
   attempts    integer not null default 0,
   error       text,
+  dedupe_key  text,
   created_at  timestamptz not null default now(),
   printed_at  timestamptz
 );
+alter table public.print_jobs add column if not exists dedupe_key text;
 create index if not exists print_jobs_cola on public.print_jobs (location_id, status, id);
+create unique index if not exists print_jobs_dedupe on public.print_jobs (dedupe_key) where dedupe_key is not null;
 alter table public.print_jobs enable row level security;
 
 -- Última señal del programa del local y estado de sus impresoras

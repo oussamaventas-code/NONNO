@@ -19,4 +19,6 @@ npm run dev
 
 Ver [`ARQUITECTURA.md`](ARQUITECTURA.md) para el detalle completo: árbol de componentes, estado global, motor de precios y qué datos son reales frente a datos demo editables (menú, precios, horarios).
 
+Para preparar la operación, consulta [`PEDIDOS.md`](PEDIDOS.md) y [`tienda/GUIA-IMPRESORAS.md`](tienda/GUIA-IMPRESORAS.md). Las migraciones locales incluyen [`supabase/impresora.sql`](supabase/impresora.sql), [`supabase/notificaciones-cliente.sql`](supabase/notificaciones-cliente.sql) y [`supabase/mantenimiento.sql`](supabase/mantenimiento.sql) para impresión automática, avisos SMS/WhatsApp y registro mensual de mantenimiento.
+
 Todo el contenido editable (menú, sedes, textos) vive en [`src/data/`](src/data) con comentarios `TODO` señalando qué debe sustituirse por información oficial.
