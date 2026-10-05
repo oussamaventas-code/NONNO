@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Phone, Printer, Pencil, Search, X, Globe, Store, ChevronDown, Undo2, ShoppingBag, Truck, Wallet, BellRing, Ban, CalendarClock } from 'lucide-react'
+import { Plus, Phone, Printer, Pencil, Search, X, Globe, Store, ChevronDown, Undo2, ShoppingBag, Truck, Wallet, BellRing, Ban, CalendarClock, MonitorCheck } from 'lucide-react'
 import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
 import { updateOrder } from './api'
@@ -50,9 +50,20 @@ function matches(o, q) {
     || (digits.length >= 3 && String(o.customer_phone || '').replace(/\D/g, '').includes(digits))
 }
 
-/** Semáforo de la hora: rojo si va tarde, amarillo si queda poco. */
+/** Ya sale en la pantalla del local: lo marcó el mostrador o llegó su hora. */
+const onScreen = (o, now) => !isDelivery(o) && isActive(o)
+  && (o.status === 'listo' || (o.ready_at && Date.parse(o.ready_at) <= now))
+
+/** Semáforo de la hora: rojo si va tarde, amarillo si queda poco. Un
+    pedido de recoger ya en la pantalla espera al cliente: verde y, si
+    pasan más de 15 min sin venir, rojo. */
 function timing(o, now) {
-  if (!o.ready_at || !isActive(o)) return null
+  if (!isActive(o)) return null
+  if (onScreen(o, now)) {
+    const waiting = o.ready_at ? Math.max(0, Math.round((now - Date.parse(o.ready_at)) / 60000)) : 0
+    return waiting > 15 ? { tone: 'late', text: `EN PANTALLA · ${waiting} MIN` } : { tone: 'screen', text: 'EN PANTALLA' }
+  }
+  if (!o.ready_at) return null
   const min = Math.round((Date.parse(o.ready_at) - now) / 60000)
   if (o.scheduled_for && min > FAR_MIN) return { tone: 'far', text: `PROGRAMADO ${hourOf(o.ready_at)}` }
   if (min < 0) return { tone: 'late', text: `TARDE ${-min} MIN` }
@@ -65,6 +76,7 @@ const PILL = {
   soon: 'bg-queso text-[rgb(29_43_79)]',
   ok: 'bg-albahaca/15 text-albahaca',
   far: 'bg-carbon/10 text-carbon',
+  screen: 'bg-albahaca text-papel',
 }
 
 export default function Counter({ orders, locationIds, defaultLocationId, doughLeft = null, onSaved, onError, onCloseCash }) {
@@ -170,6 +182,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, doughL
       onDeliver={() => deliver(o)}
       onEdit={() => setEditor({ order: o })}
       onUnpay={() => patch(o, { paymentStatus: 'pendiente' })}
+      onToScreen={() => patch(o, { status: 'listo', seen: true })}
       onCancelAsk={() => setCancelling(o.id)}
       onCancelBack={() => setCancelling(null)}
       onCancel={(reason) => cancel(o, reason)}
@@ -345,7 +358,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, doughL
  *   cobrar  → se entregó sin cobrar: Cobrar
  *   hecho   → ya cerrado: solo reimprimir
  */
-function OrderCard({ o, kind, now, busy, cancelling, onCharge, onDeliver, onEdit, onUnpay, onCancelAsk, onCancelBack, onCancel }) {
+function OrderCard({ o, kind, now, busy, cancelling, onCharge, onDeliver, onEdit, onUnpay, onToScreen, onCancelAsk, onCancelBack, onCancel }) {
   const ch = CHANNEL[o.channel] || CHANNEL.web
   const paid = isPaid(o)
   /* Pedido tomado sin conexión, aún en la cola de este equipo:
@@ -401,6 +414,11 @@ function OrderCard({ o, kind, now, busy, cancelling, onCharge, onDeliver, onEdit
           {primary && (
             <button onClick={primary.run} disabled={busy} className="pbig w-full bg-albahaca">
               {busy ? 'Guardando…' : primary.label}
+            </button>
+          )}
+          {kind === 'recoger' && !local && !onScreen(o, now) && (
+            <button onClick={onToScreen} disabled={busy} className="psec w-full !border-albahaca !text-albahaca">
+              <MonitorCheck className="w-5 h-5" /> Ya está · a la pantalla
             </button>
           )}
           <div className="flex flex-wrap gap-2">

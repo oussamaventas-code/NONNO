@@ -8,9 +8,11 @@ import { isConnectionError } from './offlineQueue'
 
 /* ═══════════════════════════════════════════════════════════════
    PANTALLA DEL LOCAL (TV)
-   Para que el cliente que espera sepa cómo va su pedido:
-   "En preparación" y "¡Listo! Recoge tu pedido". Solo pedidos para
-   recoger, con número y nombre abreviado.
+   Para que el cliente vea su número y su nombre y sepa que ya puede
+   recogerlo: "¡Ya puedes recoger!" en grande y, al lado y pequeño,
+   los números que aún se preparan. Solo pedidos para RECOGER.
+   Un pedido sale aquí al llegar su hora o antes, si el mostrador
+   pulsa "Ya está · a la pantalla"; se quita al cobrar y entregar.
 
    PLAN B: si se corta la conexión, la pantalla se queda con lo último
    que sabía (con un aviso discreto) y sigue reintentando sola.
@@ -18,8 +20,8 @@ import { isConnectionError } from './offlineQueue'
 
 const POLL_MS = 4000
 const FLASH_MS = 15000
-const MAX_PREP = 12
-const MAX_READY = 8
+const MAX_PREP = 16
+const MAX_READY = 9
 
 /** "NN-4821" → { prefix: "NN", number: "4821" } */
 const splitRef = (ref) => {
@@ -96,9 +98,9 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
 
   return (
     <div className="h-screen overflow-hidden bg-masa text-carbon flex flex-col cursor-none select-none">
-      <header className="flex items-center justify-between px-[3vw] py-[2vh] border-b-2 border-tomate">
+      <header className="flex items-center justify-between px-[3vw] py-[1.6vh] border-b-2 border-tomate">
         <div>
-          <p className="font-sans font-extrabold uppercase tracking-tight text-[2.2vw] leading-none text-tomate">
+          <p className="font-sans font-extrabold uppercase tracking-tight text-[2vw] leading-none text-tomate">
             LA PIZZA DE <em className="font-serif italic font-semibold">NONNO</em>
           </p>
           <p className="mono text-carbon/60 text-[1vw] mt-1">{location?.name.toUpperCase()}</p>
@@ -106,47 +108,16 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
         <p className="font-mono font-bold text-[3vw] leading-none text-tomate">{hourOf(now)}</p>
       </header>
 
-      <div className="checker" aria-hidden="true" />
-
-      <main className="flex-1 min-h-0 grid grid-cols-[1.15fr_1fr]">
-        {/* En preparación */}
+      <main className="flex-1 min-h-0 grid grid-cols-[1fr_18vw]">
+        {/* LO IMPORTANTE: ya puedes recoger. Número enorme y nombre. */}
         <section className="min-h-0 px-[3vw] py-[3vh] flex flex-col">
-          <h2 className="flex items-center gap-[1vw] font-sans font-extrabold uppercase text-[2.4vw] neon-amarillo">
-            <span className="inline-block w-[1vw] h-[1vw] rounded-full bg-tomate animate-pulse-dot" />
-            En preparación
-          </h2>
-          {preparing.length === 0 ? (
-            <p className="mt-[4vh] font-serif italic text-[2vw] text-tomate/70">Ahora mismo no hay pedidos en el horno.</p>
-          ) : (
-            <ul className="mt-[3vh] grid grid-cols-3 gap-[1.2vw] content-start">
-              {preparing.slice(0, MAX_PREP).map((o) => {
-                const { prefix, number } = splitRef(o.ref)
-                return (
-                  <li key={o.id} className="pcard px-[1.2vw] py-[1.5vh]">
-                    <p className={['font-mono font-bold leading-none neon-amarillo', number.length > 4 ? 'text-[2.4vw]' : 'text-[3.4vw]'].join(' ')}>
-                      <span className="text-[1.1vw] text-tomate/60 align-top mr-[0.3vw]">{prefix}</span>{number}
-                    </p>
-                    <p className="mt-[0.8vh] text-[1.2vw] text-carbon/70 truncate">{o.name}</p>
-                    {o.readyAt && <p className="mono normal-case text-[1vw] text-tomate">hacia las {hourOf(o.readyAt)}</p>}
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-          {preparing.length > MAX_PREP && (
-            <p className="mt-[2vh] mono normal-case text-[1.2vw] text-carbon/60">y {preparing.length - MAX_PREP} más en el horno…</p>
-          )}
-        </section>
-
-        {/* Listos */}
-        <section className="min-h-0 border-l-2 border-[rgb(82_230_150)] shadow-[inset_0_0_40px_rgb(82_230_150_/_0.15)] px-[3vw] py-[3vh] flex flex-col">
-          <h2 className="font-sans font-extrabold uppercase text-[2.4vw] leading-none neon-verde">
-            ¡Listo! <span className="neon-amarillo">Recoge tu pedido</span>
+          <h2 className="font-sans font-extrabold uppercase text-[3.4vw] leading-none neon-verde">
+            ¡Ya puedes recoger!
           </h2>
           {ready.length === 0 ? (
-            <p className="mt-[4vh] font-serif italic text-[2vw] text-masa/80">Enseguida saldrán los primeros.</p>
+            <p className="mt-[6vh] font-serif italic text-[2.4vw] text-masa/80">Enseguida salen los primeros.</p>
           ) : (
-            <ul className="mt-[3vh] grid grid-cols-2 gap-[1.2vw] content-start">
+            <ul className="mt-[3vh] grid grid-cols-3 gap-[1.6vw] content-start">
               {ready.slice(0, MAX_READY).map((o) => {
                 const { prefix, number } = splitRef(o.ref)
                 const isNew = flash.has(o.id)
@@ -154,27 +125,46 @@ export default function DisplayBoard({ scope, sedeEnRuta, onSignedOut }) {
                   <li
                     key={o.id}
                     className={[
-                      'rounded-lg border-2 border-[rgb(82_230_150)] bg-crema text-carbon px-[1.4vw] py-[1.8vh] shadow-[0_0_10px_rgb(82_230_150_/_0.8),inset_0_0_10px_rgb(82_230_150_/_0.3)] transition-all',
-                      isNew ? 'ring-[0.4vw] ring-queso animate-pulse' : '',
+                      'rounded-xl border-[0.25vw] border-[rgb(82_230_150)] bg-crema px-[1.6vw] py-[2.2vh] text-center shadow-[0_0_12px_rgb(82_230_150_/_0.8),inset_0_0_12px_rgb(82_230_150_/_0.3)]',
+                      isNew ? 'ring-[0.5vw] ring-queso animate-pulse' : '',
                     ].join(' ')}
                   >
-                    <p className={['font-mono font-bold leading-none neon-verde', number.length > 4 ? 'text-[3.2vw]' : 'text-[4.4vw]'].join(' ')}>
-                      <span className="text-[1.3vw] text-tomate/60 align-top mr-[0.3vw]">{prefix}</span>{number}
+                    <p className={['font-mono font-bold leading-none neon-verde', number.length > 4 ? 'text-[4.5vw]' : 'text-[7vw]'].join(' ')}>
+                      {prefix && <span className="text-[1.4vw] text-tomate/60 align-top mr-[0.3vw]">{prefix}</span>}{number}
                     </p>
-                    <p className="mt-[0.8vh] text-[1.5vw] font-semibold truncate">{o.name}</p>
+                    <p className="mt-[1.2vh] text-[2.2vw] font-bold truncate">{o.name}</p>
                   </li>
                 )
               })}
             </ul>
           )}
           {ready.length > MAX_READY && (
-            <p className="mt-[2vh] mono normal-case text-[1.2vw] text-masa/90">y {ready.length - MAX_READY} más listos en el mostrador</p>
+            <p className="mt-[2vh] mono normal-case text-[1.4vw] text-masa/90">y {ready.length - MAX_READY} más: pregunta en el mostrador</p>
           )}
         </section>
+
+        {/* Al lado, pequeño: los que aún se están haciendo (solo el número) */}
+        <aside className="min-h-0 border-l-2 border-tomate/60 px-[1.6vw] py-[3vh] flex flex-col">
+          <h2 className="font-sans font-extrabold uppercase text-[1.5vw] leading-tight neon-amarillo">Preparando</h2>
+          {preparing.length === 0 ? (
+            <p className="mt-[2vh] text-[1.2vw] text-masa/70">Nada en el horno.</p>
+          ) : (
+            <ul className="mt-[2vh] grid grid-cols-2 gap-[0.8vw] content-start">
+              {preparing.slice(0, MAX_PREP).map((o) => (
+                <li key={o.id} className="rounded-lg border border-tomate/50 py-[1vh] text-center font-mono font-bold text-[2.2vw] leading-none neon-amarillo">
+                  {splitRef(o.ref).number}
+                </li>
+              ))}
+            </ul>
+          )}
+          {preparing.length > MAX_PREP && (
+            <p className="mt-[1.5vh] text-[1vw] text-masa/70">y {preparing.length - MAX_PREP} más</p>
+          )}
+        </aside>
       </main>
 
       <footer className="flex items-center justify-between px-[3vw] py-[1.5vh] border-t-2 border-tomate text-[1vw] text-carbon/60">
-        <p>Tu número de pedido está en tu ticket.</p>
+        <p className="text-[1.3vw]">Tu número está en tu ticket. Cuando salga aquí, pasa por el mostrador.</p>
         {offline && (
           <p className="flex items-center gap-[0.5vw] text-tomate">
             <WifiOff className="w-[1.1vw] h-[1.1vw]" /> Sin conexión: mostrando la última información
