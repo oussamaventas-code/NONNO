@@ -1,27 +1,27 @@
-import { useEffect, useRef, useState } from 'react'
-import { Plus, Phone, Printer, Pencil, Euro, Truck, Package, Store, Clock, PackageCheck, CalendarClock, Search, X, Globe, ChevronDown, Undo2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Plus, Phone, Printer, Pencil, Search, X, Globe, Store, ChevronDown, Undo2, ShoppingBag, Truck, Wallet, BellRing, Ban, CalendarClock } from 'lucide-react'
 import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
 import { updateOrder } from './api'
-import { printReceipt } from './printTicket'
-import { useOrderAlert } from './useOrderAlert'
+import { printReceipt, printTicket } from './printTicket'
 import { isThisServiceDay } from '../lib/orderNumber'
 import OrderEditor from './OrderEditor'
 import ChargeDialog from './ChargeDialog'
+import CancelReasons from './CancelReasons'
+import Routes, { ColumnTitle } from './Routes'
 
 /* ═══════════════════════════════════════════════════════════════
-   TPV DEL MOSTRADOR
-   Los pedidos de la sede agrupados por lo que hay que HACER con ellos:
-     LISTOS PARA ENTREGAR → arriba, en verde; suena al salir de cocina
-     EN COCINA            → con lo que les falta
-     PARA REPARTO         → los de domicilio ya hechos: los lleva Reparto
-     ENTREGADOS SIN COBRAR → para que no se escape ninguno
-   Lo ya cerrado (cobrado y entregado, cancelado) queda plegado abajo.
+   MOSTRADOR — la pantalla del local, todo en una
+   La cocina trabaja con la comanda en papel y no toca el panel, así
+   que aquí no se espera a ningún "listo": cada pedido tiene UNA cosa
+   que hacer y un botón grande para hacerla.
 
-   Quién hace qué: los de RECOGER se cobran y entregan aquí (cobrar un
-   pedido listo ya lo da por entregado; sin cobrar no se puede entregar).
-   Los de DOMICILIO los entrega y cobra Reparto, al volver el repartidor.
-   Así cada euro entra por un solo sitio y la caja cuadra.
+     PARA RECOGER        → Cobrar y entregar (o Entregar si ya pagó)
+     A DOMICILIO         → elegir quién lo lleva y "Sale"
+     EN LA CALLE + CAJA  → qué lleva cada repartidor y cerrar la caja
+
+   El dinero entra solo por dos sitios: este mostrador y el repartidor.
+   En el móvil las tres columnas son tres pestañas.
    ═══════════════════════════════════════════════════════════════ */
 
 const CHANNEL = {
@@ -31,19 +31,13 @@ const CHANNEL = {
 }
 
 const UNDO_MS = 10000
+/* Programado para dentro de más de esto: se ve, pero aún no apremia */
+const FAR_MIN = 45
 
 const isActive = (o) => !['entregado', 'cancelado'].includes(o.status)
-const isToday = (o) => isThisServiceDay(o)
 const isPaid = (o) => o.payment_status === 'pagado'
-const inKitchen = (o) => ['nuevo', 'horno'].includes(o.status)
-
-/** "en 5 min", "ya", "hace 8 min" respecto a `now` */
-function minutesText(iso, now) {
-  const min = Math.round((Date.parse(iso) - now) / 60000)
-  if (min > 0) return { future: true, text: `en ${min} min` }
-  if (min === 0) return { future: true, text: 'ya' }
-  return { future: false, text: `hace ${-min} min` }
-}
+const isDelivery = (o) => o.mode === 'delivery'
+const byTime = (a, b) => Date.parse(a.ready_at || a.created_at) - Date.parse(b.ready_at || b.created_at)
 
 /** El cliente dice "el 12", "Juan" o su teléfono: todo vale */
 function matches(o, q) {
@@ -56,16 +50,33 @@ function matches(o, q) {
     || (digits.length >= 3 && String(o.customer_phone || '').replace(/\D/g, '').includes(digits))
 }
 
-export default function Counter({ orders, locationIds, defaultLocationId, onSaved, onError, onGoReparto }) {
+/** Semáforo de la hora: rojo si va tarde, amarillo si queda poco. */
+function timing(o, now) {
+  if (!o.ready_at || !isActive(o)) return null
+  const min = Math.round((Date.parse(o.ready_at) - now) / 60000)
+  if (o.scheduled_for && min > FAR_MIN) return { tone: 'far', text: `PROGRAMADO ${hourOf(o.ready_at)}` }
+  if (min < 0) return { tone: 'late', text: `TARDE ${-min} MIN` }
+  if (min === 0) return { tone: 'soon', text: 'YA' }
+  if (min <= 5) return { tone: 'soon', text: `EN ${min} MIN` }
+  return { tone: 'ok', text: `EN ${min} MIN` }
+}
+const PILL = {
+  late: 'bg-tomate text-papel',
+  soon: 'bg-queso text-[rgb(29_43_79)]',
+  ok: 'bg-albahaca/15 text-albahaca',
+  far: 'bg-carbon/10 text-carbon',
+}
+
+export default function Counter({ orders, locationIds, defaultLocationId, doughLeft = null, onSaved, onError, onCloseCash }) {
   const [search, setSearch] = useState('')
   const [showDone, setShowDone] = useState(false)
   const [editor, setEditor] = useState(null) // { order?, channel }
   const [charging, setCharging] = useState(null) // { order, deliver }
+  const [cancelling, setCancelling] = useState(null) // id
   const [busyId, setBusyId] = useState(null)
   const [undo, setUndo] = useState(null) // { order, from, wasPaid }
-  const [flash, setFlash] = useState(() => new Set())
+  const [col, setCol] = useState('recoger') // móvil: qué columna se ve
   const [now, setNow] = useState(Date.now)
-  const { ding } = useOrderAlert()
 
   /* Los minutos avanzan solos */
   useEffect(() => {
@@ -73,51 +84,36 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
     return () => clearInterval(t)
   }, [])
 
-  /* Cocina marca LISTO → suena aquí y la tarjeta parpadea unos segundos */
-  const lastStatus = useRef(null)
-  useEffect(() => {
-    const prev = lastStatus.current
-    lastStatus.current = new Map(orders.map((o) => [o.id, o.status]))
-    if (!prev) return
-    const ready = orders.filter((o) => o.status === 'listo' && ['nuevo', 'horno'].includes(prev.get(o.id)))
-    if (!ready.length) return
-    ding()
-    setFlash((f) => new Set([...f, ...ready.map((o) => o.id)]))
-    const t = setTimeout(() => setFlash((f) => {
-      const next = new Set(f)
-      ready.forEach((o) => next.delete(o.id))
-      return next
-    }), 12000)
-    return () => clearTimeout(t)
-  }, [orders, ding])
-
   /* Deshacer se va solo a los 10 s */
   useEffect(() => {
-    if (!undo) return
+    if (!undo) return undefined
     const t = setTimeout(() => setUndo(null), UNDO_MS)
     return () => clearTimeout(t)
   }, [undo])
 
-  const today = orders.filter((o) => isToday(o) || isActive(o)).filter((o) => matches(o, search))
-  const byTime = (a, b) => Date.parse(a.ready_at || a.created_at) - Date.parse(b.ready_at || b.created_at)
-  const isDelivery = (o) => o.mode === 'delivery'
-  const listos = today.filter((o) => o.status === 'listo' && !isDelivery(o)).sort(byTime)
-  const cocina = today.filter(inKitchen).sort(byTime)
-  const reparto = today.filter((o) => o.status === 'listo' && isDelivery(o)).sort(byTime)
-  const sinCobrar = today.filter((o) => o.status === 'entregado' && !isPaid(o)).sort(byTime)
-  const hechos = today
+  const tonight = orders.filter((o) => isThisServiceDay(o) || isActive(o))
+  const shown = tonight.filter((o) => matches(o, search))
+
+  const recoger = shown.filter((o) => isActive(o) && !isDelivery(o)).sort(byTime)
+  const sinCobrar = shown.filter((o) => o.status === 'entregado' && !isPaid(o)).sort(byTime)
+  const porSalir = shown.filter((o) => isActive(o) && isDelivery(o) && !o.dispatched_at)
+  const enCalle = shown.filter((o) => isActive(o) && isDelivery(o) && o.dispatched_at)
+  const hechos = shown
     .filter((o) => o.status === 'cancelado' || (o.status === 'entregado' && isPaid(o)))
     .sort((a, b) => byTime(b, a))
 
-  const porCobrar = orders
-    .filter((o) => isToday(o) && o.status !== 'cancelado' && !isPaid(o))
-    .reduce((sum, o) => sum + Number(o.total || 0), 0)
-  const cobradoHoy = orders
-    .filter((o) => isToday(o) && isPaid(o) && o.status !== 'cancelado')
-    .reduce((acc, o) => {
-      acc[o.payment_method === 'tarjeta' ? 'tarjeta' : 'efectivo'] += Number(o.total || 0)
-      return acc
-    }, { efectivo: 0, tarjeta: 0 })
+  /* Pedidos de la web que nadie ha mirado todavía (suenan hasta marcarlos) */
+  const nuevosWeb = tonight.filter((o) => o.channel === 'web' && o.status === 'nuevo' && !o.seen_at && !o.offline)
+
+  /* La noche en números (franja azul) */
+  const counted = tonight.filter((o) => isThisServiceDay(o) && o.status !== 'cancelado')
+  const cobrado = counted.filter(isPaid).reduce((acc, o) => {
+    acc[o.payment_method === 'tarjeta' ? 'tarjeta' : 'efectivo'] += Number(o.total || 0)
+    return acc
+  }, { efectivo: 0, tarjeta: 0 })
+  const porCobrar = counted.filter((o) => !isPaid(o)).reduce((n, o) => n + Number(o.total || 0), 0)
+  const enLaCalle = tonight.filter((o) => isActive(o) && isDelivery(o) && o.dispatched_at && !isPaid(o))
+    .reduce((n, o) => n + Number(o.total || 0), 0)
 
   const patch = async (order, body) => {
     setBusyId(order.id)
@@ -134,18 +130,23 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
   }
 
   const deliver = async (order) => {
-    const updated = await patch(order, { status: 'entregado' })
+    const updated = await patch(order, { status: 'entregado', seen: true })
     if (updated) setUndo({ order: updated, from: order.status, wasPaid: isPaid(order) })
   }
 
   const confirmCharge = async (method, printIt) => {
     const { order, deliver: alsoDeliver } = charging
-    const body = { paymentStatus: 'pagado', paymentMethod: method, ...(alsoDeliver ? { status: 'entregado' } : {}) }
+    const body = { paymentStatus: 'pagado', paymentMethod: method, seen: true, ...(alsoDeliver ? { status: 'entregado' } : {}) }
     const updated = await patch(order, body)
     if (!updated) return
     setCharging(null)
     if (printIt) printReceipt(updated)
     if (alsoDeliver) setUndo({ order: updated, from: order.status, wasPaid: isPaid(order) })
+  }
+
+  const cancel = async (order, reason) => {
+    setCancelling(null)
+    await patch(order, { status: 'cancelado', cancelReason: reason, seen: true })
   }
 
   const undoLast = async () => {
@@ -155,90 +156,156 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
     await patch(order, { status: from, ...(wasPaid ? {} : { paymentStatus: 'pendiente' }) })
   }
 
-  const empty = !listos.length && !cocina.length && !reparto.length && !sinCobrar.length
-  const card = (o, tone) => (
-    <OrderRow
+  const markSeen = () => nuevosWeb.forEach((o) => updateOrder(o.id, { seen: true }).then(({ order }) => onSaved(order)).catch(() => {}))
+
+  const card = (o, kind) => (
+    <OrderCard
       key={o.id}
       o={o}
-      tone={tone}
+      kind={kind}
       now={now}
-      flash={flash.has(o.id)}
       busy={busyId === o.id}
+      cancelling={cancelling === o.id}
       onCharge={(alsoDeliver) => setCharging({ order: o, deliver: alsoDeliver })}
       onDeliver={() => deliver(o)}
       onEdit={() => setEditor({ order: o })}
       onUnpay={() => patch(o, { paymentStatus: 'pendiente' })}
-      onGoReparto={onGoReparto}
+      onCancelAsk={() => setCancelling(o.id)}
+      onCancelBack={() => setCancelling(null)}
+      onCancel={(reason) => cancel(o, reason)}
     />
   )
 
+  const MOBILE_COLS = [
+    { id: 'recoger', label: 'Recoger', n: recoger.length + sinCobrar.length },
+    { id: 'domicilio', label: 'Domicilio', n: porSalir.length },
+    { id: 'calle', label: 'Calle y caja', n: new Set(enCalle.map((o) => o.route_id)).size },
+  ]
+  const colClass = (id) => (col === id ? '' : 'hidden lg:flex')
+
   return (
-    <div className="pb-20">
-      {/* Móvil: los dos botones grandes, uno debajo de otro, a todo el ancho */}
-      <div className="grid gap-3 md:flex md:flex-wrap">
-        <button onClick={() => setEditor({ channel: 'mostrador' })} className="btn bg-tomate text-crema px-6 min-h-[56px] md:min-h-[48px]">
-          <span className="btn-layer bg-horno" />
-          <span className="btn-label"><Plus className="w-4 h-4" strokeWidth={2.5} /> NUEVO PEDIDO</span>
-        </button>
-        <button onClick={() => setEditor({ channel: 'telefono' })} className="btn bg-carbon text-crema px-6 min-h-[56px] md:min-h-[48px]">
-          <span className="btn-layer bg-tomate" />
-          <span className="btn-label"><Phone className="w-4 h-4" /> PEDIDO POR TELÉFONO</span>
-        </button>
+    <div className="pb-24">
+      {/* Arriba: lo que más se hace. Nuevo pedido y buscar. */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="grid grid-cols-2 gap-3 lg:flex">
+          <button onClick={() => setEditor({ channel: 'mostrador' })} className="pbig bg-tomate sm:text-lg lg:px-6">
+            <Plus className="w-6 h-6" strokeWidth={3} /> Nuevo pedido
+          </button>
+          <button onClick={() => setEditor({ channel: 'telefono' })} className="pbig bg-carbon lg:px-6">
+            <Phone className="w-5 h-5" /> Por teléfono
+          </button>
+        </div>
+        <label className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-carbon/50" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar: número, nombre o teléfono"
+            aria-label="Buscar pedido"
+            className="pfield !min-h-[52px] !pl-11 !pr-11 !text-base !border-2 !border-carbon/70"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-carbon/60" aria-label="Borrar búsqueda">
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </label>
       </div>
 
-      {/* Buscador: "el 12", "Juan", "611…" */}
-      <div className="relative mt-5">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-carbon/40" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Nº, nombre o teléfono"
-          aria-label="Buscar pedido"
-          className="pfield !pl-11 !pr-11 !text-base"
-        />
-        {search && (
-          <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-carbon/50" aria-label="Borrar búsqueda">
-            <X className="w-5 h-5" />
-          </button>
+      {/* La noche en números */}
+      <div className="mt-4 flex flex-wrap items-center gap-x-7 gap-y-1 rounded-lg bg-carbon px-4 py-2.5 text-[0.95rem] text-masa">
+        <span><strong className="text-lg">{counted.length}</strong> pedidos esta noche</span>
+        <span>Cobrado <strong className="text-lg">{price(cobrado.efectivo + cobrado.tarjeta)}</strong> <span className="opacity-80">(efectivo {price(cobrado.efectivo)} · tarjeta {price(cobrado.tarjeta)})</span></span>
+        <span>Por cobrar <strong className="text-lg text-queso">{price(porCobrar)}</strong></span>
+        {doughLeft != null && (
+          <span className="lg:ml-auto">{doughLeft === 0 ? <strong className="text-queso">SIN MASAS</strong> : <>Quedan <strong className="text-lg">{doughLeft}</strong> masas</>}</span>
         )}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1">
-        <span className="mono normal-case text-carbon/60">
-          Por cobrar: <strong className="text-tomate">{price(porCobrar)}</strong>
-        </span>
-        <span className="mono normal-case text-carbon/60">
-          Cobrado hoy: <strong className="text-carbon">{price(cobradoHoy.efectivo)}</strong> efectivo ·{' '}
-          <strong className="text-carbon">{price(cobradoHoy.tarjeta)}</strong> tarjeta
-        </span>
-      </div>
-
-      {empty && (
-        <p className="py-14 text-center font-serif italic font-semibold text-lg text-tomate">
-          {search ? 'Ningún pedido con esa búsqueda.' : 'No hay pedidos pendientes.'}
-        </p>
+      {/* Pedidos de la web sin mirar: suenan hasta que alguien los ve */}
+      {nuevosWeb.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border-2 border-carbon bg-queso px-4 py-3 text-[rgb(29_43_79)] animate-pulse" role="alert">
+          <BellRing className="w-6 h-6 flex-shrink-0" />
+          <p className="flex-1 font-sans font-extrabold uppercase tracking-wide">
+            {nuevosWeb.length === 1 ? 'Pedido nuevo de la web' : `${nuevosWeb.length} pedidos nuevos de la web`}: {nuevosWeb.map((o) => `${o.ref} (${o.mode === 'delivery' ? 'domicilio' : 'recoger'})`).join(', ')}
+          </p>
+          <button onClick={markSeen} className="pbig bg-carbon !min-h-[44px]">Visto</button>
+        </div>
       )}
 
-      <Group title="Listos para entregar" tone="listo" count={listos.length}>{listos.map((o) => card(o, 'listo'))}</Group>
-      <Group title="En cocina" tone="cocina" count={cocina.length}>{cocina.map((o) => card(o, 'cocina'))}</Group>
-      <Group title="Para reparto" tone="reparto" count={reparto.length}>{reparto.map((o) => card(o, 'reparto'))}</Group>
-      <Group title="Entregados sin cobrar" tone="cobrar" count={sinCobrar.length}>{sinCobrar.map((o) => card(o, 'cobrar'))}</Group>
+      {/* Móvil: tres pestañas grandes con su cuenta */}
+      <div className="lg:hidden mt-4 grid grid-cols-3 gap-2" role="tablist" aria-label="Columnas del mostrador">
+        {MOBILE_COLS.map((c) => (
+          <button key={c.id} role="tab" aria-selected={col === c.id} onClick={() => setCol(c.id)} className="ptab !min-h-[3.5rem] flex-col !gap-0 !px-1 leading-tight">
+            <span className="font-mono font-extrabold text-xl leading-none">{c.n}</span>
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-5 grid gap-6 lg:grid-cols-3 items-start">
+        {/* PARA RECOGER */}
+        <section className={['flex-col gap-4 min-w-0', col === 'recoger' ? 'flex' : 'hidden lg:flex'].join(' ')}>
+          <ColumnTitle Icon={ShoppingBag} count={recoger.length} tone="tomate">Para recoger</ColumnTitle>
+          {recoger.length === 0 && (
+            <p className="rounded-md border border-dashed border-carbon/30 py-6 text-center text-carbon/60">
+              {search ? 'Ninguno con esa búsqueda.' : 'Nadie esperando para recoger.'}
+            </p>
+          )}
+          {recoger.map((o) => card(o, 'recoger'))}
+          {sinCobrar.length > 0 && (
+            <>
+              <p className="mt-2 font-sans font-extrabold uppercase tracking-wide text-tomate">Entregados sin cobrar ({sinCobrar.length})</p>
+              {sinCobrar.map((o) => card(o, 'cobrar'))}
+            </>
+          )}
+        </section>
+
+        {/* A DOMICILIO · POR SALIR */}
+        <div className={['flex-col min-w-0', colClass('domicilio')].join(' ')}>
+          <Routes part="salir" orders={shown} locationIds={locationIds} onSaved={onSaved} onError={onError} />
+        </div>
+
+        {/* EN LA CALLE + CAJA */}
+        <div className={['flex-col min-w-0', colClass('calle')].join(' ')}>
+          <Routes
+            part="calle"
+            orders={shown}
+            locationIds={locationIds}
+            onSaved={onSaved}
+            onError={onError}
+            footer={(
+              <div className="mt-2 flex flex-col gap-3 rounded-lg border-2 border-carbon bg-queso p-4 text-[rgb(29_43_79)]">
+                <p className="flex items-center gap-2 font-sans font-extrabold uppercase tracking-wide"><Wallet className="w-5 h-5" /> Caja de esta noche</p>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <span>Efectivo<br /><strong className="text-lg">{price(cobrado.efectivo)}</strong></span>
+                  <span>Tarjeta<br /><strong className="text-lg">{price(cobrado.tarjeta)}</strong></span>
+                  <span>En la calle<br /><strong className="text-lg">{price(enLaCalle)}</strong></span>
+                </div>
+                {onCloseCash && (
+                  <button onClick={onCloseCash} className="pbig bg-[rgb(29_43_79)] !text-[rgb(255_250_233)] !border-[rgb(29_43_79)]">Cerrar caja</button>
+                )}
+              </div>
+            )}
+          />
+        </div>
+      </div>
 
       {hechos.length > 0 && (
-        <div className="mt-8">
-          <button onClick={() => setShowDone((v) => !v)} className="ptab soft">
+        <div className="mt-10">
+          <button onClick={() => setShowDone((v) => !v)} className="psec">
             <ChevronDown className={['w-4 h-4 transition-transform', showDone ? 'rotate-180' : ''].join(' ')} />
-            {showDone ? 'Ocultar' : 'Ver'} cerrados hoy ({hechos.length})
+            {showDone ? 'Ocultar' : 'Ver'} terminados esta noche ({hechos.length})
           </button>
-          {showDone && <ul className="mt-3 flex flex-col gap-3">{hechos.map((o) => card(o, 'hecho'))}</ul>}
+          {showDone && <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{hechos.map((o) => card(o, 'hecho'))}</div>}
         </div>
       )}
 
       {/* Deshacer el último "entregado" (un toque de más en hora punta) */}
       {undo && (
-        <div className="fixed inset-x-3 bottom-20 md:bottom-6 z-40 mx-auto max-w-md flex items-center justify-between gap-3 rounded-md bg-forno px-4 py-3 text-masa shadow-float">
-          <span className="text-sm font-semibold">{undo.order.ref} {undo.wasPaid ? 'entregado' : 'cobrado y entregado'}</span>
-          <button onClick={undoLast} className="flex items-center gap-1.5 rounded-md border border-masa/40 px-3 py-1.5 text-sm font-bold uppercase">
+        <div className="fixed inset-x-3 bottom-24 md:bottom-6 z-40 mx-auto max-w-md flex items-center justify-between gap-3 rounded-lg bg-[rgb(29_43_79)] px-4 py-3 text-[rgb(255_250_233)] shadow-float" role="status">
+          <span className="font-semibold">{undo.order.ref} {undo.wasPaid ? 'entregado' : 'cobrado y entregado'}</span>
+          <button onClick={undoLast} className="flex items-center gap-1.5 rounded-md border border-[rgb(255_250_233)]/50 px-3 py-2 text-sm font-bold uppercase">
             <Undo2 className="w-4 h-4" /> Deshacer
           </button>
         </div>
@@ -272,129 +339,89 @@ export default function Counter({ orders, locationIds, defaultLocationId, onSave
   )
 }
 
-const GROUP_TONE = {
-  listo: 'text-albahaca',
-  cocina: 'text-horno',
-  cobrar: 'text-tomate',
-  reparto: 'text-carbon',
-}
-
-function Group({ title, tone, count, children }) {
-  if (!count) return null
-  return (
-    <section className="mt-7">
-      <h3 className={['flex items-center gap-2 font-sans font-extrabold uppercase tracking-wide text-sm', GROUP_TONE[tone]].join(' ')}>
-        <span className="inline-block w-2.5 h-2.5 rounded-full bg-current" /> {title}
-        <span className="rounded-full border border-current px-2 text-xs leading-5">{count}</span>
-      </h3>
-      <ul className="mt-3 flex flex-col gap-3">{children}</ul>
-    </section>
-  )
-}
-
-/* El marco de la tarjeta toma el color de su grupo */
-const STRIPE = {
-  listo: 'border-l-[8px] !border-albahaca',
-  cocina: 'border-l-[8px] !border-horno',
-  cobrar: 'border-l-[8px] !border-tomate',
-  reparto: 'border-l-[8px] !border-carbon/40',
-  hecho: 'opacity-70',
-}
-
-function OrderRow({ o, tone, now, flash, busy, onCharge, onDeliver, onEdit, onUnpay, onGoReparto }) {
+/**
+ * Tarjeta de un pedido del mostrador. `kind`:
+ *   recoger → Cobrar y entregar / Entregar
+ *   cobrar  → se entregó sin cobrar: Cobrar
+ *   hecho   → ya cerrado: solo reimprimir
+ */
+function OrderCard({ o, kind, now, busy, cancelling, onCharge, onDeliver, onEdit, onUnpay, onCancelAsk, onCancelBack, onCancel }) {
   const ch = CHANNEL[o.channel] || CHANNEL.web
   const paid = isPaid(o)
-  const delivery = o.mode === 'delivery'
   /* Pedido tomado sin conexión, aún en la cola de este equipo:
      solo se puede reimprimir hasta que llegue al sistema. */
   const local = Boolean(o.offline)
   const active = isActive(o)
   const editable = !local && active && (o.items || []).every((i) => i.id)
-  const time = o.ready_at && active ? minutesText(o.ready_at, now) : null
+  const time = timing(o, now)
+  const isNew = o.channel === 'web' && o.status === 'nuevo' && !o.seen_at
 
-  /* Qué es lo más probable que haya que hacer con este pedido.
-     Recogida lista: cobrar = entregar (un solo botón). Recogida sin
-     cobrar no se entrega. Domicilio: lo entrega y cobra Reparto; aquí
-     solo se cobra si se quedó entregado sin cobrar. */
-  const canCharge = !local && !paid && o.status !== 'cancelado' && (!delivery || o.status === 'entregado')
-  const canDeliver = !local && active && !delivery && paid
-  const handOver = !local && active && o.status === 'listo' && !delivery
-  const primary = handOver ? (paid ? 'entregar' : 'cobrar-entregar') : canCharge ? 'cobrar' : null
-  const toReparto = !local && active && delivery
+  const primary = local || kind === 'hecho' ? null
+    : kind === 'cobrar' ? { label: 'Cobrar', run: () => onCharge(false) }
+      : paid ? { label: 'Entregar', run: onDeliver }
+        : { label: 'Cobrar y entregar', run: () => onCharge(true) }
+
+  const frame = kind === 'hecho' ? 'opacity-75' : time?.tone === 'late' ? 'pc-late' : isNew ? 'pc-new' : 'pc-navy'
 
   return (
-    <li className={['pcard p-4 sm:p-5', STRIPE[tone] || '', flash ? 'animate-pulse ring-4 ring-albahaca' : ''].join(' ')}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-baseline gap-3">
-            <span className="font-mono font-bold text-2xl text-carbon">{o.ref}</span>
-            <span className="truncate font-sans font-bold text-lg text-carbon">{o.customer_name}</span>
-          </div>
-          {/* Lo secundario en una sola línea pequeña, con iconos */}
-          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-carbon/60">
-            <span className="flex items-center gap-1">
-              {delivery ? <><Truck className="w-3.5 h-3.5" /> {o.delivery_zone || 'Reparto'}</> : <><Package className="w-3.5 h-3.5" /> Recoge</>}
-            </span>
-            <span className="flex items-center gap-1"><ch.Icon className="w-3.5 h-3.5" /> {ch.label}</span>
-            {o.customer_phone && <span>{o.customer_phone}</span>}
-            {o.scheduled_for && <span className="flex items-center gap-1 text-horno"><CalendarClock className="w-3.5 h-3.5" /> Programado</span>}
-            {o.edited_at && <span className="text-horno font-semibold">Modificado</span>}
-            {o.status === 'cancelado' && <span className="text-tomate font-semibold">Cancelado</span>}
-            {local && <span className="rounded bg-forno px-1.5 text-masa font-semibold">SIN ENVIAR · en papel</span>}
-          </p>
-          <p className="mt-1.5 text-sm text-carbon/70 line-clamp-2">
-            {(o.items || []).map((i) => `${i.qty}× ${i.name}`).join(', ')}
-          </p>
-          {time && (
-            <p className={['mt-1.5 flex items-center gap-1.5 text-sm font-bold', o.status === 'listo' && !time.future ? 'text-tomate' : 'text-carbon'].join(' ')}>
-              <Clock className="w-4 h-4" />
-              {o.status === 'listo'
-                ? (time.future ? `Listo · para las ${hourOf(o.ready_at)}` : `Esperando ${time.text}`)
-                : `Listo ${time.text} (${hourOf(o.ready_at)})`}
-            </p>
+    <article className={['pcard p-4 flex flex-col gap-2.5', frame].join(' ')}>
+      <div className="flex items-center gap-3">
+        <span className="font-mono font-bold text-2xl text-carbon">{o.ref}</span>
+        <span className="flex-1 min-w-0 truncate font-sans font-bold text-lg text-carbon">{o.customer_name}</span>
+        {time && <span className={['flex-shrink-0 rounded-full px-2.5 py-1 font-mono text-[0.8rem] font-bold', PILL[time.tone]].join(' ')}>{time.text}</span>}
+        {o.status === 'cancelado' && <span className="flex-shrink-0 rounded-full bg-tomate/15 px-2.5 py-1 font-mono text-[0.8rem] font-bold text-tomate">CANCELADO</span>}
+      </div>
+
+      <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[0.78rem] text-carbon/70">
+        <span className="flex items-center gap-1"><ch.Icon className="w-3.5 h-3.5" /> {ch.label.toUpperCase()}{isNew ? ' · NUEVO' : ''}</span>
+        {o.ready_at && <span>· para las {hourOf(o.ready_at)}</span>}
+        {isDelivery(o) && <span className="flex items-center gap-1">· <Truck className="w-3.5 h-3.5" /> domicilio</span>}
+        {o.customer_phone && <span>· {o.customer_phone}</span>}
+        {o.scheduled_for && <span className="flex items-center gap-1 text-horno">· <CalendarClock className="w-3.5 h-3.5" /> programado</span>}
+        {o.edited_at && <span className="font-semibold text-horno">· modificado</span>}
+        {local && <span className="rounded bg-carbon px-1.5 text-masa font-semibold">SIN ENVIAR · en papel</span>}
+      </p>
+
+      <p className="text-[0.95rem] leading-snug text-carbon line-clamp-3">
+        {(o.items || []).map((i) => `${i.qty} ${i.name}`).join(' · ')}
+      </p>
+      {o.notes && <p className="text-sm font-semibold text-carbon">Nota: {o.notes}</p>}
+
+      <div className="flex items-center justify-between gap-3">
+        <strong className="font-sans text-2xl text-carbon">{price(o.total)}</strong>
+        <span className={['text-sm font-bold uppercase', paid ? 'text-albahaca' : 'text-tomate'].join(' ')}>
+          {paid ? `Pagado · ${o.payment_method || 'efectivo'}` : 'Sin cobrar'}
+        </span>
+      </div>
+
+      {cancelling ? (
+        <CancelReasons onPick={onCancel} onBack={onCancelBack} disabled={busy} />
+      ) : (
+        <>
+          {primary && (
+            <button onClick={primary.run} disabled={busy} className="pbig w-full bg-albahaca">
+              {busy ? 'Guardando…' : primary.label}
+            </button>
           )}
-        </div>
-
-        <div className="text-right flex-shrink-0">
-          <p className="font-serif italic font-semibold text-3xl text-tomate">{price(o.total)}</p>
-          <p className={['mono normal-case mt-1', paid ? 'text-albahaca' : 'text-tomate'].join(' ')}>
-            {paid ? `Pagado · ${o.payment_method || 'efectivo'}` : 'Sin cobrar'}
-          </p>
-        </div>
-      </div>
-
-      {/* Acción principal, grande */}
-      {primary && (
-        <button
-          onClick={() => (primary === 'entregar' ? onDeliver() : onCharge(primary === 'cobrar-entregar'))}
-          disabled={busy}
-          className="btn mt-4 w-full min-h-[56px] bg-albahaca text-crema disabled:opacity-50"
-        >
-          <span className="btn-layer bg-carbon" />
-          <span className="btn-label text-base">
-            {primary === 'entregar' && <><PackageCheck className="w-5 h-5" /> ENTREGAR</>}
-            {primary === 'cobrar-entregar' && <><Euro className="w-5 h-5" /> COBRAR</>}
-            {primary === 'cobrar' && <><Euro className="w-5 h-5" /> COBRAR</>}
-          </span>
-        </button>
+          <div className="flex flex-wrap gap-2">
+            {!local && active && (
+              <button onClick={() => printTicket(o)} className="psec" title="Vuelve a sacar la comanda en la impresora de cocina">
+                <Printer className="w-4 h-4" /> Comanda
+              </button>
+            )}
+            <button onClick={() => printReceipt(o)} className="psec" title="Vuelve a sacar el ticket del cliente">
+              <Printer className="w-4 h-4" /> Ticket
+            </button>
+            {editable && <button onClick={onEdit} disabled={busy} className="psec"><Pencil className="w-4 h-4" /> Cambiar</button>}
+            {!local && active && <button onClick={onCancelAsk} disabled={busy} className="psec"><Ban className="w-4 h-4" /> Cancelar</button>}
+            {!local && paid && kind !== 'hecho' && (
+              <button onClick={onUnpay} disabled={busy} className="ml-auto px-2 text-sm text-carbon/50 underline-offset-2 hover:underline">
+                Deshacer cobro
+              </button>
+            )}
+          </div>
+        </>
       )}
-
-      {/* El resto, pequeño */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {canDeliver && primary !== 'entregar' && primary !== 'cobrar-entregar' && (
-          <button onClick={onDeliver} disabled={busy} className="ptab soft"><PackageCheck className="w-4 h-4" /> Entregado</button>
-        )}
-        {toReparto && onGoReparto && (
-          <button onClick={onGoReparto} className="ptab soft"><Truck className="w-4 h-4" /> {o.dispatched_at ? 'En la calle · ver reparto' : 'Lo lleva reparto'}</button>
-        )}
-        {editable && <button onClick={onEdit} disabled={busy} className="ptab soft"><Pencil className="w-4 h-4" /> Editar</button>}
-        <button onClick={() => printReceipt(o)} className="ptab soft"><Printer className="w-4 h-4" /> Ticket</button>
-        {!local && paid && (
-          <button onClick={onUnpay} disabled={busy} className="mono normal-case px-2 text-carbon/40 hover:text-tomate transition-colors">
-            Deshacer cobro
-          </button>
-        )}
-      </div>
-    </li>
+    </article>
   )
 }

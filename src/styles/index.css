@@ -169,10 +169,15 @@
     box-shadow: 0 0 8px rgb(72 190 255), 0 0 28px rgb(72 190 255 / 0.7), inset 0 0 14px rgb(72 190 255 / 0.55);
   }
   .btn-neon:active { transform: scale(0.98); }
-  .neon-amarillo {
+  /* En claro (panel de día) no hay neón: tinta normal */
+  .neon-amarillo { color: rgb(var(--c-carbon)); }
+  .tema-negro .neon-amarillo {
     color: rgb(255 228 60);
     text-shadow: 0 0 6px rgb(255 228 60 / 0.7), 0 0 16px rgb(255 200 0 / 0.4);
   }
+  /* Sección activa de la barra del panel: rojo de día, azul neón de noche */
+  .panel-activo { color: rgb(var(--c-tomate)); --activo: var(--c-tomate); }
+  .tema-negro .panel-activo { color: rgb(72 190 255); --activo: 72 190 255; }
   .pill-neon {
     @apply rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide;
     color: rgb(150 215 255);
@@ -231,6 +236,28 @@
   .pcard {
     @apply relative rounded-lg border border-tomate bg-crema;
     box-shadow: 3px 3px 0 0 rgb(var(--c-tomate));
+  }
+
+  /* Tarjeta de pedido del mostrador: filete y sombra azul noche, como la maqueta */
+  .pcard.pc-navy { @apply border-2 border-carbon; box-shadow: 4px 4px 0 0 rgb(var(--c-carbon)); }
+  .pcard.pc-late { @apply border-2 border-tomate; box-shadow: 4px 4px 0 0 rgb(var(--c-carbon)); }
+  .pcard.pc-new { @apply border-2 border-carbon bg-queso/40; box-shadow: 4px 4px 0 0 rgb(var(--c-carbon)); }
+
+  /* Botón de acción grande del mostrador (cobrar, sale el reparto…):
+     se ve desde lejos y se acierta con el dedo. El color va aparte. */
+  .pbig {
+    @apply inline-flex items-center justify-center gap-2 min-h-[52px] rounded-lg border-2 border-carbon px-4
+           font-sans font-extrabold uppercase tracking-wide text-base text-papel transition-transform
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    box-shadow: 3px 3px 0 0 rgb(var(--c-carbon));
+  }
+  .pbig:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 0 rgb(var(--c-carbon)); }
+
+  /* Botón secundario del mostrador (reimprimir, editar…): blanco con filete */
+  .psec {
+    @apply inline-flex items-center justify-center gap-1.5 min-h-[44px] rounded-lg border-2 border-carbon/70 bg-crema px-3
+           font-sans font-bold text-sm text-carbon transition-colors hover:border-carbon hover:bg-carbon/5
+           disabled:opacity-50;
   }
 
   /* Etiqueta (estado, canal, modo): rectángulo con filete, como los sellos de la web */
@@ -456,6 +483,9 @@
 .tema-negro .pcard { --tubo: var(--neon-rojo); }
 .tema-negro .frame-navy,
 .tema-negro .frame-navy > .frame-in { --tubo: var(--neon-azul); }
+/* Mostrador de noche: tarjetas normales en azul, las que van tarde en rojo */
+.tema-negro .pcard.pc-navy { --tubo: var(--neon-azul); }
+.tema-negro .pcard.pc-new { --tubo: var(--neon-amarillo, 255 228 60); }
 
 .tema-negro .frame,
 .tema-negro .frame-navy,

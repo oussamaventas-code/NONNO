@@ -39,6 +39,11 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'No hemos podido cargar los pedidos.' })
   }
 
+  /* En el local nadie marca LISTO (la cocina trabaja con la comanda en
+     papel): un pedido se da por listo al llegar su hora. */
+  const now = Date.now()
+  const isReady = (o) => o.status === 'listo' || (o.ready_at && Date.parse(o.ready_at) <= now)
+
   res.setHeader('Cache-Control', 'no-store')
   return res.status(200).json({
     location: getLocation(locationId).name,
@@ -46,7 +51,7 @@ export default async function handler(req, res) {
       id: o.id,
       ref: o.ref,
       name: shortName(o.customer_name),
-      status: o.status === 'listo' ? 'listo' : 'preparando',
+      status: isReady(o) ? 'listo' : 'preparando',
       readyAt: o.ready_at,
     })),
   })

@@ -468,9 +468,10 @@ export default function OrderEditor({ order, orders = [], locationIds, defaultLo
                       </div>
                       <button
                         onClick={() => setOpenLine(openLine === l.id ? null : l.id)}
-                        className="mono normal-case flex items-center gap-1.5 rounded-md px-3 py-1.5 text-carbon/70 hover:bg-tomate/10"
+                        aria-expanded={openLine === l.id}
+                        className="flex items-center gap-1.5 rounded-lg border-2 border-carbon/50 px-3 min-h-[40px] text-sm font-bold text-carbon hover:border-carbon"
                       >
-                        <SlidersHorizontal className="w-3.5 h-3.5" /> {openLine === l.id ? 'Cerrar' : 'Ajustar'}
+                        <SlidersHorizontal className="w-4 h-4" /> {openLine === l.id ? 'Listo' : 'Quitar / añadir ingredientes'}
                       </button>
                     </div>
                     {openLine === l.id && <LineOptions line={l} onChange={(patch) => updateLine(l.id, patch)} />}

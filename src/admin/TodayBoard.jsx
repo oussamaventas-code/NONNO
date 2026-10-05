@@ -10,7 +10,7 @@ import DoughControl from './DoughControl'
 /* ═══════════════════════════════════════════════════════════════
    HOY — la pantalla del jefe
    Las dos sedes de un vistazo: si están abiertas, cuánto llevan
-   facturado, qué hay en el horno, qué va tarde y si la caja se ha
+   facturado, qué hay en marcha, qué va tarde y si la caja se ha
    cerrado. Debajo, los avisos que piden hacer algo. Solo dirección.
    ═══════════════════════════════════════════════════════════════ */
 
@@ -52,8 +52,9 @@ export default function TodayBoard({ orders, storeStatuses, onDoughSaved, onOpen
 
   /* Avisos que piden que alguien haga algo, de las dos sedes */
   const active = orders.filter(isActive)
-  const late = active.filter((o) => o.ready_at && ['nuevo', 'horno'].includes(o.status) && Date.parse(o.ready_at) < now)
-  const unseen = active.filter((o) => o.status === 'nuevo' && !o.seen_at && now - Date.parse(o.created_at) > 2 * 60000
+  /* Nadie marca LISTO (la cocina va con papel): va tarde lo que pasó su hora sin entregarse ni salir */
+  const late = active.filter((o) => o.ready_at && !o.dispatched_at && Date.parse(o.ready_at) < now)
+  const unseen = active.filter((o) => o.channel === 'web' && o.status === 'nuevo' && !o.seen_at && now - Date.parse(o.created_at) > 2 * 60000
     && !(o.scheduled_for && Date.parse(o.ready_at) - now > 45 * 60000))
   const unverified = active.filter((o) => o.mode === 'delivery' && o.delivery_verified === false)
   const alerts = [
@@ -67,12 +68,11 @@ export default function TodayBoard({ orders, storeStatuses, onDoughSaved, onOpen
       <div className="grid gap-5 lg:grid-cols-2">
         {LOCATIONS.map((loc) => {
           const mine = orders.filter((o) => o.location_id === loc.id)
-          const count = (st) => mine.filter((o) => o.status === st).length
           const lateHere = late.filter((o) => o.location_id === loc.id).length
           const open = storeStatuses[loc.id]?.is_open === true
           const s = money[loc.id]?.summary
           const box = cash[loc.id]
-          const next = mine.filter((o) => ['nuevo', 'horno'].includes(o.status) && o.ready_at && Date.parse(o.ready_at) >= now).sort((a, b) => Date.parse(a.ready_at) - Date.parse(b.ready_at))[0]
+          const next = mine.filter((o) => isActive(o) && !o.dispatched_at && o.ready_at && Date.parse(o.ready_at) >= now).sort((a, b) => Date.parse(a.ready_at) - Date.parse(b.ready_at))[0]
           return (
             <section key={loc.id} className={['pframe', lateHere ? '' : 'pf-navy'].join(' ')}>
               <div className="pframe-in p-5">
@@ -96,11 +96,11 @@ export default function TodayBoard({ orders, storeStatuses, onDoughSaved, onOpen
                   <p className="mt-2 text-sm text-carbon/70">Por cobrar: <strong className="text-tomate">{price(s.pending)}</strong></p>
                 )}
 
-                {/* Cocina ahora */}
+                {/* Ahora mismo */}
                 <div className="mt-4 grid grid-cols-2 gap-2 text-center">
                   {[
-                    { label: 'En preparación', n: count('nuevo') + count('horno') },
-                    { label: 'Listos', n: count('listo') },
+                    { label: 'En marcha', n: mine.filter((o) => isActive(o) && !o.dispatched_at).length },
+                    { label: 'En la calle', n: mine.filter((o) => isActive(o) && o.dispatched_at).length },
                   ].map((k) => (
                     <div key={k.label} className="rounded-md border border-tomate/30 bg-masa py-2">
                       <p className="font-mono font-extrabold text-2xl text-carbon leading-none">{k.n}</p>
@@ -129,7 +129,7 @@ export default function TodayBoard({ orders, storeStatuses, onDoughSaved, onOpen
                 </div>
 
                 <button onClick={() => onOpenSede(loc.id)} className="ptab soft mt-4 w-full">
-                  Ver la cocina de {loc.name} <ChevronRight className="w-4 h-4" />
+                  Ver el mostrador de {loc.name} <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </section>

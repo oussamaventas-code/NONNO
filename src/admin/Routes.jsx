@@ -8,10 +8,13 @@ import { routeAction, updateOrder, fetchDrivers, saveDriver, removeDriver } from
 import { printDocument, esc } from './printTicket'
 
 /* ═══════════════════════════════════════════════════════════════
-   REPARTO
-   "Por salir": el sistema agrupa los pedidos a domicilio en salidas
-   y ordena las paradas. "Sale el reparto" las fija y
-   pasan a "En reparto", donde se marcan entregadas (y cobradas).
+   REPARTO  (vive dentro del mostrador; `part` dice qué trozo pintar)
+     salir        → "A domicilio · por salir": el sistema agrupa los
+                    pedidos en salidas y ordena las paradas. Se elige
+                    quién lo lleva y sale. No espera a ningún "listo":
+                    la cocina trabaja con la comanda en papel.
+     calle        → repartidores en la calle y lo que tienen que cobrar
+     repartidores → alta de repartidores y sus PIN (Encargado)
    Si la sede tiene repartidores dados de alta, al salir se elige quién
    la lleva: esas paradas le salen en su móvil (/repartidor) y él las
    marca entregadas y cobradas escaneando el QR del ticket.
@@ -20,7 +23,7 @@ import { printDocument, esc } from './printTicket'
 const isOpen = (o) => !['entregado', 'cancelado'].includes(o.status)
 const km1 = (n) => `${Number(n).toLocaleString('es-ES', { maximumFractionDigits: 1 })} km`
 
-export default function Routes({ orders, locationIds, onSaved, onError }) {
+export default function Routes({ orders, locationIds, onSaved, onError, part = 'salir', footer = null }) {
   const locId = locationIds.find((id) => getLocation(id)?.services.delivery)
   const [busy, setBusy] = useState(null)
   const [drivers, setDrivers] = useState([])
@@ -39,7 +42,9 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
   useEffect(() => { loadDrivers() }, [loadDrivers])
 
   if (!locId) {
-    return <p className="py-16 text-center font-serif italic font-semibold text-lg text-tomate">Esta sede no hace reparto a domicilio.</p>
+    return part === 'repartidores'
+      ? <p className="py-16 text-center font-serif italic font-semibold text-lg text-tomate">Esta sede no hace reparto a domicilio.</p>
+      : null
   }
 
   const { origin, routing: cfg } = getLocation(locId).delivery
@@ -97,120 +102,107 @@ export default function Routes({ orders, locationIds, onSaved, onError }) {
       <div class="total"><span>A COBRAR</span><span>${esc(price(toCollect))}</span></div>`)
   }
 
+  if (part === 'repartidores') {
+    return <Drivers locId={locId} drivers={drivers} off={driversOff} onChange={setDrivers} onError={onError} />
+  }
+
+  if (part === 'calle') {
+    return (
+      <section className="flex flex-col gap-4 min-w-0">
+        <ColumnTitle Icon={Truck} count={onRoad.length}>Repartidores en la calle</ColumnTitle>
+        {onRoad.length === 0 && <p className="rounded-md border border-dashed border-carbon/30 py-6 text-center text-carbon/60">Nadie en la calle ahora mismo.</p>}
+        {onRoad.map((route) => {
+          const toCollect = route.stops.filter((s) => s.payment_status !== 'pagado').reduce((n, s) => n + Number(s.total || 0), 0)
+          return (
+            <TripCard
+              key={route.routeId}
+              trip={route}
+              origin={origin}
+              title={route.stops[0]?.driver_name || 'Reparto'}
+              header={`Salió a las ${hourOf(route.departAt)} · quedan ${route.stops.length} · ${toCollect ? `a cobrar ${price(toCollect)}` : 'todo pagado'}`}
+              stopActions={(s) => (
+                s.payment_status === 'pagado' ? (
+                  <SmallButton onClick={() => deliver(s)} disabled={busy === s.id} icon={Check}>Entregado</SmallButton>
+                ) : (
+                  <>
+                    <SmallButton onClick={() => deliver(s, 'efectivo')} disabled={busy === s.id} icon={Banknote}>Entregado · efectivo</SmallButton>
+                    <SmallButton onClick={() => deliver(s, 'tarjeta')} disabled={busy === s.id} icon={CreditCard}>Entregado · tarjeta</SmallButton>
+                  </>
+                )
+              )}
+            >
+              <div className="flex flex-wrap gap-2">
+                <a href={mapsRouteUrl(origin, route.stops)} target="_blank" rel="noopener noreferrer" className="ptab soft"><MapIcon className="w-4 h-4" /> Mapa</a>
+                <button onClick={() => undo(route)} disabled={busy === route.routeId} className="ptab soft"><Undo2 className="w-4 h-4" /> No ha salido</button>
+              </div>
+            </TripCard>
+          )
+        })}
+        {footer}
+      </section>
+    )
+  }
+
+  /* part === 'salir' */
   return (
-    <div className="flex flex-col gap-8">
-      <section>
-        <h2 className="font-sans font-extrabold uppercase text-xl text-tomate">Por salir</h2>
-        <p className="mono normal-case text-carbon/55 mt-1">
-          Agrupados por hora y cercanía, máximo {cfg.maxStops} paradas por salida. El orden de paradas es el más corto.
-        </p>
-        {trips.length === 0 ? (
-          <p className="mt-6 font-serif italic font-semibold text-lg text-tomate">No hay repartos pendientes.</p>
-        ) : (
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            {trips.map((trip, n) => {
-              const notReady = trip.stops.filter((s) => s.status !== 'listo')
-              return (
-                <TripCard
-                  key={trip.id}
-                  title={`Salida ${n + 1}`}
-                  trip={trip}
-                  origin={origin}
-                  header={trip.verified
-                    ? `Sale hacia las ${hourOf(trip.departAt)} · ${trip.stops.length} parada(s) · ${km1(trip.km)} · ~${trip.minutes} min`
-                    : `Sale hacia las ${hourOf(trip.departAt)} · dirección sin ubicar`}
-                >
-                  <div className="flex flex-wrap gap-2">
-                    <a href={mapsRouteUrl(origin, trip.stops)} target="_blank" rel="noopener noreferrer" className="btn border border-tomate bg-transparent text-tomate px-4">
-                      <span className="btn-layer bg-tomate/10" />
-                      <span className="btn-label"><MapIcon className="w-4 h-4" /> GOOGLE MAPS</span>
-                    </a>
-                    <button onClick={() => printSheet(trip)} className="btn border border-tomate bg-transparent text-tomate px-4">
-                      <span className="btn-layer bg-tomate/10" />
-                      <span className="btn-label"><Printer className="w-4 h-4" /> HOJA DE RUTA</span>
-                    </button>
-                    {drivers.length > 0 && !notReady.length ? (
-                      <div className="basis-full">
-                        <p className="mono normal-case text-carbon/60 mb-1.5">¿Quién lo lleva?</p>
-                        <div className="flex flex-wrap gap-2">
-                          {drivers.map((d) => (
-                            <button
-                              key={d.id}
-                              onClick={() => dispatch(trip, d.id)}
-                              disabled={busy === trip.id}
-                              className="btn flex-1 min-w-[8rem] bg-tomate text-crema disabled:opacity-50"
-                            >
-                              <span className="btn-layer bg-horno" />
-                              <span className="btn-label"><Send className="w-4 h-4" /> {busy === trip.id ? 'GUARDANDO…' : `SALE ${d.name.toUpperCase()}`}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => dispatch(trip)}
-                        disabled={busy === trip.id || notReady.length > 0}
-                        title={notReady.length ? `Espera a que cocina marque listo: ${notReady.map((s) => s.ref).join(', ')}` : undefined}
-                        className="btn flex-1 min-w-[11rem] bg-tomate text-crema disabled:opacity-50"
-                      >
-                        <span className="btn-layer bg-horno" />
-                        <span className="btn-label">
-                          <Send className="w-4 h-4" />
-                          {busy === trip.id ? 'GUARDANDO…' : notReady.length ? 'FALTA POR HORNEAR' : 'SALE EL REPARTO'}
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                </TripCard>
-              )
-            })}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h2 className="font-sans font-extrabold uppercase text-xl text-tomate flex items-center gap-2">
-          <Truck className="w-5 h-5 text-horno" /> En reparto
-        </h2>
-        {onRoad.length === 0 ? (
-          <p className="mt-3 font-serif italic font-semibold text-lg text-tomate">Nadie en la calle ahora mismo.</p>
-        ) : (
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            {onRoad.map((route) => (
-              <TripCard
-                key={route.routeId}
-                title="En la calle"
-                trip={route}
-                origin={origin}
-                header={`${route.stops[0]?.driver_name ? `${route.stops[0].driver_name} · ` : ''}salió a las ${hourOf(route.departAt)} · quedan ${route.stops.length} parada(s)`}
-                stopActions={(s) => (
-                  s.payment_status === 'pagado' ? (
-                    <SmallButton onClick={() => deliver(s)} disabled={busy === s.id} icon={Check}>Entregado</SmallButton>
-                  ) : (
-                    <>
-                      <SmallButton onClick={() => deliver(s, 'efectivo')} disabled={busy === s.id} icon={Banknote}>Entregado · efectivo</SmallButton>
-                      <SmallButton onClick={() => deliver(s, 'tarjeta')} disabled={busy === s.id} icon={CreditCard}>Entregado · tarjeta</SmallButton>
-                    </>
-                  )
-                )}
-              >
-                <div className="flex flex-wrap gap-2">
-                  <a href={mapsRouteUrl(origin, route.stops)} target="_blank" rel="noopener noreferrer" className="btn border border-tomate bg-transparent text-tomate px-4">
-                    <span className="btn-layer bg-tomate/10" />
-                    <span className="btn-label"><MapIcon className="w-4 h-4" /> GOOGLE MAPS</span>
-                  </a>
-                  <button onClick={() => undo(route)} disabled={busy === route.routeId} className="mono normal-case flex items-center gap-1.5 px-3 text-carbon/45 hover:text-tomate">
-                    <Undo2 className="w-3.5 h-3.5" /> Deshacer salida
+    <section className="flex flex-col gap-4 min-w-0">
+      <ColumnTitle Icon={Truck} count={trips.reduce((n, t) => n + t.stops.length, 0)} tone="horno">A domicilio · por salir</ColumnTitle>
+      {trips.length === 0 && <p className="rounded-md border border-dashed border-carbon/30 py-6 text-center text-carbon/60">Ningún domicilio esperando.</p>}
+      {trips.map((trip, n) => (
+        <TripCard
+          key={trip.id}
+          title={trips.length > 1 ? `Salida ${n + 1}` : 'Salida'}
+          trip={trip}
+          origin={origin}
+          header={trip.verified
+            ? `Hacia las ${hourOf(trip.departAt)} · ${trip.stops.length} parada${trip.stops.length > 1 ? 's' : ''} · ${km1(trip.km)}`
+            : `Hacia las ${hourOf(trip.departAt)} · dirección sin ubicar`}
+        >
+          {drivers.length > 0 ? (
+            <>
+              <p className="mono normal-case text-carbon/70 mb-1.5">¿Quién lo lleva?</p>
+              <div className="flex flex-wrap gap-2">
+                {drivers.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => dispatch(trip, d.id)}
+                    disabled={busy === trip.id}
+                    className="pbig flex-1 min-w-[8rem] bg-horno"
+                  >
+                    {busy === trip.id ? 'Guardando…' : `Sale ${d.name}`}
                   </button>
-                </div>
-              </TripCard>
-            ))}
+                ))}
+              </div>
+            </>
+          ) : (
+            <button onClick={() => dispatch(trip)} disabled={busy === trip.id} className="pbig w-full bg-horno">
+              <Send className="w-5 h-5" /> {busy === trip.id ? 'Guardando…' : 'Sale el reparto'}
+            </button>
+          )}
+          <div className="mt-2 flex flex-wrap gap-2">
+            <a href={mapsRouteUrl(origin, trip.stops)} target="_blank" rel="noopener noreferrer" className="ptab soft"><MapIcon className="w-4 h-4" /> Mapa</a>
+            <button onClick={() => printSheet(trip)} className="ptab soft"><Printer className="w-4 h-4" /> Hoja de ruta</button>
           </div>
-        )}
-      </section>
+        </TripCard>
+      ))}
+    </section>
+  )
+}
 
-      <Drivers locId={locId} drivers={drivers} off={driversOff} onChange={setDrivers} onError={onError} />
-    </div>
+/** Cabecera de columna del mostrador: título, icono y cuántos hay. */
+const TONES = {
+  tomate: ['border-tomate', 'bg-tomate'],
+  horno: ['border-horno', 'bg-horno'],
+  carbon: ['border-carbon', 'bg-carbon'],
+}
+export function ColumnTitle({ Icon, count, tone = 'carbon', children }) {
+  const [border, bg] = TONES[tone]
+  return (
+    <h2 className={['flex items-center gap-2.5 border-b-[3px] pb-2 font-sans font-extrabold uppercase tracking-wide text-lg text-carbon', border].join(' ')}>
+      {Icon && <Icon className="w-5 h-5" />}
+      <span className="flex-1">{children}</span>
+      <span className={['rounded-md px-2 font-mono text-base leading-7 text-papel', bg].join(' ')}>{count}</span>
+    </h2>
   )
 }
 
@@ -289,7 +281,7 @@ function Drivers({ locId, drivers, off, onChange, onError }) {
 
 function TripCard({ title, trip, header, stopActions, children }) {
   return (
-    <article className="pcard p-5">
+    <article className="pcard pc-navy p-4">
       <p className="mono text-tomate">{title.toUpperCase()}</p>
       <p className="mt-1 font-sans font-bold text-carbon">{header}</p>
       <ol className="mt-4 flex flex-col gap-3">
@@ -314,9 +306,6 @@ function TripCard({ title, trip, header, stopActions, children }) {
               {s.delivery_verified === false && (
                 <p className="mt-1 flex items-center gap-1.5 text-horno font-semibold"><AlertTriangle className="w-3.5 h-3.5" /> Dirección sin verificar: llama antes de salir</p>
               )}
-              {s.status !== 'listo' && !s.dispatched_at && (
-                <p className="mt-1 text-horno">Aún {s.status === 'horno' ? 'en el horno' : 'sin empezar'}</p>
-              )}
               {stopActions && <div className="mt-2 flex flex-wrap gap-2">{stopActions(s)}</div>}
             </div>
           </li>
@@ -329,7 +318,7 @@ function TripCard({ title, trip, header, stopActions, children }) {
 
 function SmallButton({ onClick, disabled, icon: Icon, children }) {
   return (
-    <button onClick={onClick} disabled={disabled} className="flex items-center gap-1.5 rounded-md bg-forno text-masa px-3 py-1.5 text-xs font-semibold uppercase tracking-wide disabled:opacity-50">
+    <button onClick={onClick} disabled={disabled} className="pbig !min-h-[44px] !text-sm bg-carbon !px-3">
       <Icon className="w-3.5 h-3.5" /> {children}
     </button>
   )
