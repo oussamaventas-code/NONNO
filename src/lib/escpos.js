@@ -17,7 +17,7 @@ import { LOGO_RASTER } from './escposLogo.js'
 
 const COLS = 48
 /* Propio (format.js no se puede importar desde el servidor): 12.5 → "12,50 €" */
-const price = (v) => `${(Number(v) || 0).toFixed(2).replace('.', ',')} €`
+export const price = (v) => `${(Number(v) || 0).toFixed(2).replace('.', ',')} €`
 const ESC = 0x1b
 const GS = 0x1d
 const LF = 0x0a
@@ -41,7 +41,7 @@ function encode(text) {
 }
 
 /** Corta un texto en líneas de `width` caracteres sin partir palabras. */
-function wrap(text, width) {
+export function wrap(text, width) {
   const lines = []
   for (const para of String(text ?? '').split('\n')) {
     let line = ''
@@ -116,10 +116,10 @@ class Ticket {
   bytes() { return Uint8Array.from(this.b) }
 }
 
-const hora = (iso) => new Date(iso).toLocaleString('es-ES', {
+export const hora = (iso) => new Date(iso).toLocaleString('es-ES', {
   timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
 })
-const CHANNEL = { mostrador: 'MOSTRADOR', telefono: 'TELÉFONO' }
+export const CHANNEL = { mostrador: 'MOSTRADOR', telefono: 'TELÉFONO' }
 
 /** Líneas del pedido por puesto de cocina, en el orden de STATIONS. */
 export function sections(order) {
@@ -164,7 +164,7 @@ function items(t, list, { kitchen }) {
   }
 }
 
-const paymentText = (order) => (order.payment_status === 'pagado'
+export const paymentText = (order) => (order.payment_status === 'pagado'
   ? `PAGADO${order.payment_method ? ` · ${order.payment_method.toUpperCase()}` : ''}`
   : 'PENDIENTE DE PAGO')
 

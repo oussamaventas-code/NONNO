@@ -6,12 +6,14 @@ import { siteBase } from './mail.js'
 import { notifyPrinterDown } from './push.js'
 import { getLocation } from '../../src/data/locations.js'
 import { comandaBytes, receiptBytes, cancelBytes, testBytes } from '../../src/lib/escpos.js'
+import { comandaZpl, receiptZpl, cancelZpl, testZpl } from '../../src/lib/zpl.js'
 
 /* ═══════════════════════════════════════════════════════════════
    NONNO IMPRESORA  ·  /api/print   (vive en api/display.js, ver vercel.json)
 
-   El servidor deja cada papel en la cola (print_jobs) ya convertido a
-   ESC/POS, y el programa del local (tienda/nonno-impresora) lo recoge,
+   El servidor deja cada papel en la cola (print_jobs) ya convertido al
+   idioma de su impresora (ESC/POS las de tickets, ZPL las Zebra de
+   etiquetas; el programa del local dice cuál es cuál), y el programa del local (tienda/nonno-impresora) lo recoge,
    lo manda a la impresora y confirma. Si el ordenador del local estaba
    apagado, al volver imprime lo pendiente. Nadie tiene que tener Chrome
    abierto para que salga el papel.
@@ -45,17 +47,25 @@ function agentAllowed(req, locationId) {
   return given.length === want.length && timingSafeEqual(given, want)
 }
 
-/** ¿Esta sede tiene el programa instalado? (alguna vez ha dado señal) */
-async function agentInstalled(locationId) {
-  const { data, error } = await db().from('store_status').select('printer_seen_at').eq('location_id', locationId).maybeSingle()
-  if (error) { if (!missing(error)) console.error('Impresora: estado', error); return false }
-  return Boolean(data?.printer_seen_at)
+/**
+ * Impresoras de la sede según el programa del local, o null si no lo
+ * tiene instalado (nunca ha dado señal).
+ */
+async function agentPrinters(locationId) {
+  const { data, error } = await db().from('store_status').select('printer_seen_at, printer_info').eq('location_id', locationId).maybeSingle()
+  if (error) { if (!missing(error)) console.error('Impresora: estado', error); return null }
+  return data?.printer_seen_at ? (data.printer_info || {}) : null
 }
 
-function render(kind, order) {
-  if (kind === 'comanda') return { role: 'cocina', bytes: comandaBytes(order) }
-  if (kind === 'cancelado') return { role: 'cocina', bytes: cancelBytes(order) }
-  return { role: 'mostrador', bytes: receiptBytes(order, { siteUrl: siteBase() }) }
+/* Programas antiguos no dicen el idioma: entonces es ESC/POS */
+const isZpl = (printers, role) => printers?.[role]?.lang === 'zpl'
+
+function render(kind, order, printers) {
+  const role = kind === 'ticket' ? 'mostrador' : 'cocina'
+  const zpl = isZpl(printers, role)
+  if (kind === 'comanda') return { role, bytes: zpl ? comandaZpl(order) : comandaBytes(order) }
+  if (kind === 'cancelado') return { role, bytes: zpl ? cancelZpl(order) : cancelBytes(order) }
+  return { role, bytes: (zpl ? receiptZpl : receiptBytes)(order, { siteUrl: siteBase() }) }
 }
 
 /**
@@ -67,9 +77,10 @@ function render(kind, order) {
 export async function enqueue(order, kinds) {
   if (!isConfigured() || !kinds.length) return false
   try {
-    if (!(await agentInstalled(order.location_id))) return false
+    const printers = await agentPrinters(order.location_id)
+    if (!printers) return false
     const rows = kinds.map((kind) => {
-      const { role, bytes } = render(kind, order)
+      const { role, bytes } = render(kind, order, printers)
       return { location_id: order.location_id, role, kind, order_id: order.id, ref: order.ref, data: Buffer.from(bytes).toString('base64') }
     })
     const { error } = await db().from('print_jobs').insert(rows)
@@ -209,8 +220,9 @@ async function panel(req, res, action) {
   if (action === 'test') {
     const role = ROLES.includes(req.body.role) ? req.body.role : 'cocina'
     const label = `${getLocation(locationId).name} · ${role === 'cocina' ? 'COCINA' : 'MOSTRADOR'}`
+    const bytes = isZpl(await agentPrinters(locationId), role) ? testZpl(label) : testBytes(label)
     const { error } = await db().from('print_jobs').insert({
-      location_id: locationId, role, kind: 'prueba', data: Buffer.from(testBytes(label)).toString('base64'),
+      location_id: locationId, role, kind: 'prueba', data: Buffer.from(bytes).toString('base64'),
     })
     if (error) throw error
     return res.status(200).json({ queued: true })

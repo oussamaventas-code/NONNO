@@ -62,32 +62,41 @@ foreach ($port in $freeUsb) {
 }
 
 $printers = @(Get-Printer | Where-Object { $_.Name -notmatch 'PDF|XPS|OneNote|Fax|Wondershare' } | Sort-Object Name)
-function Pick($label, $default) {
+$langs = [ordered]@{}
+# Devuelve la impresora elegida y apunta en $langs si es Zebra (ZPL) o de tickets (ESC/POS)
+function Pick($role, $label, $default) {
   Title $label
   for ($i = 0; $i -lt $printers.Count; $i++) {
     $p = $printers[$i]
-    Write-Host ("     {0} = {1}   ({2})" -f ($i + 1), $p.Name, $p.PortName)
+    $zebra = if ($p.DriverName -match 'ZDesigner|Zebra|ZPL') { '  ZEBRA' } else { '' }
+    Write-Host ("     {0} = {1}   ({2}){3}" -f ($i + 1), $p.Name, $p.PortName, $zebra)
   }
   Write-Host  '     R = impresora de RED (por IP, cable o WiFi)'
   if ($default) { Write-Host "     Enter = la misma que antes ($default)" }
   $a = Ask 'Elige:'
-  if (-not $a -and $default) { return $default }
+  if (-not $a -and $default) { $langs[$role] = $langs.cocina; return $default }
   if ($a -match '^[Rr]$') {
     $ip = Ask 'IP de la impresora (sale en su hoja de prueba, p. ej. 192.168.1.50):'
     if ($ip -notmatch '^\d{1,3}(\.\d{1,3}){3}(:\d+)?$') { Fail 'IP no válida.' }
+    $z = Ask '¿Es una ZEBRA de etiquetas? (s/N):'
+    $langs[$role] = if ($z -match '^[SsYy]') { 'zpl' } else { 'escpos' }
     return "ip:$ip"
   }
   $n = 0
-  if ([int]::TryParse($a, [ref]$n) -and $n -ge 1 -and $n -le $printers.Count) { return $printers[$n - 1].Name }
+  if ([int]::TryParse($a, [ref]$n) -and $n -ge 1 -and $n -le $printers.Count) {
+    $p = $printers[$n - 1]
+    $langs[$role] = if ($p.DriverName -match 'ZDesigner|Zebra|ZPL') { 'zpl' } else { 'escpos' }
+    return $p.Name
+  }
   Fail 'Opción no válida.'
 }
 Write-Host ''
-Write-Host '  OJO: solo impresoras de TICKETS (rollo de 80 mm). La Zebra de etiquetas no vale.' -ForegroundColor Yellow
-$cocina = Pick '3. Impresora de COCINA (comandas: entrantes, pizzas, bebidas)' $null
-$mostrador = Pick '4. Impresora del MOSTRADOR (ticket del cliente)' $cocina
+Write-Host '  Vale cualquier impresora de tickets (rollo de 80 mm) y las Zebra de etiquetas 10x15.' -ForegroundColor Yellow
+$cocina = Pick 'cocina' '3. Impresora de COCINA (comandas: entrantes, pizzas, bebidas)' $null
+$mostrador = Pick 'mostrador' '4. Impresora del MOSTRADOR (ticket del cliente)' $cocina
 
 # ── 4. Guardar e instalar ────────────────────────────────────────
-$cfg = [ordered]@{ api = $WEB; location = $sede; key = $key; printers = [ordered]@{ cocina = $cocina; mostrador = $mostrador } }
+$cfg = [ordered]@{ api = $WEB; location = $sede; key = $key; printers = [ordered]@{ cocina = $cocina; mostrador = $mostrador }; langs = $langs }
 $cfg | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $dir 'config.json') -Encoding UTF8
 Copy-Item (Join-Path $here 'agente.ps1') (Join-Path $dir 'agente.ps1') -Force
 
@@ -114,8 +123,9 @@ Write-Host '  ==============================================' -ForegroundColor G
 Write-Host '     LISTO. Nonno Impresora está en marcha.' -ForegroundColor Green
 Write-Host '  ==============================================' -ForegroundColor Green
 Write-Host "  Local:      $sede"
-Write-Host "  Cocina:     $cocina"
-Write-Host "  Mostrador:  $mostrador"
+$tipo = @{ zpl = 'Zebra, etiquetas'; escpos = 'tickets' }
+Write-Host "  Cocina:     $cocina ($($tipo[$langs.cocina]))"
+Write-Host "  Mostrador:  $mostrador ($($tipo[$langs.mostrador]))"
 Write-Host ''
 Write-Host '  - Arranca solo cada vez que se enciende el ordenador. No hay que abrir nada.'
 Write-Host '  - En el panel (⚙ › Impresoras) verás "Conectada" y puedes imprimir una prueba.'

@@ -4,6 +4,8 @@
 #  Pregunta sin parar a la web si hay papeles para este local
 #  (comandas, tickets, avisos de cancelado) y los manda tal cual a la
 #  impresora: por USB (impresora de Windows) o por red (IP:9100).
+#  Le dice a la web qué idioma habla cada impresora: ESC/POS (tickets
+#  de 80 mm) o ZPL (Zebra de etiquetas), y la web le manda el papel así.
 #  Cada vez que pregunta, la web sabe que está vivo; si se calla con
 #  la tienda abierta, al jefe le llega un aviso al móvil.
 #
@@ -13,7 +15,7 @@
 # ════════════════════════════════════════════════════════════════
 
 $ErrorActionPreference = 'Stop'
-$VERSION = '1.0'
+$VERSION = '1.1'
 $dir = Join-Path $env:LOCALAPPDATA 'Nonno\impresora'
 $cfgPath = Join-Path $dir 'config.json'
 $logPath = Join-Path $dir 'registro.txt'
@@ -77,8 +79,23 @@ function Send-Paper([string]$target, [string]$doc, [byte[]]$data) {
   }
 }
 
+# Idioma de la impresora: lo que diga config.json; si no, Zebra por su driver
+function Printer-Lang([string]$target, [string]$lang) {
+  if ($lang -in @('zpl', 'escpos')) { return $lang }
+  if ($target -and $target -notmatch '^ip:') {
+    try { if ((Get-Printer -Name $target -ErrorAction Stop).DriverName -match 'ZDesigner|Zebra|ZPL') { return 'zpl' } } catch { }
+  }
+  return 'escpos'
+}
+
 # Cómo está cada impresora (se manda a la web para el panel)
-function Printer-State([string]$target) {
+function Printer-State([string]$target, [string]$lang) {
+  $s = Printer-Status $target
+  $s.lang = Printer-Lang $target $lang
+  return $s
+}
+
+function Printer-Status([string]$target) {
   if (-not $target) { return @{ ok = $false; status = 'sin asignar' } }
   if ($target -match '^ip:([^:]+)(?::(\d+))?$') {
     $port = if ($Matches[2]) { [int]$Matches[2] } else { 9100 }
@@ -105,10 +122,11 @@ while ($true) {
   try {
     $cfg = Get-Content $cfgPath -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($cfg.location -ne $lastCfg) { Log "Local: $($cfg.location) · cocina: $($cfg.printers.cocina) · mostrador: $($cfg.printers.mostrador)"; $lastCfg = $cfg.location }
+    $langs = $cfg.langs; if (-not $langs) { $langs = @{} }
     $headers = @{ 'x-nonno-key' = $cfg.key }
     $url = "$($cfg.api.TrimEnd('/'))/api/print"
 
-    $states = @{ cocina = (Printer-State $cfg.printers.cocina); mostrador = (Printer-State $cfg.printers.mostrador) }
+    $states = @{ cocina = (Printer-State $cfg.printers.cocina $langs.cocina); mostrador = (Printer-State $cfg.printers.mostrador $langs.mostrador) }
     $body = @{ action = 'poll'; location = $cfg.location; printers = $states; version = $VERSION } | ConvertTo-Json -Depth 4 -Compress
     $r = Invoke-RestMethod -Uri $url -Method Post -Headers $headers -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 45
 

@@ -107,7 +107,7 @@ export function PrinterSettings({ printers, locationIds, onError }) {
                 </p>
                 {Object.entries(ROLE).map(([role, label]) => s.info?.[role] && (
                   <p key={role} className="text-xs text-carbon/70">
-                    {label}: {s.info[role].name || '—'} · <span className={s.info[role].ok ? 'text-albahaca' : 'text-tomate'}>{s.info[role].status}</span>
+                    {label}: {s.info[role].name || '—'}{s.info[role].lang === 'zpl' ? ' (Zebra, etiquetas)' : ''} · <span className={s.info[role].ok ? 'text-albahaca' : 'text-tomate'}>{s.info[role].status}</span>
                   </p>
                 ))}
                 <div className="mt-2 flex gap-2">
