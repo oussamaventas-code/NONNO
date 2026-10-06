@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Phone, Printer, Pencil, Search, X, Globe, Store, ChevronDown, Undo2, ShoppingBag, Truck, Wallet, BellRing, Ban, CalendarClock, MonitorCheck } from 'lucide-react'
+import { Plus, Phone, Printer, Pencil, Search, X, Globe, Store, ChevronDown, Undo2, ShoppingBag, Truck, Wallet, BellRing, Ban, CalendarClock, MonitorCheck, MoreHorizontal } from 'lucide-react'
 import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
 import { updateOrder } from './api'
@@ -259,7 +259,7 @@ export default function Counter({ orders, locationIds, defaultLocationId, doughL
       <div className="mt-5 grid gap-6 lg:grid-cols-3 items-start">
         {/* PARA RECOGER */}
         <section className={['flex-col gap-4 min-w-0', col === 'recoger' ? 'flex' : 'hidden lg:flex'].join(' ')}>
-          <ColumnTitle Icon={ShoppingBag} count={recoger.length} tone="tomate">Para recoger</ColumnTitle>
+          <ColumnTitle Icon={ShoppingBag} count={recoger.length} tone="tomate" hint="El cliente viene al local: cóbralo y entrégalo.">Para recoger</ColumnTitle>
           {recoger.length === 0 && (
             <p className="rounded-md border border-dashed border-carbon/30 py-6 text-center text-carbon/60">
               {search ? 'Ninguno con esa búsqueda.' : 'Nadie esperando para recoger.'}
@@ -357,6 +357,8 @@ export default function Counter({ orders, locationIds, defaultLocationId, doughL
  *   recoger → Cobrar y entregar / Entregar
  *   cobrar  → se entregó sin cobrar: Cobrar
  *   hecho   → ya cerrado: solo reimprimir
+ * A la vista solo el botón de lo que toca; lo de vez en cuando
+ * (reimprimir, cambiar, cancelar…) va dentro de "Más".
  */
 function OrderCard({ o, kind, now, busy, cancelling, onCharge, onDeliver, onEdit, onUnpay, onToScreen, onCancelAsk, onCancelBack, onCancel }) {
   const ch = CHANNEL[o.channel] || CHANNEL.web
@@ -368,6 +370,7 @@ function OrderCard({ o, kind, now, busy, cancelling, onCharge, onDeliver, onEdit
   const editable = !local && active && (o.items || []).every((i) => i.id)
   const time = timing(o, now)
   const isNew = o.channel === 'web' && o.status === 'nuevo' && !o.seen_at
+  const [more, setMore] = useState(false)
 
   const primary = local || kind === 'hecho' ? null
     : kind === 'cobrar' ? { label: 'Cobrar', run: () => onCharge(false) }
@@ -411,33 +414,54 @@ function OrderCard({ o, kind, now, busy, cancelling, onCharge, onDeliver, onEdit
         <CancelReasons onPick={onCancel} onBack={onCancelBack} disabled={busy} />
       ) : (
         <>
-          {primary && (
-            <button onClick={primary.run} disabled={busy} className="pbig w-full bg-albahaca">
-              {busy ? 'Guardando…' : primary.label}
-            </button>
-          )}
-          {kind === 'recoger' && !local && !onScreen(o, now) && (
-            <button onClick={onToScreen} disabled={busy} className="psec w-full !border-albahaca !text-albahaca">
-              <MonitorCheck className="w-5 h-5" /> Ya está · a la pantalla
-            </button>
-          )}
-          <div className="flex flex-wrap gap-2">
-            {!local && active && (
-              <button onClick={() => printTicket(o)} className="psec" title="Vuelve a sacar la comanda en la impresora de cocina">
-                <Printer className="w-4 h-4" /> Comanda
+          <div className="flex gap-2">
+            {primary ? (
+              <button onClick={primary.run} disabled={busy} className="pbig flex-1 bg-albahaca">
+                {busy ? 'Guardando…' : primary.label}
+              </button>
+            ) : (
+              <button onClick={() => printReceipt(o)} className="psec flex-1">
+                <Printer className="w-4 h-4" /> Reimprimir ticket
               </button>
             )}
-            <button onClick={() => printReceipt(o)} className="psec" title="Vuelve a sacar el ticket del cliente">
-              <Printer className="w-4 h-4" /> Ticket
-            </button>
-            {editable && <button onClick={onEdit} disabled={busy} className="psec"><Pencil className="w-4 h-4" /> Cambiar</button>}
-            {!local && active && <button onClick={onCancelAsk} disabled={busy} className="psec"><Ban className="w-4 h-4" /> Cancelar</button>}
-            {!local && paid && kind !== 'hecho' && (
-              <button onClick={onUnpay} disabled={busy} className="ml-auto px-2 text-sm text-carbon/50 underline-offset-2 hover:underline">
-                Deshacer cobro
+            {primary && (
+              <button onClick={() => setMore((v) => !v)} aria-expanded={more} className={['psec !px-4', more ? '!bg-carbon !text-papel' : ''].join(' ')}>
+                <MoreHorizontal className="w-5 h-5" /> Más
               </button>
             )}
           </div>
+          {primary && more && (
+            <div className="flex flex-col gap-2 rounded-md border border-carbon/20 bg-carbon/5 p-2">
+              {kind === 'recoger' && !onScreen(o, now) && (
+                <button onClick={() => { setMore(false); onToScreen() }} disabled={busy} className="psec w-full !justify-start">
+                  <MonitorCheck className="w-4 h-4" /> Ya está hecho: sacarlo en la pantalla
+                </button>
+              )}
+              {active && (
+                <button onClick={() => { setMore(false); printTicket(o) }} className="psec w-full !justify-start">
+                  <Printer className="w-4 h-4" /> Reimprimir comanda (cocina)
+                </button>
+              )}
+              <button onClick={() => { setMore(false); printReceipt(o) }} className="psec w-full !justify-start">
+                <Printer className="w-4 h-4" /> Reimprimir ticket (cliente)
+              </button>
+              {editable && (
+                <button onClick={() => { setMore(false); onEdit() }} disabled={busy} className="psec w-full !justify-start">
+                  <Pencil className="w-4 h-4" /> Cambiar el pedido
+                </button>
+              )}
+              {paid && (
+                <button onClick={() => { setMore(false); onUnpay() }} disabled={busy} className="psec w-full !justify-start">
+                  <Undo2 className="w-4 h-4" /> Deshacer el cobro
+                </button>
+              )}
+              {active && (
+                <button onClick={() => { setMore(false); onCancelAsk() }} disabled={busy} className="psec w-full !justify-start !border-tomate !text-tomate">
+                  <Ban className="w-4 h-4" /> Cancelar el pedido
+                </button>
+              )}
+            </div>
+          )}
         </>
       )}
     </article>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Store, Phone, Printer, Search, Star, CalendarClock } from 'lucide-react'
+import { X, Minus, Plus, Trash2, SlidersHorizontal, Check, Clock, Printer, Search, Star, CalendarClock } from 'lucide-react'
 import { CATEGORIES, productsByCategory, visibleProducts, getProduct, priceOf, isSoldOut } from '../data/menu'
 import { plain } from '../lib/plain'
 import { getLocation } from '../data/locations'
@@ -84,7 +84,7 @@ export default function OrderEditor({ order, orders = [], locationIds, defaultLo
   const [lines, setLines] = useState(() => (editing ? linesFromOrder(order) : []))
   const [mode, setMode] = useState(order?.mode || 'pickup')
   const [customer, setCustomer] = useState(() => (editing ? customerFromOrder(order) : EMPTY_CUSTOMER))
-  const [channel, setChannel] = useState(order?.channel || defaultChannel)
+  const [channel] = useState(order?.channel || defaultChannel)
   const [paidNow, setPaidNow] = useState(false)
   const [method, setMethod] = useState('efectivo')
 
@@ -100,6 +100,7 @@ export default function OrderEditor({ order, orders = [], locationIds, defaultLo
   const [query, setQuery] = useState('')
   /* Pedido para ahora o programado para una hora (solo pedidos nuevos) */
   const [when, setWhen] = useState('now')
+  const [extrasOpen, setExtrasOpen] = useState(() => Boolean(order?.notes))
   const [laterTime, setLaterTime] = useState('')
   const [openLine, setOpenLine] = useState(null)
   const [eta, setEta] = useState(null)
@@ -304,7 +305,7 @@ export default function OrderEditor({ order, orders = [], locationIds, defaultLo
       <div className="flex items-center justify-between gap-3 border-b border-tomate bg-masa px-4 sm:px-6 py-3">
         <div>
           <h2 id="editor-title" className="font-sans font-extrabold uppercase text-lg text-tomate">
-            {editing ? `Editar ${order.ref}` : 'Nuevo pedido'}
+            {editing ? `Editar ${order.ref}` : `Nuevo pedido · ${channel === 'telefono' ? 'por teléfono' : 'mostrador'}`}
           </h2>
           <p className="mono normal-case text-carbon/50">{location?.name}</p>
         </div>
@@ -400,26 +401,6 @@ export default function OrderEditor({ order, orders = [], locationIds, defaultLo
                   ].join(' ')}
                 >
                   {getLocation(id).name}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {!editing && (
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: 'mostrador', label: 'Mostrador', Icon: Store },
-                { id: 'telefono', label: 'Teléfono', Icon: Phone },
-              ].map(({ id, label, Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setChannel(id)}
-                  className={[
-                    'ptab',
-                    channel === id ? 'is-on' : '',
-                  ].join(' ')}
-                >
-                  <Icon className="w-4 h-4" /> {label}
                 </button>
               ))}
             </div>
@@ -523,7 +504,20 @@ export default function OrderEditor({ order, orders = [], locationIds, defaultLo
             {mode === 'delivery' && (
               <DeliveryPicker locationId={locId} value={customer} onChange={patchCustomer} compact anySede />
             )}
-            {!editing && (
+            {/* Hora y notas: casi siempre es "lo antes posible" y sin nota, así que va plegado */}
+            <button
+              onClick={() => setExtrasOpen((v) => !v)}
+              aria-expanded={extrasOpen}
+              className="flex items-center justify-between gap-2 rounded-md border border-carbon/30 px-3 min-h-[44px] text-sm font-semibold text-carbon"
+            >
+              <span className="flex items-center gap-2 min-w-0 truncate">
+                <CalendarClock className="w-4 h-4 flex-shrink-0" />
+                {editing ? '' : when === 'later' && laterTime ? `Para las ${laterTime} · ` : 'Lo antes posible · '}
+                {customer.notes.trim() ? `Nota: ${customer.notes.trim()}` : 'sin nota'}
+              </span>
+              <span className="flex-shrink-0 text-tomate">{extrasOpen ? 'Cerrar' : editing ? 'Cambiar nota' : 'Cambiar hora o nota'}</span>
+            </button>
+            {extrasOpen && !editing && (
               <div>
                 <p className="mono normal-case text-carbon/50 text-xs mb-1">¿Para cuándo?</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -559,7 +553,7 @@ export default function OrderEditor({ order, orders = [], locationIds, defaultLo
                 )}
               </div>
             )}
-            <Input label="Notas (opcional)" value={customer.notes} onChange={(v) => patchCustomer({ notes: v })} />
+            {extrasOpen && <Input label="Nota del pedido (opcional)" value={customer.notes} onChange={(v) => patchCustomer({ notes: v })} />}
           </div>
 
           {/* Totales y hora */}

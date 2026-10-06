@@ -109,7 +109,7 @@ export default function Routes({ orders, locationIds, onSaved, onError, part = '
   if (part === 'calle') {
     return (
       <section className="flex flex-col gap-4 min-w-0">
-        <ColumnTitle Icon={Truck} count={onRoad.length}>Repartidores en la calle</ColumnTitle>
+        <ColumnTitle Icon={Truck} count={onRoad.length} hint="Lo que lleva cada repartidor y lo que tiene que traer. Al final, la caja.">Repartidores en la calle</ColumnTitle>
         {onRoad.length === 0 && <p className="rounded-md border border-dashed border-carbon/30 py-6 text-center text-carbon/60">Nadie en la calle ahora mismo.</p>}
         {onRoad.map((route) => {
           const toCollect = route.stops.filter((s) => s.payment_status !== 'pagado').reduce((n, s) => n + Number(s.total || 0), 0)
@@ -146,7 +146,7 @@ export default function Routes({ orders, locationIds, onSaved, onError, part = '
   /* part === 'salir' */
   return (
     <section className="flex flex-col gap-4 min-w-0">
-      <ColumnTitle Icon={Truck} count={trips.reduce((n, t) => n + t.stops.length, 0)} tone="horno">A domicilio · por salir</ColumnTitle>
+      <ColumnTitle Icon={Truck} count={trips.reduce((n, t) => n + t.stops.length, 0)} tone="horno" hint="Cuando el repartidor se vaya, pulsa «Sale» con su nombre.">A domicilio · por salir</ColumnTitle>
       {trips.length === 0 && <p className="rounded-md border border-dashed border-carbon/30 py-6 text-center text-carbon/60">Ningún domicilio esperando.</p>}
       {trips.map((trip, n) => (
         <TripCard
@@ -195,14 +195,18 @@ const TONES = {
   horno: ['border-horno', 'bg-horno'],
   carbon: ['border-carbon', 'bg-carbon'],
 }
-export function ColumnTitle({ Icon, count, tone = 'carbon', children }) {
+/** Título de columna con su cuenta y, debajo, qué se hace en ella (para quien empieza). */
+export function ColumnTitle({ Icon, count, tone = 'carbon', hint, children }) {
   const [border, bg] = TONES[tone]
   return (
-    <h2 className={['flex items-center gap-2.5 border-b-[3px] pb-2 font-sans font-extrabold uppercase tracking-wide text-lg text-carbon', border].join(' ')}>
-      {Icon && <Icon className="w-5 h-5" />}
-      <span className="flex-1">{children}</span>
-      <span className={['rounded-md px-2 font-mono text-base leading-7 text-papel', bg].join(' ')}>{count}</span>
-    </h2>
+    <div className={['border-b-[3px] pb-2', border].join(' ')}>
+      <h2 className="flex items-center gap-2.5 font-sans font-extrabold uppercase tracking-wide text-lg text-carbon">
+        {Icon && <Icon className="w-5 h-5" />}
+        <span className="flex-1">{children}</span>
+        <span className={['rounded-md px-2 font-mono text-base leading-7 text-papel', bg].join(' ')}>{count}</span>
+      </h2>
+      {hint && <p className="mt-0.5 text-sm text-carbon/60">{hint}</p>}
+    </div>
   )
 }
 
