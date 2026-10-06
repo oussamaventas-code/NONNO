@@ -1,0 +1,475 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Simulación de pedidos · Nonno</title>
+<style>
+  /* Siempre en vertical y con el papel que tenga el driver de la
+     impresora (rollo de 80 mm o etiqueta de 10×15): así Chrome no lo
+     gira en horizontal ni lo encoge a un ancho que no es el suyo. */
+  @page { size: portrait; margin: 2mm 3mm; }
+  /* Papel siempre blanco: el ticket no debe heredar el modo oscuro
+     del navegador ni en la vista previa ni al imprimir. */
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { background: #fff; }
+  body {
+    width: 100%; max-width: 100mm; margin: 0 auto; padding: 0;
+    font-family: "Courier New", monospace; font-size: 12px; line-height: 1.25; color: #000;
+  }
+  h1 { font-size: 15px; margin: 0; letter-spacing: .5px; }
+  .center { text-align: center; }
+  .rule { border-top: 1px dashed #000; margin: 5px 0; }
+  .big { font-size: 20px; font-weight: bold; }
+  .mode { font-size: 15px; font-weight: bold; text-transform: uppercase; }
+  .section { font-size: 16px; font-weight: bold; text-align: center; border: 2px solid #000; padding: 3px 0; margin: 6px 0; }
+  .part { font-size: 11px; text-align: center; color: #333; }
+  table { width: 100%; border-collapse: collapse; }
+  td { vertical-align: top; padding: 2px 0; }
+  /* Si el ticket no cabe en una etiqueta, que no parta una línea por la mitad. */
+  tr, .total, .payment, .field { break-inside: avoid; }
+  .qty { width: 26px; font-weight: bold; }
+  .amount { text-align: right; white-space: nowrap; padding-left: 4px; }
+  .sub { font-size: 11px; }
+  .note { font-size: 11px; font-weight: bold; }
+  /* Lo que hay que QUITAR se lee de un vistazo: es el error más caro
+     en cocina. Recuadrado y en negrita, no una línea más. */
+  .remove {
+    font-size: 12px; font-weight: bold;
+    border: 1.5px solid #000; padding: 1px 4px; margin: 2px 0;
+    display: inline-block;
+  }
+  .total { display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; }
+  .payment { text-align: center; font-size: 13px; font-weight: bold; border: 1.5px solid #000; padding: 3px 0; margin: 6px 0; }
+  .field { margin: 2px 0; }
+  .foot { font-size: 11px; text-align: center; margin-top: 8px; }
+  .logo { display: block; width: 20mm; margin: 0 auto 1px; }
+  .thanks { font-size: 13px; font-weight: bold; text-align: center; margin-top: 4px; }
+
+.ticket { break-after: page; page-break-after: always; }
+.ticket:last-child { break-after: auto; page-break-after: auto; }
+@media screen {
+  body { max-width: none; background: #ddd; font-family: Arial, sans-serif; }
+  .resumen { background: #fff; padding: 16px; margin: 16px auto; max-width: 900px; border-radius: 8px; }
+  .resumen table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  .resumen td, .resumen th { border: 1px solid #ccc; padding: 6px; text-align: left; }
+  .resumen button { font-size: 18px; padding: 10px 20px; margin-top: 12px; cursor: pointer; }
+  .ticket { background: #fff; width: 100mm; margin: 16px auto; padding: 4mm; box-shadow: 0 2px 8px rgba(0,0,0,.25); font-family: "Courier New", monospace; }
+}
+@media print { .resumen { display: none; } }
+</style></head><body>
+<div class="resumen">
+  <h2 style="margin:0 0 8px">Simulación: 2 pedidos (tramos de 15 min, 15 pizzas por tramo)</h2>
+  <table><tr><th>Pedido</th><th>Cliente</th><th>Hora del pedido</th><th>Pizzas</th><th>Tipo</th><th>Horno (tramo y pizzas)</th><th>Listo</th><th>Lo tiene el cliente</th></tr><tr><td>SL-1</td><td>Juan</td><td>20:01</td><td>4</td><td>Recoge</td><td>20:00 (4)</td><td><b>20:15</b></td><td><b>20:15</b></td></tr><tr><td>SL-2</td><td>María</td><td>20:02</td><td>20</td><td>Reparto (+20 min)</td><td>20:00 (11) + 20:15 (9)</td><td><b>20:30</b></td><td><b>20:50</b></td></tr></table>
+  <p><b>Ocupación del horno:</b> 20:00 → 15/15 · 20:15 → 9/15</p>
+  <p>Abajo van las 7 hojas que saldrían: comandas de cocina por sección y el ticket de cada cliente.</p>
+  <button onclick="print()">🖨️ IMPRIMIR TODO</button>
+</div>
+<section class="ticket">
+    
+  <div class="center">
+    <h1>LA PIZZA DE NONNO</h1>
+    <div>Sangonera la Verde</div>
+  </div>
+
+  <div class="rule"></div>
+  <div class="center big">SL-1</div>
+  <div class="center mode">RECOGIDA</div>
+  
+  <div class="center">Pedido: 9/10, 20:01</div>
+  <div class="center big">PARA LAS 20:15</div>
+  
+  
+  <div class="rule"></div>
+  <div class="section">ENTRANTES</div>
+    
+    <table>
+    <tr>
+      <td class="qty">1×</td>
+      <td>
+        <strong>Tequeños</strong>
+        
+        
+        
+      </td>
+      <td class="amount">4,90 €</td>
+    </tr></table>
+    <div class="rule"></div>
+    
+  <div class="field center">Juan</div>
+  <div class="payment">PENDIENTE DE PAGO</div>
+  <div class="rule"></div>
+  <div class="foot">Gracias por elegir a Nonno</div></section>
+<section class="ticket">
+    
+  <div class="center">
+    <h1>LA PIZZA DE NONNO</h1>
+    <div>Sangonera la Verde</div>
+  </div>
+
+  <div class="rule"></div>
+  <div class="center big">SL-1</div>
+  <div class="center mode">RECOGIDA</div>
+  
+  <div class="center">Pedido: 9/10, 20:01</div>
+  <div class="center big">PARA LAS 20:15</div>
+  
+  
+  <div class="rule"></div>
+  <div class="section">PIZZAS · HORNO</div>
+    
+    <table>
+    <tr>
+      <td class="qty">2×</td>
+      <td>
+        <strong>Margarita</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">19,00 €</td>
+    </tr>
+    <tr>
+      <td class="qty">1×</td>
+      <td>
+        <strong>Pepperoni</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">10,90 €</td>
+    </tr>
+    <tr>
+      <td class="qty">1×</td>
+      <td>
+        <strong>Barbacoa</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">12,90 €</td>
+    </tr></table>
+    <div class="rule"></div>
+    
+  <div class="field center">Juan</div>
+  <div class="payment">PENDIENTE DE PAGO</div>
+  <div class="rule"></div>
+  <div class="foot">Gracias por elegir a Nonno</div></section>
+<section class="ticket">
+    
+  <div class="center">
+    <h1>LA PIZZA DE NONNO</h1>
+    <div>Sangonera la Verde</div>
+  </div>
+
+  <div class="rule"></div>
+  <div class="center big">SL-1</div>
+  <div class="center mode">RECOGIDA</div>
+  
+  <div class="center">Pedido: 9/10, 20:01</div>
+  <div class="center big">PARA LAS 20:15</div>
+  
+  
+  <div class="rule"></div>
+  <div class="section">BEBIDAS</div>
+    
+    <table>
+    <tr>
+      <td class="qty">1×</td>
+      <td>
+        <strong>Coca-Cola 2 L</strong>
+        
+        
+        
+      </td>
+      <td class="amount">3,00 €</td>
+    </tr></table>
+    <div class="rule"></div>
+    
+  <div class="field center">Juan</div>
+  <div class="payment">PENDIENTE DE PAGO</div>
+  <div class="rule"></div>
+  <div class="foot">Gracias por elegir a Nonno</div></section>
+<section class="ticket">
+    
+  <div class="center">
+    <img class="logo" src="data:image/png;base64,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" alt="La Pizza de Nonno">
+    <div>Sangonera la Verde</div>
+  </div>
+
+  <div class="rule"></div>
+  <div class="center big">SL-1</div>
+  <div class="center mode">RECOGIDA</div>
+  
+  <div class="center">Pedido: 9/10, 20:01</div>
+  <div class="center big">PARA LAS 20:15</div>
+  
+  
+  <div class="rule"></div>
+  
+    <table>
+    <tr>
+      <td class="qty">2×</td>
+      <td>
+        <strong>Margarita</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">19,00 €</td>
+    </tr>
+    <tr>
+      <td class="qty">1×</td>
+      <td>
+        <strong>Pepperoni</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">10,90 €</td>
+    </tr>
+    <tr>
+      <td class="qty">1×</td>
+      <td>
+        <strong>Barbacoa</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">12,90 €</td>
+    </tr>
+    <tr>
+      <td class="qty">1×</td>
+      <td>
+        <strong>Tequeños</strong>
+        
+        
+        
+      </td>
+      <td class="amount">4,90 €</td>
+    </tr>
+    <tr>
+      <td class="qty">1×</td>
+      <td>
+        <strong>Coca-Cola 2 L</strong>
+        
+        
+        
+      </td>
+      <td class="amount">3,00 €</td>
+    </tr></table>
+    <div class="rule"></div>
+    <div class="field" style="display:flex;justify-content:space-between"><span>Subtotal</span><span>50,70 €</span></div><div class="sub">Oferta 3 pizzas clásicas por 28,00 €</div><div class="field" style="display:flex;justify-content:space-between"><span>Dto. recogida</span><span>-1,90 €</span></div>
+    <div class="total"><span>TOTAL</span><span>48,80 €</span></div>
+    <div class="rule"></div>
+    
+  
+  <div class="field"><strong>Juan</strong> · Tel: 611 22 33 44</div>
+  
+  
+  
+  
+  
+  <div class="payment">PENDIENTE DE PAGO</div>
+  <div class="rule"></div>
+  <div class="thanks">¡Gracias por elegir a Nonno!</div></section>
+<section class="ticket">
+    
+  <div class="center">
+    <h1>LA PIZZA DE NONNO</h1>
+    <div>Sangonera la Verde</div>
+  </div>
+
+  <div class="rule"></div>
+  <div class="center big">SL-2</div>
+  <div class="center mode">ENTREGA</div>
+  
+  <div class="center">Pedido: 9/10, 20:02</div>
+  <div class="center big">PARA LAS 20:30</div>
+  <div class="center">Llega al cliente: 20:50</div>
+  
+  <div class="rule"></div>
+  <div class="section">PIZZAS · HORNO</div>
+    <div class="payment">HORNO: 20:00 → 11 · 20:15 → 9</div>
+    <table>
+    <tr>
+      <td class="qty">5×</td>
+      <td>
+        <strong>Margarita</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">47,50 €</td>
+    </tr>
+    <tr>
+      <td class="qty">4×</td>
+      <td>
+        <strong>Prosciutto</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">42,00 €</td>
+    </tr>
+    <tr>
+      <td class="qty">4×</td>
+      <td>
+        <strong>Barbacoa</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">51,60 €</td>
+    </tr>
+    <tr>
+      <td class="qty">3×</td>
+      <td>
+        <strong>Carbonara tradicional</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">38,70 €</td>
+    </tr>
+    <tr>
+      <td class="qty">4×</td>
+      <td>
+        <strong>Kebab</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">47,60 €</td>
+    </tr></table>
+    <div class="rule"></div>
+    
+  <div class="field center">María</div>
+  <div class="payment">PENDIENTE DE PAGO</div>
+  <div class="rule"></div>
+  <div class="foot">Gracias por elegir a Nonno</div></section>
+<section class="ticket">
+    
+  <div class="center">
+    <h1>LA PIZZA DE NONNO</h1>
+    <div>Sangonera la Verde</div>
+  </div>
+
+  <div class="rule"></div>
+  <div class="center big">SL-2</div>
+  <div class="center mode">ENTREGA</div>
+  
+  <div class="center">Pedido: 9/10, 20:02</div>
+  <div class="center big">PARA LAS 20:30</div>
+  <div class="center">Llega al cliente: 20:50</div>
+  
+  <div class="rule"></div>
+  <div class="section">BEBIDAS</div>
+    
+    <table>
+    <tr>
+      <td class="qty">3×</td>
+      <td>
+        <strong>Coca-Cola 2 L</strong>
+        
+        
+        
+      </td>
+      <td class="amount">9,00 €</td>
+    </tr></table>
+    <div class="rule"></div>
+    
+  <div class="field center">María</div>
+  <div class="payment">PENDIENTE DE PAGO</div>
+  <div class="rule"></div>
+  <div class="foot">Gracias por elegir a Nonno</div></section>
+<section class="ticket">
+    
+  <div class="center">
+    <img class="logo" src="data:image/png;base64,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" alt="La Pizza de Nonno">
+    <div>Sangonera la Verde</div>
+  </div>
+
+  <div class="rule"></div>
+  <div class="center big">SL-2</div>
+  <div class="center mode">ENTREGA</div>
+  
+  <div class="center">Pedido: 9/10, 20:02</div>
+  <div class="center big">PARA LAS 20:30</div>
+  <div class="center">Llega al cliente: 20:50</div>
+  
+  <div class="rule"></div>
+  
+    <table>
+    <tr>
+      <td class="qty">5×</td>
+      <td>
+        <strong>Margarita</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">47,50 €</td>
+    </tr>
+    <tr>
+      <td class="qty">4×</td>
+      <td>
+        <strong>Prosciutto</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">42,00 €</td>
+    </tr>
+    <tr>
+      <td class="qty">4×</td>
+      <td>
+        <strong>Barbacoa</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">51,60 €</td>
+    </tr>
+    <tr>
+      <td class="qty">3×</td>
+      <td>
+        <strong>Carbonara tradicional</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">38,70 €</td>
+    </tr>
+    <tr>
+      <td class="qty">4×</td>
+      <td>
+        <strong>Kebab</strong> <span class="sub">33 cm</span>
+        
+        
+        
+      </td>
+      <td class="amount">47,60 €</td>
+    </tr>
+    <tr>
+      <td class="qty">3×</td>
+      <td>
+        <strong>Coca-Cola 2 L</strong>
+        
+        
+        
+      </td>
+      <td class="amount">9,00 €</td>
+    </tr></table>
+    <div class="rule"></div>
+    <div class="field" style="display:flex;justify-content:space-between"><span>Subtotal</span><span>236,40 €</span></div><div class="field" style="display:flex;justify-content:space-between"><span>Envío 3 km</span><span>+3,00 €</span></div>
+    <div class="total"><span>TOTAL</span><span>239,40 €</span></div>
+    <div class="rule"></div>
+    
+  
+  <div class="field"><strong>María</strong> · Tel: 622 33 44 55</div>
+  <div class="field">Dir: Calle Mayor 20, Sangonera la Verde</div>
+  <div class="field"><strong>DISTANCIA: 3 KM</strong></div>
+  
+  
+  
+  <div class="payment">PENDIENTE DE PAGO</div>
+  <div class="rule"></div>
+  <div class="thanks">¡Gracias por elegir a Nonno!</div></section>
+</body></html>
