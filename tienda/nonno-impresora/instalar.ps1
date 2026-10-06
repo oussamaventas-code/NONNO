@@ -1,12 +1,15 @@
 ﻿# ════════════════════════════════════════════════════════════════
 #  Instala NONNO IMPRESORA en el ordenador del local.
-#  Se lanza con "INSTALAR NONNO IMPRESORA.bat" (doble clic).
+#  Se lanza con "INSTALAR NONNO IMPRESORA.bat" (doble clic), o con el
+#  instalador que se descarga del panel (⚙ › Impresoras): ese ya trae
+#  el local, el código y el programa dentro ($NONNO_SEDE, $NONNO_KEY,
+#  $NONNO_AGENTE) y se salta las dos primeras preguntas.
 #  Se puede volver a ejecutar para cambiar de impresora o de local.
 # ════════════════════════════════════════════════════════════════
 $ErrorActionPreference = 'Stop'
 $Host.UI.RawUI.WindowTitle = 'Instalar Nonno Impresora'
 $WEB = 'https://nonno-beta.vercel.app'
-$here = Split-Path -Parent $MyInvocation.MyCommand.Path
+$here = if ($MyInvocation.MyCommand.Path) { Split-Path -Parent $MyInvocation.MyCommand.Path } else { $null }
 $dir = Join-Path $env:LOCALAPPDATA 'Nonno\impresora'
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
 
@@ -21,18 +24,27 @@ Write-Host '  ==============================================' -ForegroundColor R
 Write-Host '  Imprime solo las comandas y los tickets, sin abrir Chrome.'
 
 # ── 1. Local ─────────────────────────────────────────────────────
-Title '1. ¿De qué local es este ordenador?'
-Write-Host '     1 = Sangonera la Verde'
-Write-Host '     2 = Santo Ángel'
-$sede = switch (Ask 'Escribe 1 o 2 y pulsa Enter:') { '1' { 'sangonera' } '2' { 'santo-angel' } default { $null } }
-if (-not $sede) { Fail 'Opción no válida. Vuelve a abrir el instalador.' }
+if ($NONNO_SEDE) {
+  $sede = $NONNO_SEDE
+  Write-Host "  Local: $NONNO_SEDE_NOMBRE (instalador descargado del panel)" -ForegroundColor Green
+} else {
+  Title '1. ¿De qué local es este ordenador?'
+  Write-Host '     1 = Sangonera la Verde'
+  Write-Host '     2 = Santo Ángel'
+  $sede = switch (Ask 'Escribe 1 o 2 y pulsa Enter:') { '1' { 'sangonera' } '2' { 'santo-angel' } default { $null } }
+  if (-not $sede) { Fail 'Opción no válida. Vuelve a abrir el instalador.' }
+}
 
 # ── 2. Código ────────────────────────────────────────────────────
-Title '2. Código de instalación'
-Write-Host '     En el panel: Reparto/Mostrador › ⚙ › Impresoras › "Código de instalación".'
-Write-Host '     Cópialo y pégalo aquí (clic derecho pega en esta ventana).'
-$key = Ask 'Código:'
-if (-not $key) { Fail 'Falta el código.' }
+if ($NONNO_KEY) {
+  $key = $NONNO_KEY
+} else {
+  Title '2. Código de instalación'
+  Write-Host '     En el panel: Reparto/Mostrador › ⚙ › Impresoras › "Código de instalación".'
+  Write-Host '     Cópialo y pégalo aquí (clic derecho pega en esta ventana).'
+  $key = Ask 'Código:'
+  if (-not $key) { Fail 'Falta el código.' }
+}
 
 Write-Host '  Comprobando el código con la web…'
 try {
@@ -98,7 +110,11 @@ $mostrador = Pick 'mostrador' '4. Impresora del MOSTRADOR (ticket del cliente)' 
 # ── 4. Guardar e instalar ────────────────────────────────────────
 $cfg = [ordered]@{ api = $WEB; location = $sede; key = $key; printers = [ordered]@{ cocina = $cocina; mostrador = $mostrador }; langs = $langs }
 $cfg | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $dir 'config.json') -Encoding UTF8
-Copy-Item (Join-Path $here 'agente.ps1') (Join-Path $dir 'agente.ps1') -Force
+if ($NONNO_AGENTE) {
+  [IO.File]::WriteAllBytes((Join-Path $dir 'agente.ps1'), [Convert]::FromBase64String($NONNO_AGENTE))
+} else {
+  Copy-Item (Join-Path $here 'agente.ps1') (Join-Path $dir 'agente.ps1') -Force
+}
 
 # Para la copia anterior (si la había) antes de arrancar la nueva
 Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" | Where-Object { $_.CommandLine -match 'Nonno\\impresora\\agente\.ps1' } |

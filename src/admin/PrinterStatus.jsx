@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Printer, RefreshCw, KeyRound, Copy, Check } from 'lucide-react'
+import { Printer, RefreshCw, KeyRound, Copy, Check, Download } from 'lucide-react'
 import { getLocation } from '../data/locations'
 import { hourOf } from '../lib/kitchenSlots'
 import { printTest, printRetry, printTakeover, printInstallKey } from './api'
 import { printTicket, printReceipt } from './printTicket'
+import { downloadInstaller } from './printerInstaller'
 
 /* ═══════════════════════════════════════════════════════════════
    NONNO IMPRESORA en el panel
@@ -86,6 +87,10 @@ export function PrinterSettings({ printers, locationIds, onError }) {
       setMsg(`Prueba enviada a ${ROLE[role].toLowerCase()} de ${getLocation(id)?.name}.`)
     } catch (err) { onError(err.message) }
   }
+  const [downloaded, setDownloaded] = useState(null)
+  const download = async (id) => {
+    try { downloadInstaller(id, (await printInstallKey(id)).key); setDownloaded(id) } catch (err) { onError(err.message) }
+  }
   const showKey = async (id) => {
     try { setKey({ id, key: (await printInstallKey(id)).key }); setCopied(false) } catch (err) { onError(err.message) }
   }
@@ -115,6 +120,16 @@ export function PrinterSettings({ printers, locationIds, onError }) {
                   <button onClick={() => test(id, 'mostrador')} className="ptab soft flex-1">Prueba mostrador</button>
                 </div>
               </>
+            )}
+            {/* Lo fácil: un archivo con todo dentro, se abre y solo pregunta la impresora */}
+            <button onClick={() => download(id)} className="ptab mt-2 w-full">
+              <Download className="w-4 h-4" /> Descargar instalador para este ordenador
+            </button>
+            {downloaded === id && (
+              <p className="mt-1.5 text-xs text-carbon/70 leading-snug">
+                Ábrelo desde las descargas. Si Chrome avisa, pulsa «Conservar». Si Windows dice «protegió su PC»,
+                pulsa «Más información» › «Ejecutar de todas formas». Solo pregunta qué impresora es la de cocina y cuál la del mostrador.
+              </p>
             )}
             {key?.id === id ? (
               <div className="mt-2">
