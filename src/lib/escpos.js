@@ -1,6 +1,7 @@
 import { hourOf } from './kitchenSlots.js'
 import { STATIONS, stationOf } from '../data/menu.js'
 import { LOGO_RASTER } from './escposLogo.js'
+import { IVA_RATE, vatOf, fiscalOf } from './fiscal.js'
 
 /* ═══════════════════════════════════════════════════════════════
    TICKETS EN ESC/POS (impresoras térmicas de 80 mm, estilo Epson)
@@ -195,6 +196,8 @@ export function comandaBytes(order) {
 export function receiptBytes(order, { siteUrl } = {}) {
   const t = new Ticket()
   head(t, order, { logo: true })
+  const fiscal = fiscalOf(order.location_id)
+  if (fiscal) t.align('c').line(`FACTURA SIMPLIFICADA ${order.ref}`).line(`${fiscal.name} · NIF ${fiscal.nif}`).line(fiscal.address || '').align('l').rule()
   items(t, order.items || [], { kitchen: false })
   t.rule()
   const discount = Number(order.discount) || 0
@@ -207,7 +210,9 @@ export function receiptBytes(order, { siteUrl } = {}) {
     if (points) t.cols(`Puntos Club Nonno (${Number(order.points_redeemed) || 0})`, `-${price(points)}`)
     if (fee) t.cols(`Envío ${order.delivery_zone || ''}`, `+${price(fee)}`)
   }
-  t.size(2, 2).bold(true).cols('TOTAL', price(order.total)).bold(false).size(1).rule()
+  t.size(2, 2).bold(true).cols('TOTAL', price(order.total)).bold(false).size(1)
+  const tax = vatOf(order.total)
+  t.cols(`Base imponible (IVA ${IVA_RATE} %)`, price(tax.base)).cols(`IVA ${IVA_RATE} % incluido`, price(tax.iva)).rule()
   t.bold(true).line(`${order.customer_name || ''}${order.customer_phone ? ` · Tel: ${order.customer_phone}` : ''}`).bold(false)
   if (order.address) t.line(`Dir: ${order.address}`)
   if (order.delivery_zone) t.bold(true).line(`DISTANCIA: ${order.delivery_zone.toUpperCase()}`).bold(false)

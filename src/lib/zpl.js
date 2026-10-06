@@ -1,6 +1,7 @@
 import { hourOf } from './kitchenSlots.js'
 import { LOGO_RASTER } from './escposLogo.js'
 import { price, wrap, hora, CHANNEL, sections, paymentText } from './escpos.js'
+import { IVA_RATE, vatOf, fiscalOf } from './fiscal.js'
 
 /* ═══════════════════════════════════════════════════════════════
    ETIQUETAS EN ZPL (Zebra GC420t y compañía, 10×15 cm, 203 ppp)
@@ -37,8 +38,10 @@ class Label {
     this.y = M
     this.more = more // texto de cabecera si sigue en otra etiqueta
     this.side = 0 // ancho reservado a la derecha (QR al lado del texto)
+    this.left = 0 // ancho reservado a la izquierda (logo al lado del número)
   }
-  get width() { return W - 2 * M - this.side }
+  get width() { return W - 2 * M - this.side - this.left }
+  get x() { return M + this.left }
   need(h) {
     if (this.y + h <= H - M || !this.cur.length) return this
     this.pages.push(this.cur)
@@ -52,7 +55,7 @@ class Label {
   text(t, { size = S.m, align = 'L' } = {}) {
     for (const l of wrap(clean(t), fits(this.width, size))) {
       this.need(size + 6)
-      this.cur.push(`^FO${M},${this.y}^A0N,${size},${size}^FB${this.width},1,0,${align}^FD${l}^FS`)
+      this.cur.push(`^FO${this.x},${this.y}^A0N,${size},${size}^FB${this.width},1,0,${align}^FD${l}^FS`)
       this.y += size + Math.round(size * 0.22)
     }
     return this
@@ -95,11 +98,18 @@ class Label {
     lines.forEach((l, i) => this.cur.push(`^FO${M},${this.y + 14 + i * (size + 8)}^A0N,${size},${size}^FB${this.width},1,0,C^FD${l}^FS`))
     return this.gap(h + 10)
   }
-  logo() {
+  /** Logo centrado o, con fn, a la izquierda y lo que escriba fn() a su derecha. */
+  logo(fn) {
     this.need(LOGO.rows + 10)
     const total = LOGO.row * LOGO.rows
-    this.cur.push(`^FO${Math.round((W - LOGO.dots) / 2)},${this.y}^GFA,${total},${total},${LOGO.row},${LOGO.hex}^FS`)
-    return this.gap(LOGO.rows + 10)
+    const y0 = this.y
+    this.cur.push(`^FO${fn ? M : Math.round((W - LOGO.dots) / 2)},${y0}^GFA,${total},${total},${LOGO.row},${LOGO.hex}^FS`)
+    if (!fn) return this.gap(LOGO.rows + 10)
+    this.left = LOGO.dots + 16
+    fn(this)
+    this.left = 0
+    this.y = Math.max(this.y, y0 + LOGO.rows + 6)
+    return this
   }
   /**
    * QR a la derecha y, a su izquierda, lo que escriba fn() (más estrecho).
@@ -127,18 +137,21 @@ class Label {
 
 /* En el ticket del cliente (logo) va más apretado para que quepa en una etiqueta */
 function head(t, order, { logo = false } = {}) {
-  if (logo) t.logo()
-  else t.text(`LA PIZZA DE NONNO · ${order.location_name || ''}`, { size: S.m, align: 'C' })
-  if (logo) t.text(order.location_name || '', { size: S.s, align: 'C' })
-  t.rule()
   const mode = `${order.mode === 'delivery' ? 'ENTREGA' : 'RECOGIDA'}${CHANNEL[order.channel] ? ` · ${CHANNEL[order.channel]}` : ''}`
   const eta = order.mode === 'delivery' && order.eta_at ? `Llega al cliente: ${hourOf(order.eta_at)}` : ''
   if (logo) {
-    t.text(order.ref, { size: 64, align: 'C' })
-    t.text(`${mode}${order.ready_at ? ` · PARA LAS ${hourOf(order.ready_at)}` : ''}`, { size: S.m, align: 'C' })
+    /* Logo a la izquierda y el pedido a su lado: ahorra media etiqueta */
+    t.logo((t) => {
+      t.text(order.location_name || '', { size: S.s, align: 'C' })
+      t.text(order.ref, { size: 72, align: 'C' })
+      t.text(mode, { size: S.m, align: 'C' })
+      if (order.ready_at) t.text(`PARA LAS ${hourOf(order.ready_at)}`, { size: S.m, align: 'C' })
+      t.text(`Pedido: ${hora(order.created_at)}`, { size: 22, align: 'C' })
+      if (eta) t.text(eta, { size: 22, align: 'C' })
+    })
     if (order.edited_at) t.banner(`MODIFICADO ${hourOf(order.edited_at)}`, S.s)
-    t.text(`Pedido: ${hora(order.created_at)}${eta ? ` · ${eta}` : ''}`, { size: S.s, align: 'C' })
   } else {
+    t.text(`LA PIZZA DE NONNO · ${order.location_name || ''}`, { size: S.m, align: 'C' }).rule()
     t.text(order.ref, { size: 96, align: 'C' })
     t.text(mode, { size: S.m, align: 'C' })
     if (order.edited_at) t.banner(`MODIFICADO ${hourOf(order.edited_at)}`, S.m)
@@ -186,6 +199,13 @@ export function comandaZpl(order) {
 export function receiptZpl(order, { siteUrl } = {}) {
   const t = new Label(`${order.ref} · ticket`)
   head(t, order, { logo: true })
+  const fiscal = fiscalOf(order.location_id)
+  if (fiscal) {
+    t.text(`Factura simplificada ${order.ref}`, { size: 22, align: 'C' })
+    t.text(`${fiscal.name} · NIF ${fiscal.nif}`, { size: 22, align: 'C' })
+    if (fiscal.address) t.text(fiscal.address, { size: 22, align: 'C' })
+    t.rule(2)
+  }
   items(t, order.items || [], { kitchen: false })
   t.rule()
   const discount = Number(order.discount) || 0
@@ -198,7 +218,9 @@ export function receiptZpl(order, { siteUrl } = {}) {
     if (points) t.cols(`Puntos Club Nonno (${Number(order.points_redeemed) || 0})`, `-${price(points)}`, S.s)
     if (fee) t.cols(`Envío ${order.delivery_zone || ''}`, `+${price(fee)}`, S.s)
   }
-  t.cols('TOTAL', price(order.total), 52).rule()
+  t.cols('TOTAL', price(order.total), 52)
+  const tax = vatOf(order.total)
+  t.text(`IVA ${IVA_RATE} % incluido · Base ${price(tax.base)} · IVA ${price(tax.iva)}`, { size: S.s, align: 'R' }).rule()
   const customer = (t) => {
     t.text(`${order.customer_name || ''}${order.customer_phone ? ` · Tel: ${order.customer_phone}` : ''}`, { size: 28 })
     if (order.address) t.text(`Dir: ${order.address}`, { size: 28 })

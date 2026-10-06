@@ -1,6 +1,7 @@
 import { price } from '../lib/format'
 import { STATIONS, stationOf } from '../data/menu'
 import { hourOf } from '../lib/kitchenSlots'
+import { IVA_RATE, vatOf, fiscalOf } from '../lib/fiscal'
 import qrcode from 'qrcode-generator'
 import { queuePrint } from './api'
 /* Logo en blanco y negro puro (la versión neón tiene fondo negro y en
@@ -268,13 +269,26 @@ export function driverQr(order) {
   return `<div class="qr">${qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true })}<div>REPARTIDOR: ESCANEA AL ENTREGAR</div></div>`
 }
 
+/** Desglose del IVA (y, si ya están puestos, los datos fiscales de la sede). */
+function taxRows(order) {
+  const tax = vatOf(order.total)
+  const row = (label, value) => `<div class="field" style="display:flex;justify-content:space-between"><span>${label}</span><span>${value}</span></div>`
+  return row(`Base imponible (IVA ${IVA_RATE} %)`, esc(price(tax.base))) + row(`IVA ${IVA_RATE} % incluido`, esc(price(tax.iva)))
+}
+function fiscalHead(order) {
+  const f = fiscalOf(order.location_id)
+  return f ? `<div class="center sub">FACTURA SIMPLIFICADA ${esc(order.ref)}<br>${esc(f.name)} · NIF ${esc(f.nif)}${f.address ? `<br>${esc(f.address)}` : ''}</div><div class="rule"></div>` : ''
+}
+
 export function buildReceiptHtml(order) {
   const body = `
     ${ticketHead(order, { logo: true })}
+    ${fiscalHead(order)}
     <table>${itemsTable(order.items || [])}</table>
     <div class="rule"></div>
     ${breakdown(order)}
     <div class="total"><span>TOTAL</span><span>${esc(price(order.total))}</span></div>
+    ${taxRows(order)}
     <div class="rule"></div>
     ${ticketFoot(order, { full: true, customer: true })}
     ${driverQr(order)}`
