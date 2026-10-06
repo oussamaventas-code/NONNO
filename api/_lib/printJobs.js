@@ -48,13 +48,15 @@ function agentAllowed(req, locationId) {
 }
 
 /**
- * Impresoras de la sede según el programa del local, o null si no lo
- * tiene instalado (nunca ha dado señal).
+ * Impresoras de la sede según el programa del local, o null si no está
+ * conectado ahora mismo: entonces imprime el panel (navegador), para que
+ * nada se quede esperando en la cola de un programa apagado.
  */
 async function agentPrinters(locationId) {
   const { data, error } = await db().from('store_status').select('printer_seen_at, printer_info').eq('location_id', locationId).maybeSingle()
   if (error) { if (!missing(error)) console.error('Impresora: estado', error); return null }
-  return data?.printer_seen_at ? (data.printer_info || {}) : null
+  const live = data?.printer_seen_at && Date.now() - Date.parse(data.printer_seen_at) < ONLINE_MS
+  return live ? (data.printer_info || {}) : null
 }
 
 /* Programas antiguos no dicen el idioma: entonces es ESC/POS */

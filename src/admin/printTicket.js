@@ -303,7 +303,7 @@ export function buildReceiptHtml(order) {
 let agents = {}
 export const setPrintAgents = (map) => { agents = map || {} }
 /** ¿Imprime este pedido el programa del local? (los pedidos sin enviar, no) */
-export const viaAgent = (order) => Boolean(agents[order?.location_id]) && /^[0-9a-f-]{36}$/i.test(String(order?.id || ''))
+export const viaAgent = (order) => Boolean(agents[order?.location_id]?.online) && /^[0-9a-f-]{36}$/i.test(String(order?.id || ''))
 
 const browserReceipt = (order) => printOne(buildReceiptHtml(order))
 async function browserTicket(order) {
