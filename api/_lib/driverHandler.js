@@ -13,7 +13,7 @@ import { serviceDay, serviceDayRange } from '../../src/lib/orderNumber.js'
      GET                                   → yo, mis repartos de esta noche y lo que llevo cobrado
      POST { action: 'login', location, pin }
      POST { action: 'logout' }
-     POST { action: 'lookup', orderId }    → el pedido del QR del ticket
+     POST { action: 'lookup', orderId }    → un pedido de su sede
      POST { action: 'lookup', ref }        → o por su número de esta noche ("07")
      POST { action: 'deliver', orderId, method? }  entregado (+ cobrado en efectivo o tarjeta)
 
@@ -165,7 +165,7 @@ async function deliver(req, res, driver) {
     .eq('id', order.id).eq('location_id', driver.location_id).neq('status', 'entregado').neq('status', 'cancelado')
     .select('*').maybeSingle()
   if (error) throw error
-  if (!data) return res.status(409).json({ error: `El ${order.ref} acaba de cambiar. Vuelve a escanearlo.` })
+  if (!data) return res.status(409).json({ error: `El ${order.ref} acaba de cambiar. Vuelve a abrirlo.` })
   await settleOrderPoints(data)
   return res.status(200).json({ order: brief(data), ...(await myNight(driver)) })
 }

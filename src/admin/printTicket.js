@@ -3,7 +3,6 @@ import { STATIONS, stationOf } from '../data/menu'
 import { hourOf } from '../lib/kitchenSlots'
 import { IVA_RATE, vatOf, fiscalOf } from '../lib/fiscal'
 import { invoiceNumber } from '../lib/orderNumber'
-import qrcode from 'qrcode-generator'
 import { queuePrint } from './api'
 /* Logo en blanco y negro puro (la versión neón tiene fondo negro y en
    térmica saldría un borrón). Va incrustado: imprime aunque no haya red. */
@@ -105,9 +104,6 @@ const STYLE = `
   .field { margin: 2px 0; }
   .foot { font-size: 11px; text-align: center; margin-top: 8px; }
   .logo { display: block; width: 20mm; margin: 0 auto 1px; }
-  .qr { text-align: center; margin: 6px 0 2px; }
-  .qr svg { width: 30mm; height: 30mm; }
-  .qr div { font-size: 10px; }
   .thanks { font-size: 13px; font-weight: bold; text-align: center; margin-top: 4px; }
 `
 
@@ -256,20 +252,6 @@ function printOne(html) {
 /** Cualquier otra hoja a 80 mm (p. ej. la lista de la compra). `bodyHtml` ya viene escapado. */
 export const printDocument = (title, bodyHtml) => printOne(page(title, bodyHtml))
 
-/** Ticket de cliente del mostrador: un único ticket completo, sin secciones de cocina. */
-/**
- * QR del repartidor: va en el ticket de los pedidos a domicilio. Al
- * llegar a la casa lo escanea con la cámara del móvil, se abre su
- * portal con ESE pedido y marca entregado y cobrado (efectivo/tarjeta).
- */
-export function driverQr(order) {
-  if (order.mode !== 'delivery' || !/^[0-9a-f-]{36}$/i.test(String(order.id || '')) || typeof window === 'undefined') return ''
-  const qr = qrcode(0, 'M')
-  qr.addData(`${window.location.origin}/repartidor?p=${order.id}`)
-  qr.make()
-  return `<div class="qr">${qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true })}<div>REPARTIDOR: ESCANEA AL ENTREGAR</div></div>`
-}
-
 /** Desglose del IVA (y, si ya están puestos, los datos fiscales de la sede). */
 function taxRows(order) {
   const tax = vatOf(order.total)
@@ -281,6 +263,7 @@ function fiscalHead(order) {
   return f ? `<div class="center sub">FACTURA SIMPLIFICADA ${esc(invoiceNumber(order))}<br>${esc(f.name)} · NIF ${esc(f.nif)}${f.address ? `<br>${esc(f.address)}` : ''}</div><div class="rule"></div>` : ''
 }
 
+/** Ticket de cliente del mostrador: un único ticket completo, sin secciones de cocina. */
 export function buildReceiptHtml(order) {
   const body = `
     ${ticketHead(order, { logo: true })}
@@ -291,8 +274,7 @@ export function buildReceiptHtml(order) {
     <div class="total"><span>TOTAL</span><span>${esc(price(order.total))}</span></div>
     ${taxRows(order)}
     <div class="rule"></div>
-    ${ticketFoot(order, { full: true, customer: true })}
-    ${driverQr(order)}`
+    ${ticketFoot(order, { full: true, customer: true })}`
   return page(`Ticket ${order.ref}`, body)
 }
 

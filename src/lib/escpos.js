@@ -193,8 +193,8 @@ export function comandaBytes(order) {
   return t.bytes()
 }
 
-/** Ticket del cliente: completo, con logo, totales y el QR del repartidor si es a domicilio. */
-export function receiptBytes(order, { siteUrl } = {}) {
+/** Ticket del cliente: completo, con logo y totales. */
+export function receiptBytes(order) {
   const t = new Ticket()
   head(t, order, { logo: true })
   const fiscal = fiscalOf(order.location_id)
@@ -220,9 +220,6 @@ export function receiptBytes(order, { siteUrl } = {}) {
   if (order.delivery_verified === false) t.box('DIRECCIÓN SIN VERIFICAR · LLAMAR')
   if (order.notes) t.line(`Notas: ${order.notes}`)
   t.box(paymentText(order))
-  if (order.mode === 'delivery' && siteUrl && /^[0-9a-f-]{36}$/i.test(String(order.id || ''))) {
-    t.qr(`${siteUrl}/repartidor?p=${order.id}`).align('c').line('REPARTIDOR: ESCANEA AL ENTREGAR').align('l')
-  }
   t.rule().align('c').bold(true).line('¡Gracias por elegir a Nonno!').bold(false)
   return t.cut().bytes()
 }

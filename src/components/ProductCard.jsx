@@ -31,9 +31,14 @@ export default function ProductCard({ product, onOpen }) {
           sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
           className="h-full w-full transition-transform duration-700 ease-magnetic group-hover:scale-105"
         />
-        {soldOut && (
+        {soldOut ? (
           <span className="absolute inset-0 flex items-center justify-center bg-forno/55">
-            <span className="rounded-md bg-masa text-tomate font-sans font-extrabold uppercase tracking-wider text-[0.65rem] sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 mx-1 text-center">{missing.length ? `Sin ${missing[0]}` : 'Agotado hoy'}</span>
+            <span className="rounded-md bg-masa text-tomate font-sans font-extrabold uppercase tracking-wider text-[0.65rem] sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 mx-1 text-center">Agotado hoy</span>
+          </span>
+        ) : missing.length > 0 && (
+          /* Se puede pedir igual: va sin ese ingrediente */
+          <span className="absolute bottom-2 inset-x-2 rounded-md bg-masa/95 border border-tomate text-tomate font-sans font-extrabold uppercase tracking-wide text-[0.6rem] sm:text-xs px-2 py-1 text-center">
+            Hoy sin {missing.join(', ')}
           </span>
         )}
         {product.discount && (

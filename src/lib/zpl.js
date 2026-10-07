@@ -196,8 +196,8 @@ export function comandaZpl(order) {
   return join(parts)
 }
 
-/** Ticket del cliente en una etiqueta: logo, totales y QR del repartidor. */
-export function receiptZpl(order, { siteUrl } = {}) {
+/** Ticket del cliente en una etiqueta: logo y totales. */
+export function receiptZpl(order) {
   const t = new Label(`${order.ref} · ticket`)
   head(t, order, { logo: true })
   const fiscal = fiscalOf(order.location_id)
@@ -230,9 +230,7 @@ export function receiptZpl(order, { siteUrl } = {}) {
     if (order.notes) t.text(`Notas: ${order.notes}`, { size: S.s })
     t.box(paymentText(order), S.m)
   }
-  if (order.mode === 'delivery' && siteUrl && /^[0-9a-f-]{36}$/i.test(String(order.id || ''))) {
-    t.qrBeside(`${siteUrl}/repartidor?p=${order.id}`, ['REPARTIDOR:', 'ESCANEA AL', 'ENTREGAR'], customer)
-  } else customer(t)
+  customer(t)
   t.text('¡Gracias por elegir a Nonno!', { size: S.m, align: 'C' })
   return t.bytes()
 }

@@ -17,7 +17,7 @@ import { printDocument, esc } from './printTicket'
      repartidores → alta de repartidores y sus PIN (Encargado)
    Si la sede tiene repartidores dados de alta, al salir se elige quién
    la lleva: esas paradas le salen en su móvil (/repartidor) y él las
-   marca entregadas y cobradas escaneando el QR del ticket.
+   marca entregadas y cobradas desde ahí.
    ═══════════════════════════════════════════════════════════════ */
 
 const isOpen = (o) => !['entregado', 'cancelado'].includes(o.status)
@@ -232,7 +232,7 @@ function Drivers({ locId, drivers, off, onChange, onError }) {
     <section className="pcard p-5">
       <h2 className="font-sans font-extrabold uppercase text-xl text-tomate flex items-center gap-2"><Smartphone className="w-5 h-5" /> Repartidores</h2>
       <p className="mono normal-case text-carbon/60 mt-1">
-        Cada uno entra desde su móvil en <strong className="text-carbon">{window.location.host}/repartidor</strong> con su PIN. Al llegar escanea el QR del ticket y marca entregado y cobrado (efectivo o tarjeta).
+        Cada uno entra desde su móvil en <strong className="text-carbon">{window.location.host}/repartidor</strong> con su PIN. Al darle la salida ("Sale …") le aparecen sus pedidos y desde ahí marca entregado y cobrado (efectivo o tarjeta).
       </p>
       {off ? (
         <p className="palert mt-3">{off}</p>

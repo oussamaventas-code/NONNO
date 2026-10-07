@@ -572,10 +572,11 @@ export const isExtraOut = (extraId, locationId) => {
 export const isManuallySoldOut = (id, locationId) =>
   Boolean(locationId && overrides.soldOut[locationId]?.includes(id))
 
-/** Producto agotado en esa sede: a mano, o porque le falta un ingrediente.
+/** Producto agotado en esa sede: solo si el local lo marca a mano.
+    Si le falta un ingrediente se puede pedir igual: va SIN ese ingrediente
+    y se avisa al cliente (ver missingIngredients).
     Sin sede elegida no se puede saber: no cuenta. */
-export const isSoldOut = (id, locationId) =>
-  isManuallySoldOut(id, locationId) || missingIngredients(id, locationId).length > 0
+export const isSoldOut = (id, locationId) => isManuallySoldOut(id, locationId)
 
 /** ¿Se puede pedir en la web ahora mismo? */
 export const isOrderable = (id, locationId) => !isHidden(id) && !isSoldOut(id, locationId)

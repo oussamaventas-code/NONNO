@@ -46,7 +46,8 @@ export default function ProductModal() {
     if (!product) return
     setPortionId(product.portions?.[0]?.id || null)
     setExtraIds([])
-    setRemoved([])
+    /* Lo que falta hoy en la sede ya va quitado: la comanda dirá "SIN …" */
+    setRemoved(missingIngredients(product.id, locationId))
     setQty(1)
     setNote('')
     pendingAdd.current = false
@@ -58,7 +59,7 @@ export default function ProductModal() {
   useEffect(() => {
     if (locationId && pendingAdd.current && product) {
       pendingAdd.current = false
-      const ok = addToCart({ productId, portionId, extraIds: extraIds.filter((id) => !outExtras.includes(id)), removed, qty, note })
+      const ok = addToCart({ productId, portionId, extraIds: extraIds.filter((id) => !outExtras.includes(id)), removed: removedNow(), qty, note })
       if (ok) closeProduct()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,8 +83,12 @@ export default function ProductModal() {
   const toggleExtra = (id) =>
     setExtraIds((prev) => (prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]))
 
-  const toggleIngredient = (ing) =>
+  const toggleIngredient = (ing) => {
+    if (missing.includes(ing)) return // hoy no hay: no se puede volver a poner
     setRemoved((prev) => (prev.includes(ing) ? prev.filter((i) => i !== ing) : [...prev, ing]))
+  }
+  /* Siempre sin lo que falta, aunque la sede se haya elegido con el modal abierto */
+  const removedNow = () => [...new Set([...removed, ...missingIngredients(product.id, locationId)])]
 
   const total = unitPrice(product, { extraIds: extraIds.filter((id) => !outExtras.includes(id)), portionId }) * qty
 
@@ -93,7 +98,7 @@ export default function ProductModal() {
       openLocationPrompt()
       return
     }
-    const ok = addToCart({ productId, portionId, extraIds: extraIds.filter((id) => !outExtras.includes(id)), removed, qty, note })
+    const ok = addToCart({ productId, portionId, extraIds: extraIds.filter((id) => !outExtras.includes(id)), removed: removedNow(), qty, note })
     if (ok) closeProduct()
   }
 
@@ -176,14 +181,20 @@ export default function ProductModal() {
             </div>
           )}
 
+          {missing.length > 0 && (
+            <p className="mt-5 rounded-md border-2 border-tomate bg-tomate/10 px-4 py-3 text-sm font-bold text-tomate" role="status">
+              Hoy no nos queda {missing.join(', ')} en esta sede. Puedes pedirla igual: te la hacemos sin {missing.length > 1 ? 'esos ingredientes' : 'ese ingrediente'}.
+            </p>
+          )}
+
           {/* Ingredientes: se quitan tocándolos */}
           {product.ingredients?.length > 0 && (
             <div className="mt-6">
               <div className="flex items-baseline justify-between gap-3 mb-2">
                 <p className="mono text-tomate">¿QUITAR ALGO? <span className="normal-case text-carbon/50">toca para quitar</span></p>
-                {removed.length > 0 && (
+                {removed.some((i) => !missing.includes(i)) && (
                   <button
-                    onClick={() => setRemoved([])}
+                    onClick={() => setRemoved(missing)}
                     className="mono normal-case text-tomate hover:text-horno transition-colors"
                   >
                     Restaurar todos
@@ -194,12 +205,14 @@ export default function ProductModal() {
               <div className="flex flex-wrap gap-2">
                 {product.ingredients.map((ing) => {
                   const off = removed.includes(ing)
+                  const gone = missing.includes(ing)
                   return (
                     <button
                       key={ing}
                       onClick={() => toggleIngredient(ing)}
+                      disabled={gone}
                       aria-pressed={!off}
-                      aria-label={off ? `Añadir ${ing}` : `Quitar ${ing}`}
+                      aria-label={gone ? `${ing}: hoy no hay` : off ? `Añadir ${ing}` : `Quitar ${ing}`}
                       className={[
                         'group flex items-center gap-1.5 rounded-md border px-3 py-2 min-h-[40px] text-sm font-semibold transition-all duration-300 ease-magnetic',
                         off
@@ -210,7 +223,7 @@ export default function ProductModal() {
                       {off
                         ? <X className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
                         : <Check className="w-3.5 h-3.5 flex-shrink-0 text-tomate" strokeWidth={2.5} />}
-                      {ing}
+                      {ing}{gone && <span className="inline-block ml-1 text-xs normal-case">· hoy no hay</span>}
                     </button>
                   )
                 })}
@@ -277,7 +290,7 @@ export default function ProductModal() {
 
             <button onClick={handleAdd} disabled={soldOut} className="btn flex-1 bg-tomate text-masa px-4 sm:px-6 disabled:opacity-50 disabled:pointer-events-none">
               <span className="btn-layer bg-forno" />
-              <span className="btn-label">{soldOut ? (missing.length ? `SIN ${missing[0].toUpperCase()} HOY EN ESTA SEDE` : 'AGOTADO HOY EN ESTA SEDE') : `AÑADIR · ${price(total)}`}</span>
+              <span className="btn-label">{soldOut ? 'AGOTADO HOY EN ESTA SEDE' : `AÑADIR · ${price(total)}`}</span>
             </button>
         </div>
       </div>

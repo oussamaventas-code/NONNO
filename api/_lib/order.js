@@ -3,7 +3,7 @@ import { orderTotals } from '../../src/lib/orderTotals.js'
 import { getLocation } from '../../src/data/locations.js'
 import { ovenUnits } from '../../src/lib/kitchenSlots.js'
 import { deliveryProblem } from '../../src/lib/delivery.js'
-import { isOrderable, isExtraOut, getExtra } from '../../src/data/menu.js'
+import { isOrderable, isExtraOut, getExtra, missingIngredients } from '../../src/data/menu.js'
 import { mobileNumber } from '../../src/lib/customerLookup.js'
 import { isEmail } from './mail.js'
 
@@ -55,13 +55,19 @@ function scheduleOf(body, { staff, locationId, delivery }) {
 export function sanitizeOrder(body, { staff = false, customerId = null, redeem = 0 } = {}) {
   const rawItems = Array.isArray(body?.items) ? body.items.slice(0, 60) : []
   let unknownProduct = false
+  const locationId = trim(body?.location?.id, 40)
 
   const lines = rawItems.map((i) => {
+    const productId = trim(i?.id, 60)
+    /* Web: si en la sede falta un ingrediente, la pizza va SIN él (el
+       cliente ya lo ha visto avisado) y la comanda lo dice. */
+    const removed = list(i?.removed, 20, 60)
+    if (!staff) removed.push(...missingIngredients(productId, locationId).filter((m) => !removed.includes(m)))
     const line = buildLine({
-      productId: trim(i?.id, 60),
+      productId,
       portionId: trim(i?.portionId, 20) || undefined,
       extraIds: list(i?.extraIds, 20, 40),
-      removed: list(i?.removed, 20, 60),
+      removed,
       note: trim(i?.note, 140),
       qty: Math.max(1, Math.min(99, Math.floor(Number(i?.qty)) || 1)),
     })
@@ -70,7 +76,6 @@ export function sanitizeOrder(body, { staff = false, customerId = null, redeem =
   }).filter(Boolean)
 
   const mode = body?.mode === 'delivery' ? 'delivery' : 'pickup'
-  const locationId = trim(body?.location?.id, 40)
   /* El personal puede repartir fuera de la zona de su sede */
   const where = { ...whereOf(body?.customer), anySede: Boolean(staff) }
   const totals = orderTotals({ lines, mode, locationId, where, pointsRedeemed: redeem })

@@ -16,7 +16,7 @@ const DriverPortal = lazy(() => import('./driver/DriverPortal'))
    /superadmin   → el mismo panel con la puerta del super admin (las dos sedes)
    /admin/sangonera, /admin/santo-angel → cada local tiene su enlace.
    /pantalla/sangonera → pantalla de pedidos para la TV del local.
-   /repartidor   → portal del repartidor (PIN, escanear el QR del ticket, cobrar).
+   /repartidor   → portal del repartidor (PIN, sus pedidos asignados, cobrar).
    La dirección solo decide qué se ve en el login: quien manda sigue
    siendo la contraseña. */
 const ruta = window.location.pathname.replace(/\/+$/, '')

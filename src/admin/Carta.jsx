@@ -16,7 +16,8 @@ import { price } from '../lib/format'
 
    Precios y ocultar: solo dirección (afectan a todas las sedes).
    Agotado y sin ingrediente: cada local marca el suyo. Si un ingrediente
-   se acaba, las pizzas que lo llevan se descartan solas en esa sede.
+   se acaba, las pizzas que lo llevan se siguen pudiendo pedir, pero la
+   web avisa y van SIN ese ingrediente en esa sede.
    ═══════════════════════════════════════════════════════════════ */
 
 const asInput = (n) => (n == null ? '' : Number(n).toFixed(2).replace('.', ','))
@@ -25,7 +26,7 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
   const [locId, setLocId] = useState(locationIds[0])
   const [query, setQuery] = useState('')
   const [busy, setBusy] = useState(null)
-  const [view, setView] = useState('productos')
+  const [view, setView] = useState('ingredientes')
 
   useEffect(() => {
     if (!locationIds.includes(locId)) setLocId(locationIds[0])
@@ -65,7 +66,7 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
           <h2 className="font-sans font-extrabold uppercase text-xl text-carbon mt-1">Precios y disponibilidad</h2>
           <p className="mono normal-case text-carbon/55 mt-1">
             {soldOutHere.length || outIngredients.length
-              ? `${soldOutHere.length} agotado${soldOutHere.length === 1 ? '' : 's'}${outIngredients.length ? ` · ${outIngredients.length} ingrediente${outIngredients.length === 1 ? '' : 's'} sin stock (${discarded.length} descartada${discarded.length === 1 ? '' : 's'})` : ''} en ${getLocation(locId).name}`
+              ? `${soldOutHere.length} agotado${soldOutHere.length === 1 ? '' : 's'}${outIngredients.length ? ` · ${outIngredients.length} ingrediente${outIngredients.length === 1 ? '' : 's'} sin stock (${discarded.length} producto${discarded.length === 1 ? '' : 's'} sin él)` : ''} en ${getLocation(locId).name}`
               : `Todo disponible en ${getLocation(locId).name}`}
             {!esDireccion && ' · los precios los cambia el super admin'}
           </p>
@@ -75,8 +76,8 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar producto"
-            aria-label="Buscar producto"
+            placeholder={view === 'ingredientes' ? 'Buscar ingrediente' : 'Buscar producto'}
+            aria-label={view === 'ingredientes' ? 'Buscar ingrediente' : 'Buscar producto'}
             className="bg-transparent outline-none text-sm w-44"
           />
         </label>
@@ -100,7 +101,7 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
       )}
 
       <div className="flex gap-2" role="tablist">
-        {[['productos', 'Productos', Package], ['ingredientes', 'Ingredientes', Carrot]].map(([id, label, Icon]) => (
+        {[['ingredientes', 'Ingredientes', Carrot], ['productos', 'Productos', Package]].map(([id, label, Icon]) => (
           <button key={id} role="tab" aria-selected={view === id} onClick={() => setView(id)} className={['ptab', view === id ? 'is-on' : ''].join(' ')}>
             <Icon className="w-3.5 h-3.5" /> {label}
             {id === 'ingredientes' && outIngredients.length > 0 && <span className="ml-1 rounded-full bg-tomate text-masa px-1.5 text-[0.65rem]">{outIngredients.length}</span>}
@@ -135,7 +136,7 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
                   <div className="flex-1 min-w-[9rem]">
                     <p className="font-sans font-bold text-carbon">{p.name}</p>
                     <p className="mono normal-case text-carbon/50">
-                      {hidden ? 'Oculto en la web' : missing.length ? `Descartada: sin ${missing.join(', ')}` : soldOut ? 'Agotado hoy' : 'Disponible'}
+                      {hidden ? 'Oculto en la web' : missing.length ? `Se pide sin ${missing.join(', ')}` : soldOut ? 'Agotado hoy' : 'Disponible'}
                     </p>
                     {p.discount && (
                       <p className="mono normal-case text-horno">{p.discount.label} ({p.discount.name}): se vende a {price(p.price)}</p>
@@ -180,7 +181,7 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
   )
 }
 
-/** Ingredientes por grupo: al marcar uno sin stock, las pizzas que lo llevan se descartan solas. */
+/** Ingredientes por grupo: al marcar uno sin stock, las pizzas que lo llevan se piden sin él (con aviso). */
 function Ingredientes({ locId, query, busy, onToggle }) {
   const out = ingredientsOut(locId)
   const items = ingredientCatalog().filter((i) => !query || i.label.toLowerCase().includes(query))
@@ -192,7 +193,7 @@ function Ingredientes({ locId, query, busy, onToggle }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="mono normal-case text-carbon/55">Marca lo que se ha acabado: las pizzas que lo llevan dejan de poder pedirse en la web de esta sede hasta que lo repongas.</p>
+      <p className="mono normal-case text-carbon/55">Marca lo que se ha acabado: las pizzas que lo llevan se siguen pudiendo pedir, pero la web avisa al cliente y salen SIN ese ingrediente en esta sede hasta que lo repongas.</p>
       {groups.map((g) => (
         <section key={g.label}>
           <h3 className="mono text-carbon/60 mb-2">{g.label}</h3>
@@ -206,7 +207,7 @@ function Ingredientes({ locId, query, busy, onToggle }) {
                     <p className="font-sans font-bold text-carbon truncate">{i.label}</p>
                     <p className="mono normal-case text-carbon/50">
                       {isOut
-                        ? `Sin stock${used.length ? ` · ${used.length} descartada${used.length === 1 ? '' : 's'}` : ''}`
+                        ? `Sin stock${used.length ? ` · ${used.length} producto${used.length === 1 ? '' : 's'} sin él` : ''}`
                         : used.length ? `En ${used.length} producto${used.length === 1 ? '' : 's'}` : 'Solo como topping'}
                     </p>
                   </div>

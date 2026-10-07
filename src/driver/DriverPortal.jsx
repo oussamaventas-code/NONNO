@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { ScanLine, Banknote, CreditCard, Check, LogOut, Phone, Map as MapIcon, X, Search, Delete, Truck, AlertTriangle } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Banknote, CreditCard, Check, LogOut, Phone, Map as MapIcon, X, Search, Delete, Truck, AlertTriangle } from 'lucide-react'
 import { LOCATIONS } from '../data/locations'
 import { price } from '../lib/format'
 import { hourOf } from '../lib/kitchenSlots'
@@ -7,12 +7,12 @@ import { hourOf } from '../lib/kitchenSlots'
 /* ═══════════════════════════════════════════════════════════════
    PORTAL DEL REPARTIDOR  ·  /repartidor
    Cada repartidor entra con su PIN de 4 cifras (lo da el local). Al
-   llegar a la casa escanea el QR del ticket con la cámara (o escribe
-   el número del pedido), y con un toque lo marca ENTREGADO y cobrado
-   en EFECTIVO o con TARJETA. El mostrador y la caja lo ven al momento.
+   darle la salida en el mostrador ("Sale Daniel") esos pedidos le
+   aparecen aquí solos; con un toque lo marca ENTREGADO y cobrado en
+   EFECTIVO o con TARJETA. El mostrador y la caja lo ven al momento.
    ═══════════════════════════════════════════════════════════════ */
 
-const POLL_MS = 30000
+const POLL_MS = 15000
 
 async function api(body) {
   const res = await fetch('/api/driver', body
@@ -23,22 +23,14 @@ async function api(body) {
   return data
 }
 
-/** El QR del ticket lleva la dirección del portal con ?p=<id del pedido> */
-const orderIdFrom = (text) => {
-  try { return new URL(text).searchParams.get('p') } catch { return /^[0-9a-f-]{36}$/i.test(text) ? text : null }
-}
-
 export default function DriverPortal() {
   const [night, setNight] = useState(null) // { driver, pending, done, totals }
   const [state, setState] = useState('cargando') // cargando | fuera | dentro
   const [error, setError] = useState('')
   const [sheet, setSheet] = useState(null) // pedido abierto
-  const [scanning, setScanning] = useState(false)
   const [busy, setBusy] = useState(false)
   const [doneMsg, setDoneMsg] = useState(null)
   const [ref, setRef] = useState('')
-  /* Pedido del QR escaneado con la cámara normal del móvil (abre esta página) */
-  const pendingId = useRef(new URLSearchParams(window.location.search).get('p'))
 
   const openOrder = useCallback(async (q) => {
     setError(''); setBusy(true)
@@ -58,17 +50,11 @@ export default function DriverPortal() {
       const data = await api()
       if (!data.driver) { setState('fuera'); return }
       setNight(data); setState('dentro')
-      if (pendingId.current) {
-        const id = pendingId.current
-        pendingId.current = null
-        window.history.replaceState(null, '', '/repartidor')
-        openOrder({ orderId: id })
-      }
     } catch (err) {
       setError(err.message)
       setState((s) => (s === 'cargando' ? 'fuera' : s))
     }
-  }, [openOrder])
+  }, [])
 
   useEffect(() => {
     load()
@@ -134,32 +120,12 @@ export default function DriverPortal() {
         </p>
       )}
 
-      <button onClick={() => { setError(''); setScanning(true) }} className="btn mt-5 w-full min-h-[72px] bg-tomate text-crema">
-        <span className="btn-layer bg-horno" />
-        <span className="btn-label text-lg"><ScanLine className="w-7 h-7" /> ESCANEAR TICKET</span>
-      </button>
-
-      <form
-        onSubmit={(e) => { e.preventDefault(); if (ref.trim()) openOrder({ ref: ref.trim() }) }}
-        className="mt-3 flex gap-2"
-      >
-        <input
-          value={ref}
-          onChange={(e) => setRef(e.target.value.replace(/\D/g, '').slice(0, 4))}
-          inputMode="numeric"
-          placeholder="o escribe el nº del pedido"
-          aria-label="Número del pedido"
-          className="pfield !text-lg flex-1"
-        />
-        <button disabled={busy || !ref} className="ptab !min-h-[52px] px-4 disabled:opacity-40" aria-label="Buscar"><Search className="w-5 h-5" /></button>
-      </form>
-
       <section className="mt-7">
         <h2 className="flex items-center gap-2 font-sans font-extrabold uppercase tracking-wide text-sm text-horno">
           <Truck className="w-4 h-4" /> Llevo ahora <span className="rounded-full border border-current px-2 text-xs leading-5">{pending.length}</span>
         </h2>
         {pending.length === 0 ? (
-          <p className="mt-3 text-carbon/60">Nada asignado. Cuando el local te dé una salida, aparece aquí; o escanea el ticket.</p>
+          <p className="mt-3 text-carbon/60">Nada asignado. Cuando el local te dé una salida, aparece aquí sola.</p>
         ) : (
           <ul className="mt-3 flex flex-col gap-3">
             {pending.map((o, i) => (
@@ -180,6 +146,21 @@ export default function DriverPortal() {
         )}
       </section>
 
+      <form
+        onSubmit={(e) => { e.preventDefault(); if (ref.trim()) openOrder({ ref: ref.trim() }) }}
+        className="mt-7 flex gap-2"
+      >
+        <input
+          value={ref}
+          onChange={(e) => setRef(e.target.value.replace(/\D/g, '').slice(0, 4))}
+          inputMode="numeric"
+          placeholder="¿Otro pedido? Escribe su número"
+          aria-label="Número del pedido"
+          className="pfield !text-lg flex-1"
+        />
+        <button disabled={busy || !ref} className="ptab !min-h-[52px] px-4 disabled:opacity-40" aria-label="Buscar"><Search className="w-5 h-5" /></button>
+      </form>
+
       {done.length > 0 && (
         <section className="mt-7">
           <h2 className="font-sans font-extrabold uppercase tracking-wide text-sm text-albahaca">Entregados esta noche</h2>
@@ -192,18 +173,6 @@ export default function DriverPortal() {
             ))}
           </ul>
         </section>
-      )}
-
-      {scanning && (
-        <Scanner
-          onClose={() => setScanning(false)}
-          onCode={(text) => {
-            setScanning(false)
-            const id = orderIdFrom(text)
-            if (id) openOrder({ orderId: id })
-            else setError('Ese código no es un ticket de Nonno.')
-          }}
-        />
       )}
 
       {sheet && (
@@ -245,7 +214,7 @@ function Links({ o }) {
   )
 }
 
-/* ── Ficha del pedido escaneado: un toque y listo ─────────────── */
+/* ── Ficha del pedido: un toque y listo ─────────────── */
 function OrderSheet({ order: o, me, busy, error, onClose, onDeliver }) {
   const otherDriver = o.driverId && o.driverId !== me.id
   const closed = o.status === 'entregado' || o.status === 'cancelado'
@@ -303,72 +272,6 @@ function OrderSheet({ order: o, me, busy, error, onClose, onDeliver }) {
           )
         )}
       </div>
-    </div>
-  )
-}
-
-/* ── Escáner con la cámara (Android/Chrome). En iPhone se usa la
-   cámara normal: el QR abre esta misma página con el pedido. ── */
-function Scanner({ onCode, onClose }) {
-  const video = useRef(null)
-  /* El portal se refresca solo cada 30 s: la cámara no debe reiniciarse por eso */
-  const onCodeRef = useRef(onCode)
-  onCodeRef.current = onCode
-  const [problem, setProblem] = useState(() => ('BarcodeDetector' in window ? '' : 'ios'))
-
-  useEffect(() => {
-    if (problem) return undefined
-    let stream
-    let timer
-    let stopped = false
-    const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
-    navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
-      .then((s) => {
-        stream = s
-        if (stopped) return s.getTracks().forEach((t) => t.stop())
-        video.current.srcObject = s
-        video.current.play()
-        const tick = async () => {
-          if (stopped) return
-          try {
-            const [hit] = await detector.detect(video.current)
-            if (hit?.rawValue) { stopped = true; navigator.vibrate?.(80); onCodeRef.current(hit.rawValue); return }
-          } catch { /* aún sin imagen */ }
-          timer = setTimeout(tick, 250)
-        }
-        tick()
-      })
-      .catch(() => setProblem('camara'))
-    return () => { stopped = true; clearTimeout(timer); stream?.getTracks().forEach((t) => t.stop()) }
-  }, [problem])
-
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      <div className="flex items-center justify-between px-4 py-3 text-masa">
-        <p className="font-bold uppercase">Apunta al QR del ticket</p>
-        <button onClick={onClose} className="w-12 h-12 rounded-md border border-masa/50 flex items-center justify-center" aria-label="Cerrar"><X className="w-6 h-6" /></button>
-      </div>
-      {problem ? (
-        <div className="m-4 rounded-md bg-masa p-5 text-carbon">
-          {problem === 'ios' ? (
-            <>
-              <p className="font-bold text-lg">Usa la cámara del móvil</p>
-              <p className="mt-2">Cierra esto, abre la app <strong>Cámara</strong>, apunta al QR del ticket y toca el aviso que sale arriba: se abre este portal con el pedido.</p>
-            </>
-          ) : (
-            <>
-              <p className="font-bold text-lg">No hay permiso para la cámara</p>
-              <p className="mt-2">Dale permiso a la cámara en el navegador, o escribe el número del pedido.</p>
-            </>
-          )}
-          <button onClick={onClose} className="ptab mt-4 w-full">Entendido</button>
-        </div>
-      ) : (
-        <div className="relative flex-1">
-          <video ref={video} playsInline muted className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 m-auto h-64 w-64 rounded-xl border-4 border-albahaca shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]" />
-        </div>
-      )}
     </div>
   )
 }

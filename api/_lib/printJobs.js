@@ -2,7 +2,6 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { db, isConfigured } from './supabase.js'
 import { readSession, SCOPE_ALL } from './auth.js'
 import { take } from './limiter.js'
-import { siteBase } from './mail.js'
 import { notifyPrinterDown } from './push.js'
 import { getLocation } from '../../src/data/locations.js'
 import { comandaBytes, receiptBytes, cancelBytes, testBytes } from '../../src/lib/escpos.js'
@@ -67,7 +66,7 @@ function render(kind, order, printers) {
   const zpl = isZpl(printers, role)
   if (kind === 'comanda') return { role, bytes: zpl ? comandaZpl(order) : comandaBytes(order) }
   if (kind === 'cancelado') return { role, bytes: zpl ? cancelZpl(order) : cancelBytes(order) }
-  return { role, bytes: (zpl ? receiptZpl : receiptBytes)(order, { siteUrl: siteBase() }) }
+  return { role, bytes: (zpl ? receiptZpl : receiptBytes)(order) }
 }
 
 /**
