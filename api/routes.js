@@ -9,8 +9,8 @@ import driverHandler from './_lib/driverHandler.js'
  *   { location, action: 'dispatch', ids: [...], driverId? }  sale el reparto con esos pedidos (y ese repartidor)
  *   { location, action: 'undo', routeId }          deshacer una salida marcada por error
  *
- * Al salir, los pedidos quedan fijos en su salida (ya no se reorganizan),
- * pasan a "listo" si cocina no lo había marcado.
+ * Al salir, los pedidos quedan fijos en su salida (ya no se reorganizan)
+ * y pasan a "listo" (cocina no lo marca: trabaja con la comanda en papel).
  *
  * /api/driver (portal del repartidor) llega aquí con ?resource=driver
  * por una reescritura de vercel.json: Vercel Hobby admite 12 funciones.
@@ -53,15 +53,8 @@ async function dispatch(req, res, locationId) {
     return res.status(409).json({ error: 'Algún pedido ya ha salido o ha cambiado. Actualiza y vuelve a intentarlo.' })
   }
 
-  /* No se manda a nadie a repartir una pizza
-     que todavía no está hecha: cocina tiene que haberla marcado lista
-     antes de que esta salida pueda confirmarse. */
-  const notReady = found.filter((o) => o.status !== 'listo')
-  if (notReady.length) {
-    return res.status(409).json({
-      error: `${notReady.map((o) => o.ref).join(', ')} aún no está${notReady.length > 1 ? 'n' : ''} listo en cocina.`,
-    })
-  }
+  /* No se espera a ningún "listo": la cocina trabaja con la comanda en
+     papel y no lo marca en el panel. Al salir, el pedido pasa a "listo". */
 
   /* Repartidor que lo lleva (opcional): sus pedidos le salen en el móvil */
   let driver = null

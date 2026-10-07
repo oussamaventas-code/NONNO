@@ -26,6 +26,7 @@ const km1 = (n) => `${Number(n).toLocaleString('es-ES', { maximumFractionDigits:
 export default function Routes({ orders, locationIds, onSaved, onError, part = 'salir', footer = null }) {
   const locId = locationIds.find((id) => getLocation(id)?.services.delivery)
   const [busy, setBusy] = useState(null)
+  const [failed, setFailed] = useState(null) // { key, message }: el aviso sale junto al botón tocado
   const [drivers, setDrivers] = useState([])
   const [driversOff, setDriversOff] = useState(false)
 
@@ -63,8 +64,8 @@ export default function Routes({ orders, locationIds, onSaved, onError, part = '
   }).sort((a, b) => a.departAt - b.departAt)
 
   const run = async (key, fn) => {
-    setBusy(key)
-    try { await fn() } catch (err) { onError(err.message) } finally { setBusy(null) }
+    setBusy(key); setFailed(null)
+    try { await fn() } catch (err) { onError(err.message); setFailed({ key, message: err.message }) } finally { setBusy(null) }
   }
 
   const dispatch = (trip, driverId) => run(trip.id, async () => {
@@ -179,6 +180,7 @@ export default function Routes({ orders, locationIds, onSaved, onError, part = '
               <Send className="w-5 h-5" /> {busy === trip.id ? 'Guardando…' : 'Sale el reparto'}
             </button>
           )}
+          {failed?.key === trip.id && <p className="palert mt-2" role="alert">{failed.message}</p>}
           <div className="mt-2 flex flex-wrap gap-2">
             <a href={mapsRouteUrl(origin, trip.stops)} target="_blank" rel="noopener noreferrer" className="ptab soft"><MapIcon className="w-4 h-4" /> Mapa</a>
             <button onClick={() => printSheet(trip)} className="ptab soft"><Printer className="w-4 h-4" /> Hoja de ruta</button>
