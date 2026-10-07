@@ -9,6 +9,7 @@ import TodayBoard from './TodayBoard'
 import DoughControl from './DoughControl'
 import { useMenuOverrides } from '../hooks/useMenuOverrides'
 import Billing from './Billing'
+import Accounting from './Accounting'
 import Discounts from './Discounts'
 import { readQueue, enqueue, dequeue, isConnectionError } from './offlineQueue'
 import { printTicket, printReceipt, setPrintAgents, viaAgent } from './printTicket'
@@ -23,8 +24,9 @@ import { LOCATIONS } from '../data/locations'
    · Sede (mostrador del local): el MOSTRADOR lo es todo (pedidos,
      cobros, reparto y caja en una pantalla). Aparte, el cierre de caja
      y lo del encargado (agotados, stock, repartidores).
-   · Jefe (las dos sedes): su resumen, los mostradores, ventas, carta y
-     precios, y lo del encargado. No ve tableros de trabajo mezclados.
+   · Super admin (las dos sedes): su resumen, los mostradores, ventas, carta y
+     precios, la facturación para el gestor y lo del encargado. No ve
+     tableros de trabajo mezclados. Cada sede tiene su propio admin.
    · Equipo de cocina (?equipo=cocina): solo reimprimir comandas. Los
      pizzeros trabajan con el papel, no con el panel.
    ═══════════════════════════════════════════════════════════════ */
@@ -44,7 +46,7 @@ const COCINA_TABS = [{ id: 'cocina', label: 'Cocina', short: 'Cocina', Icon: Che
 
 /* Secciones dentro de una pestaña (botones debajo del título) */
 const SUBTABS = {
-  ventas: [{ id: 'facturacion', label: 'Facturación' }, { id: 'cajas', label: 'Cierres de caja' }],
+  ventas: [{ id: 'facturacion', label: 'Facturación' }, { id: 'gestor', label: 'Para el gestor' }, { id: 'cajas', label: 'Cierres de caja' }],
   carta: [{ id: 'carta', label: 'Carta y agotados' }, { id: 'descuentos', label: 'Descuentos' }],
   encargado: [{ id: 'agotados', label: 'Carta y agotados', sede: true }, { id: 'stock', label: 'Stock y compra' }, { id: 'repartidores', label: 'Repartidores' }],
 }
@@ -483,7 +485,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
           <img src="/logo-nonno.png" alt="" width="48" height="48" className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0 rounded-full object-cover border-2 border-tomate" />
           <div className="min-w-0 md:min-w-[9.5rem]">
             <p className="font-sans font-extrabold uppercase text-base md:text-xl leading-none text-carbon truncate">
-              {esDireccion ? 'Dirección' : viewTab?.label}
+              {esDireccion ? 'Super admin' : viewTab?.label}
             </p>
             <p className="mt-1 font-mono text-[0.78rem] text-carbon/65 truncate">{sedeNombre}</p>
           </div>
@@ -715,7 +717,9 @@ export default function AdminPanel({ scope, onSignedOut }) {
         ) : view === 'ventas' ? (
           sub === 'cajas'
             ? <CashClose locationIds={locationIds} onError={setError} />
-            : <Billing locationId={sedeActiva === 'todas' ? null : sedeActiva} onError={setError} />
+            : sub === 'gestor'
+              ? <Accounting locationId={sedeActiva === 'todas' ? null : sedeActiva} onError={setError} />
+              : <Billing locationId={sedeActiva === 'todas' ? null : sedeActiva} onError={setError} />
         ) : view === 'carta' ? (
           sub === 'descuentos'
             ? <Discounts onError={setError} onChanged={refreshMenu} />

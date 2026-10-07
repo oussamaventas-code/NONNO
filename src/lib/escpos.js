@@ -2,6 +2,7 @@ import { hourOf } from './kitchenSlots.js'
 import { STATIONS, stationOf } from '../data/menu.js'
 import { LOGO_RASTER } from './escposLogo.js'
 import { IVA_RATE, vatOf, fiscalOf } from './fiscal.js'
+import { invoiceNumber } from './orderNumber.js'
 
 /* ═══════════════════════════════════════════════════════════════
    TICKETS EN ESC/POS (impresoras térmicas de 80 mm, estilo Epson)
@@ -197,7 +198,7 @@ export function receiptBytes(order, { siteUrl } = {}) {
   const t = new Ticket()
   head(t, order, { logo: true })
   const fiscal = fiscalOf(order.location_id)
-  if (fiscal) t.align('c').line(`FACTURA SIMPLIFICADA ${order.ref}`).line(`${fiscal.name} · NIF ${fiscal.nif}`).line(fiscal.address || '').align('l').rule()
+  if (fiscal) t.align('c').line('FACTURA SIMPLIFICADA').line(`N.º ${invoiceNumber(order)}`).line(`${fiscal.name} · NIF ${fiscal.nif}`).line(fiscal.address || '').align('l').rule()
   items(t, order.items || [], { kitchen: false })
   t.rule()
   const discount = Number(order.discount) || 0

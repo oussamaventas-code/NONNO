@@ -35,6 +35,7 @@ export default function Footer() {
             <ul className="flex flex-col gap-5">
               <li><button onClick={() => navigate('/carta')} className={link}>Pedidos</button></li>
               <li><button onClick={() => navigate('/carta')} className={link}>Carta</button></li>
+              <li><button onClick={() => navigate('/alergenos')} className={link}>Alérgenos</button></li>
             </ul>
             {/* Las dos sedes en la misma columna, alineadas, con su pin */}
             <ul className="flex flex-col gap-5">

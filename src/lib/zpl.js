@@ -2,6 +2,7 @@ import { hourOf } from './kitchenSlots.js'
 import { LOGO_RASTER } from './escposLogo.js'
 import { price, wrap, hora, CHANNEL, sections, paymentText } from './escpos.js'
 import { IVA_RATE, vatOf, fiscalOf } from './fiscal.js'
+import { invoiceNumber } from './orderNumber.js'
 
 /* ═══════════════════════════════════════════════════════════════
    ETIQUETAS EN ZPL (Zebra GC420t y compañía, 10×15 cm, 203 ppp)
@@ -201,7 +202,7 @@ export function receiptZpl(order, { siteUrl } = {}) {
   head(t, order, { logo: true })
   const fiscal = fiscalOf(order.location_id)
   if (fiscal) {
-    t.text(`Factura simplificada ${order.ref}`, { size: 22, align: 'C' })
+    t.text(`Factura simplificada ${invoiceNumber(order)}`, { size: 22, align: 'C' })
     t.text(`${fiscal.name} · NIF ${fiscal.nif}`, { size: 22, align: 'C' })
     if (fiscal.address) t.text(fiscal.address, { size: 22, align: 'C' })
     t.rule(2)

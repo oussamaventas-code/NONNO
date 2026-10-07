@@ -2,6 +2,7 @@ import { price } from '../lib/format'
 import { STATIONS, stationOf } from '../data/menu'
 import { hourOf } from '../lib/kitchenSlots'
 import { IVA_RATE, vatOf, fiscalOf } from '../lib/fiscal'
+import { invoiceNumber } from '../lib/orderNumber'
 import qrcode from 'qrcode-generator'
 import { queuePrint } from './api'
 /* Logo en blanco y negro puro (la versión neón tiene fondo negro y en
@@ -277,7 +278,7 @@ function taxRows(order) {
 }
 function fiscalHead(order) {
   const f = fiscalOf(order.location_id)
-  return f ? `<div class="center sub">FACTURA SIMPLIFICADA ${esc(order.ref)}<br>${esc(f.name)} · NIF ${esc(f.nif)}${f.address ? `<br>${esc(f.address)}` : ''}</div><div class="rule"></div>` : ''
+  return f ? `<div class="center sub">FACTURA SIMPLIFICADA ${esc(invoiceNumber(order))}<br>${esc(f.name)} · NIF ${esc(f.nif)}${f.address ? `<br>${esc(f.address)}` : ''}</div><div class="rule"></div>` : ''
 }
 
 export function buildReceiptHtml(order) {

@@ -67,7 +67,7 @@ export default function Carta({ locationIds, esDireccion, onError, onChanged }) 
             {soldOutHere.length || outIngredients.length
               ? `${soldOutHere.length} agotado${soldOutHere.length === 1 ? '' : 's'}${outIngredients.length ? ` · ${outIngredients.length} ingrediente${outIngredients.length === 1 ? '' : 's'} sin stock (${discarded.length} descartada${discarded.length === 1 ? '' : 's'})` : ''} en ${getLocation(locId).name}`
               : `Todo disponible en ${getLocation(locId).name}`}
-            {!esDireccion && ' · los precios los cambia la dirección'}
+            {!esDireccion && ' · los precios los cambia el super admin'}
           </p>
         </div>
         <label className="flex items-center gap-2 rounded-md border border-tomate/50 bg-masa px-4 py-2 focus-within:border-tomate">

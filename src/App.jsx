@@ -4,6 +4,7 @@ import MobileNav from './components/MobileNav'
 import Entrada from './components/Entrada'
 import ElegirPedido from './components/ElegirPedido'
 import Menu from './components/Menu'
+import AllergenTable from './components/AllergenTable'
 import Footer from './components/Footer'
 
 import CartDrawer from './components/CartDrawer'
@@ -25,6 +26,7 @@ import { useMenuOverrides } from './hooks/useMenuOverrides'
  *   "/"       ENTRADA          nombre, una frase y PEDIR.
  *   "/pedir"  ELECCIÓN         sede y recoger / entrega.
  *   "/carta"  MENÚ             categorías, productos, añadir y carrito.
+ *   "/alergenos"                 tabla de alérgenos de toda la carta.
  *   "/p/…"    seguimiento del pedido.
  * Los sistemas globales (carrito, modal, checkout, avisos) viven
  * fuera del flujo de scroll y se muestran/ocultan según el estado.
@@ -54,6 +56,8 @@ export default function App() {
           <NewPassword />
         ) : path === '/carta' ? (
           <Menu />
+        ) : path === '/alergenos' ? (
+          <AllergenTable />
         ) : path === '/pedir' ? (
           <ElegirPedido />
         ) : (

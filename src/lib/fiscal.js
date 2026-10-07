@@ -4,14 +4,20 @@
    Hostelería: IVA del 10 %, ya incluido en los precios (también en el
    envío, que va con la comida). El ticket desglosa base e IVA.
 
-   TODO: rellenar con la documentación del dueño (razón social, NIF/CIF
-   y domicilio fiscal de cada sede). Mientras el NIF esté a null, el
-   ticket no imprime el bloque fiscal (sí el desglose del IVA).
+   Las dos sedes son de la misma sociedad (mismo CIF y domicilio
+   fiscal). Si una sede pone el NIF a null, su ticket deja de imprimir
+   el bloque fiscal (sí el desglose del IVA).
    ═══════════════════════════════════════════════════════════════ */
 
+const NOCARPIZZAS = {
+  name: 'NOCARPIZZAS S.L.',
+  nif: 'B22487224',
+  address: 'C/ La Gloria 67 B, 30150 La Alberca (Murcia)',
+}
+
 const FISCAL = {
-  sangonera: { name: null, nif: null, address: null },
-  'santo-angel': { name: null, nif: null, address: null },
+  sangonera: NOCARPIZZAS,
+  'santo-angel': NOCARPIZZAS,
 }
 
 export const IVA_RATE = 10

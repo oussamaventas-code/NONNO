@@ -66,8 +66,8 @@ export const fetchDisplay = (locationId) =>
   request(`/api/display?location=${encodeURIComponent(locationId)}`)
 
 /** { from, to, location? }. Solo la dirección puede verlo (ver api/billing.js). */
-export const fetchBilling = ({ from, to, location }) => {
-  const qs = new URLSearchParams({ from, to, ...(location ? { location } : {}) })
+export const fetchBilling = ({ from, to, location, tickets = false }) => {
+  const qs = new URLSearchParams({ from, to, ...(location ? { location } : {}), ...(tickets ? { export: '1' } : {}) })
   return request(`/api/billing?${qs}`)
 }
 

@@ -44,11 +44,10 @@ export const SITE = {
   /* Datos fiscales para los tiques que el cliente descarga desde
      "Mi cuenta". Con razón social y NIF el documento sale como
      FACTURA SIMPLIFICADA (IVA desglosado); sin ellos, como
-     "Justificante de pedido".
-     TODO: RELLENAR CON LOS DATOS FISCALES REALES DE NONNO. */
+     "Justificante de pedido". Mismos datos que src/lib/fiscal.js. */
   billing: {
-    legalName: null, // p. ej. 'Nombre del titular o Sociedad S.L.'
-    nif: null,       // p. ej. 'B12345678'
+    legalName: 'NOCARPIZZAS S.L.',
+    nif: 'B22487224',
     vatRate: 0.10,   // IVA de hostelería en España
   },
 

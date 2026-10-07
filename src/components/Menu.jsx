@@ -5,6 +5,7 @@ import { MENU_INTRO, CATEGORY_BLURBS } from '../data/content'
 import { price } from '../lib/format'
 import { useActions } from '../store/StoreContext'
 import ProductCard from './ProductCard'
+import { navigate } from '../lib/router'
 import { useGSAP, STAGGER, onEnter, revealFrom } from '../lib/motion'
 
 /**
@@ -109,6 +110,11 @@ export default function Menu() {
 
         <p className="mt-10 mx-auto max-w-2xl text-center font-sans font-medium text-sm text-tomate/75 leading-snug">
           {MENU_INTRO} Toca un plato para personalizarlo y añadirlo a tu pedido.
+        </p>
+        <p className="mt-3 text-center">
+          <button onClick={() => navigate('/alergenos')} className="mono normal-case inline-flex items-center gap-1.5 text-tomate hover:text-horno transition-colors underline underline-offset-4">
+            ¿Alergias? Mira la tabla de alérgenos
+          </button>
         </p>
       </div>
     </section>

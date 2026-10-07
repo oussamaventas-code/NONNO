@@ -3,6 +3,8 @@ import { X, Minus, Plus, Leaf, Flame as FlameIcon, Check } from 'lucide-react'
 import { getProduct, isPizza, isSoldOut, isExtraOut, missingIngredients, PIZZA_SIZE } from '../data/menu'
 import ProductImage from './ProductImage'
 import ToppingPicker from './ToppingPicker'
+import ProductAllergens from './ProductAllergens'
+import { navigate } from '../lib/router'
 import { unitPrice } from '../lib/pricing'
 import { price } from '../lib/format'
 import { useStore, useActions } from '../store/StoreContext'
@@ -227,6 +229,12 @@ export default function ProductModal() {
               <ToppingPicker extraIds={product.extras} selected={extraIds} onToggle={toggleExtra} title="¿AÑADIR ALGO?" disabledIds={outExtras} />
             </div>
           )}
+
+          <ProductAllergens
+            productId={product.id}
+            locationId={locationId}
+            onOpenTable={() => { closeProduct(); navigate('/alergenos') }}
+          />
 
           <div className="mt-7">
             <label htmlFor="product-note" className="mono text-tomate mb-2 block">

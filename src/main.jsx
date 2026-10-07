@@ -13,20 +13,21 @@ const DisplayBoard = lazy(() => import('./admin/DisplayBoard'))
 const DriverPortal = lazy(() => import('./driver/DriverPortal'))
 
 /* /admin        → login normal
+   /superadmin   → el mismo panel con la puerta del super admin (las dos sedes)
    /admin/sangonera, /admin/santo-angel → cada local tiene su enlace.
    /pantalla/sangonera → pantalla de pedidos para la TV del local.
    /repartidor   → portal del repartidor (PIN, escanear el QR del ticket, cobrar).
    La dirección solo decide qué se ve en el login: quien manda sigue
    siendo la contraseña. */
 const ruta = window.location.pathname.replace(/\/+$/, '')
-const seccion = ['/admin', '/pantalla', '/repartidor'].find((b) => ruta === b || ruta.startsWith(`${b}/`))
+const seccion = ['/admin', '/superadmin', '/pantalla', '/repartidor'].find((b) => ruta === b || ruta.startsWith(`${b}/`))
 const sedeEnRuta = seccion && ruta.startsWith(`${seccion}/`) ? ruta.slice(seccion.length + 1) : null
 
 /* La web del cliente se instala como app. El panel también, con su
    propio icono ("Nonno Panel"): en iPhone es la única forma de que le
    lleguen al jefe las notificaciones (pedido nuevo, "¿cerramos?"). */
 if (!seccion) setupInstall()
-else if (seccion === '/admin') {
+else if (seccion === '/admin' || seccion === '/superadmin') {
   const add = (tag, attrs) => document.head.appendChild(Object.assign(document.createElement(tag), attrs))
   add('link', { rel: 'manifest', href: '/manifest-panel.webmanifest' })
   add('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' })
@@ -52,7 +53,9 @@ createRoot(document.getElementById('root')).render(
       >
         {seccion === '/repartidor' ? <DriverPortal /> : seccion === '/pantalla'
           ? <Admin sedeEnRuta={sedeEnRuta} base="/pantalla" title="PANTALLA DE PEDIDOS" Inside={DisplayBoard} />
-          : <Admin sedeEnRuta={sedeEnRuta} />}
+          : seccion === '/superadmin'
+            ? <Admin sedeEnRuta={sedeEnRuta} base="/superadmin" title="SUPER ADMIN" />
+            : <Admin sedeEnRuta={sedeEnRuta} />}
       </Suspense>
     ) : (
       <StoreProvider>

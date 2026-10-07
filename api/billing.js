@@ -1,13 +1,16 @@
 import { db, isConfigured } from './_lib/supabase.js'
 import { requireSession, SCOPE_ALL } from './_lib/auth.js'
 import { getLocation } from '../src/data/locations.js'
-import { serviceDay, serviceDayRange } from '../src/lib/orderNumber.js'
+import { serviceDay, serviceDayRange, invoiceNumber } from '../src/lib/orderNumber.js'
 import cashHandler from './_lib/cashHandler.js'
 
 /**
- * GET /api/billing?from=2026-09-01&to=2026-09-27[&location=sangonera]
+ * GET /api/billing?from=2026-09-01&to=2026-09-27[&location=sangonera][&export=1]
  *
- * Solo la dirección (sesión con las dos sedes) puede verlo: es dinero,
+ * Con export=1 trae también cada ticket (libro de facturas emitidas)
+ * para la descarga del gestor.
+ *
+ * Solo el super admin (sesión con las dos sedes) puede verlo: es dinero,
  * no algo que necesite ver el mostrador de un local. from/to son días
  * de servicio en hora de Madrid, ambos incluidos. Sin parámetros,
  * el día de hoy.
@@ -119,7 +122,7 @@ export default async function handler(req, res) {
   const session = requireSession(req, res)
   if (!session) return
   if (session.scope !== SCOPE_ALL) {
-    return res.status(403).json({ error: 'La facturación solo la puede ver la dirección.' })
+    return res.status(403).json({ error: 'La facturación solo la puede ver el super admin.' })
   }
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
@@ -133,21 +136,38 @@ export default async function handler(req, res) {
 
   const locationId = req.query?.location && getLocation(req.query.location) ? req.query.location : null
 
+  /* Para el gestor (?export=1) hacen falta además el número y la hora
+     de cada ticket: el libro de facturas emitidas. */
+  const wantsTickets = req.query?.export === '1'
   const BASE = 'created_at, status, location_id, mode, channel, payment_status, payment_method, subtotal, discount, delivery_fee, total, items'
-  const run = (columns) => {
-    let query = db()
-      .from('orders')
-      .select(columns)
-      .gte('created_at', new Date(serviceDayRange(from)[0]).toISOString())
-      .lt('created_at', new Date(serviceDayRange(to)[1]).toISOString())
-      .order('created_at', { ascending: true })
-      .limit(10000)
-    if (locationId) query = query.eq('location_id', locationId)
-    return query
+    + (wantsTickets ? ', ref, service_day' : '')
+  /* Supabase devuelve como mucho 1000 filas por consulta: un trimestre
+     de las dos sedes pasa de eso, así que se pide por páginas. */
+  const PAGE = 1000
+  const run = async (columns) => {
+    const rows = []
+    for (let start = 0; start < 50000; start += PAGE) {
+      let query = db()
+        .from('orders')
+        .select(columns)
+        .gte('created_at', new Date(serviceDayRange(from)[0]).toISOString())
+        .lt('created_at', new Date(serviceDayRange(to)[1]).toISOString())
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(start, start + PAGE - 1)
+      if (locationId) query = query.eq('location_id', locationId)
+      const { data, error } = await query
+      if (error) return { data: null, error }
+      rows.push(...data)
+      if (data.length < PAGE) break
+    }
+    return { data: rows, error: null }
   }
   let { data, error } = await run(`${BASE}, cancel_reason`)
   /* Sin la columna del motivo (supabase/fase2.sql): se sigue sin él */
   if (error?.code === '42703') ({ data, error } = await run(BASE))
+  /* Ni el día de servicio (supabase/numero-pedido.sql): se calcula de la hora */
+  if (error?.code === '42703') ({ data, error } = await run(BASE.replace(', service_day', '')))
   if (error) {
     console.error('Error calculando la facturación:', error)
     return res.status(500).json({ error: 'No hemos podido calcular la facturación.' })
@@ -169,5 +189,25 @@ export default async function handler(req, res) {
   }
 
   res.setHeader('Cache-Control', 'no-store')
-  return res.status(200).json({ from, to, location: locationId, ...aggregateBilling(data), closings })
+  const tickets = wantsTickets
+    ? data.map((o) => ({
+      ref: o.ref,
+      invoice: invoiceNumber(o),
+      day: o.service_day || serviceDay(Date.parse(o.created_at)),
+      createdAt: o.created_at,
+      locationId: o.location_id,
+      status: o.status,
+      cancelReason: o.cancel_reason || null,
+      mode: o.mode,
+      channel: o.channel,
+      paid: o.payment_status === 'pagado',
+      paymentMethod: o.payment_method || null,
+      subtotal: round(o.subtotal),
+      discount: round(o.discount),
+      deliveryFee: round(o.delivery_fee),
+      total: round(o.total),
+    }))
+    : undefined
+
+  return res.status(200).json({ from, to, location: locationId, ...aggregateBilling(data), closings, tickets })
 }
