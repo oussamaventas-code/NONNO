@@ -679,8 +679,10 @@ export default function AdminPanel({ scope, onSignedOut }) {
             <Bell className="w-5 h-5" /> Toca aquí para activar el sonido de los pedidos nuevos
           </button>
         )}
+        {/* Flotando arriba: se ve aunque estés bajado en una columna (si no,
+            parece que el botón no ha hecho nada) */}
         {error && (
-          <p className="palert mb-5 flex items-start justify-between gap-3">
+          <p className="palert !bg-papel !border-2 fixed inset-x-3 top-3 z-[70] mx-auto max-w-xl flex items-start justify-between gap-3 shadow-float" role="alert">
             <span>{error}</span>
             <button onClick={() => setError(null)} className="underline flex-shrink-0">Cerrar</button>
           </p>
