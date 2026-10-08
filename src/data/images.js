@@ -93,6 +93,7 @@ export const PHOTO = {
   calzoneOreo: 'own:calzone-oreo',
   calzoneTostarica: 'own:calzone-tostarica',
   calzonePistacho: 'own:calzone-pistacho',
+  calzoneLotus: 'own:calzone-lotus',
 
   // Entrantes
   panDeAjo: '1608198093002-ad4e005484ec',

@@ -367,7 +367,7 @@ export const PRODUCTS = [
     name: 'Sweet Lotus',
     description: 'Base de masa horneada, crema de Lotus y galleta Lotus triturada.',
     ingredients: ['Crema de Lotus', 'Galleta Lotus triturada'],
-    image: PHOTO.lotusDessert,
+    image: PHOTO.calzoneLotus,
     price: 8.9,
     vegetarian: true,
   },
