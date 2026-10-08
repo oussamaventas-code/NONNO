@@ -98,18 +98,20 @@ export const PHOTO = {
   nonnitosNutella: 'own:nonnitos-nutella',
   nonnitosPistacho: 'own:nonnitos-pistacho',
   nonnitosOreo: 'own:nonnitos-oreo',
+  provolone: 'own:provolone',
+  ovniCamembert: 'own:ovni-camembert',
 
   // Entrantes
-  panDeAjo: '1608198093002-ad4e005484ec',
+  panDeAjo: 'own:pan-de-ajo',
   ensalada: '1540189549336-e6e99c3679fe',
-  alitas: '1580217593608-61931cefc821',
+  alitas: 'own:alitas',
   patatasCheeseBacon: '1743193711514-4f7bc5d78d4d',
-  patatasCheeseKebab: '1762284513031-3d7ad15562bc',
-  patatasFritas: '1606755456206-b25206cde27e',
-  boniatos: '1745792714512-77cffdb16020',
-  nuggets: '1627662055487-551888db3aa8',
-  tequenos: '1778850855907-8fbf7b089621',
-  palitosMozzarella: '1778449665117-2c607bbc7415',
+  patatasCheeseKebab: 'own:patatas-cheese-kebab',
+  patatasFritas: 'own:patatas-fritas',
+  boniatos: 'own:boniatos',
+  nuggets: 'own:nuggets',
+  tequenos: 'own:tequenos',
+  palitosMozzarella: 'own:palitos-mozzarella',
 
   // Bebidas
   limonada: '1621263764928-df1444c5e859',
