@@ -137,6 +137,28 @@ export const LOCATIONS = [
   },
 ]
 
+const BASE_LOCATION_FIELDS = Object.fromEntries(LOCATIONS.map((location) => [
+  location.id,
+  { address: location.address, mapsUrl: location.mapsUrl, coords: location.coords, hours: location.hours },
+]))
+
+export function applyLocationOverrides(overrides = {}) {
+  for (const location of LOCATIONS) {
+    const base = BASE_LOCATION_FIELDS[location.id]
+    const value = overrides?.[location.id] || {}
+    location.address = typeof value.address === 'string' ? value.address : base.address
+    location.mapsUrl = typeof value.mapsUrl === 'string' ? value.mapsUrl : base.mapsUrl
+    location.hours = typeof value.hours === 'string' ? value.hours : base.hours
+    const hasCoords = value.lat !== '' && value.lat != null && value.lng !== '' && value.lng != null
+    const lat = hasCoords ? Number(value.lat) : NaN
+    const lng = hasCoords ? Number(value.lng) : NaN
+    location.coords = hasCoords && Number.isFinite(lat) && Number.isFinite(lng)
+      ? { lat, lng }
+      : base.coords
+    if (location.delivery) location.delivery.origin = location.coords
+  }
+}
+
 export const getLocation = (id) => LOCATIONS.find((l) => l.id === id) || null
 
 

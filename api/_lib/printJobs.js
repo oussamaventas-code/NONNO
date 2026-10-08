@@ -224,9 +224,16 @@ async function agent(req, res, action) {
         }
         continue
       }
-      if (r.ok && job.kind === 'comanda' && job.order_id) {
-        const { error: orderError } = await db().from('orders').update({ printed_at: now }).eq('id', job.order_id)
-        if (orderError) throw orderError
+      if (job.kind === 'comanda' && job.order_id) {
+        if (r.ok) {
+          const { error: orderError } = await db().from('orders').update({ printed_at: now, print_status: 'impreso' }).eq('id', job.order_id).eq('location_id', locationId)
+          if (orderError && orderError.code !== '42703') throw orderError
+        } else {
+          // Fallo en la impresora física (WiFi / IP / atasco / Excelvan ZJ-8220WIFI):
+          // Marcamos el pedido como 'Pendiente de imprimir' sin bloquear la base de datos ni congelar el TPV
+          const { error: orderError } = await db().from('orders').update({ print_status: 'Pendiente de imprimir' }).eq('id', job.order_id).eq('location_id', locationId)
+          if (orderError && orderError.code !== '42703') console.error('Error actualizando print_status en orders:', orderError)
+        }
       }
     }
     return res.status(200).json({ ok: true })

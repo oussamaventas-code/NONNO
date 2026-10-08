@@ -13,7 +13,7 @@
       name="description"
       content="Pizza artesanal en Sangonera la Verde y Santo Ángel. Masa, fuego e ingredientes de verdad. Elige tu sede, personaliza tu pizza y pide online."
     />
-    <link rel="canonical" href="https://nonno-beta.vercel.app/" />
+    <link rel="canonical" href="https://nonno-pizzeria.netlify.app/" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="restaurant" />
@@ -24,10 +24,10 @@
       content="Masa, fuego e ingredientes de verdad. Dos sedes, un mismo Nonno."
     />
     <meta property="og:locale" content="es_ES" />
-    <meta property="og:url" content="https://nonno-beta.vercel.app/" />
+    <meta property="og:url" content="https://nonno-pizzeria.netlify.app/" />
     <meta
       property="og:image"
-      content="https://nonno-beta.vercel.app/og-nonno.jpg"
+      content="https://nonno-pizzeria.netlify.app/og-nonno.jpg"
     />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -44,6 +44,78 @@
          Se pone antes de pintar para que no haya parpadeo. -->
     <script>
       document.documentElement.classList.add('tema-negro');
+    </script>
+      <!-- Schema.org JSON-LD para Restaurant / Pizzeria -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Restaurant",
+      "name": "La Pizza de Nonno",
+      "image": "https://nonno-pizzeria.netlify.app/og-nonno.jpg",
+      "@id": "https://nonno-pizzeria.netlify.app/#restaurant",
+      "url": "https://nonno-pizzeria.netlify.app",
+      "telephone": "+34 600 000 000",
+      "priceRange": "€€",
+      "servesCuisine": ["Italian", "Pizza", "Artesanal"],
+      "acceptsReservations": "false",
+      "hasMenu": "https://nonno-pizzeria.netlify.app/carta",
+      "currenciesAccepted": "EUR",
+      "paymentAccepted": "Cash, Credit Card",
+      "department": [
+        {
+          "@type": "Restaurant",
+          "name": "La Pizza de Nonno - Sangonera la Verde",
+          "telephone": "+34 611 123 456",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Calle Mayor, 12",
+            "addressLocality": "Sangonera la Verde",
+            "addressRegion": "Murcia",
+            "postalCode": "30833",
+            "addressCountry": "ES"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 37.935,
+            "longitude": -1.182
+          },
+          "openingHoursSpecification": [
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+              "opens": "19:30",
+              "closes": "23:30"
+            }
+          ]
+        },
+        {
+          "@type": "Restaurant",
+          "name": "La Pizza de Nonno - Santo Ángel",
+          "telephone": "+34 622 987 654",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Av. Juan Carlos I, 24",
+            "addressLocality": "Santo Ángel",
+            "addressRegion": "Murcia",
+            "postalCode": "30151",
+            "addressCountry": "ES"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 37.952,
+            "longitude": -1.125
+          },
+          "openingHoursSpecification": [
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+              "opens": "19:30",
+              "closes": "23:30"
+            }
+          ]
+        }
+      ]
+    }
     </script>
   </head>
   <body>

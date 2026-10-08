@@ -7,6 +7,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import { gsap, useGSAP, EASE, DUR, revealFrom, guard } from '../lib/motion'
 import { followLink } from '../lib/router'
 import { useAccount } from '../store/AccountContext'
+import { logoSrc } from '../data/siteContent'
 
 /**
  * Panel de navegación móvil a pantalla completa.
@@ -55,7 +56,7 @@ export default function MobileNav() {
       className="fixed inset-0 z-[110] bg-masa text-tomate flex flex-col"
     >
       <div className="shell flex items-center justify-between pt-6 pb-4">
-        <img src="/logo-nonno.png" alt="La Pizza de Nonno" className="h-14 w-14 rounded-full object-cover border-[3px] border-tomate" />
+        <img src={logoSrc()} alt="La Pizza de Nonno" className="h-14 w-14 rounded-full object-cover border-[3px] border-tomate" />
         <button
           onClick={() => toggleMobileNav(false)}
           className="inline-flex items-center justify-center w-11 h-11 rounded-lg border-2 border-tomate"

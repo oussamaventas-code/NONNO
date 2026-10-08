@@ -21,6 +21,7 @@ import KitchenBoard from './KitchenBoard'
 import { price } from '../lib/format'
 import { isThisServiceDay } from '../lib/orderNumber'
 import { LOCATIONS } from '../data/locations'
+import { logoSrc } from '../data/siteContent'
 
 /* Pestañas del panel y qué equipo ve cuáles. Cada ordenador o tablet
    se configura una vez (menú ⚙ → Este equipo) y solo enseña lo suyo:
@@ -513,7 +514,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
         {/* ── Móvil: una sola línea. Sección, sede, tienda y ajustes ── */}
         <div className="md:hidden">
           <div className="flex items-center gap-3 px-4 h-14">
-            <img src="/logo-nonno.png" alt="" width="36" height="36" className="h-9 w-9 flex-shrink-0 rounded-full object-cover border border-tomate" />
+            <img src={logoSrc()} alt="" width="36" height="36" className="h-9 w-9 flex-shrink-0 rounded-full object-cover border border-tomate" />
             <div className="min-w-0 flex-1">
               <p className="font-sans font-extrabold uppercase text-lg leading-none text-carbon truncate">{viewTab?.label || 'Cocina'}</p>
               <p className="mt-1 mono normal-case text-carbon/55 truncate">
@@ -563,7 +564,7 @@ export default function AdminPanel({ scope, onSignedOut }) {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
               <img
-                src="/logo-nonno.png"
+                src={logoSrc()}
                 alt=""
                 width="56"
                 height="56"

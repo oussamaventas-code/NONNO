@@ -9,8 +9,10 @@ import './styles/index.css'
 /* El panel de cocina solo lo carga quien entra en /admin: no lastra
    la web pública, que es la que tiene que abrir rápido en un móvil. */
 const Admin = lazy(() => import('./admin/Admin'))
+const Superadmin = lazy(() => import('./admin/Superadmin'))
 const DisplayBoard = lazy(() => import('./admin/DisplayBoard'))
 const DriverPortal = lazy(() => import('./driver/DriverPortal'))
+const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'))
 
 /* /admin        → login normal
    /admin/sangonera, /admin/santo-angel → cada local tiene su enlace.
@@ -19,7 +21,7 @@ const DriverPortal = lazy(() => import('./driver/DriverPortal'))
    La dirección solo decide qué se ve en el login: quien manda sigue
    siendo la contraseña. */
 const ruta = window.location.pathname.replace(/\/+$/, '')
-const seccion = ['/admin', '/pantalla', '/repartidor'].find((b) => ruta === b || ruta.startsWith(`${b}/`))
+const seccion = ['/superadmin', '/admin', '/pantalla', '/repartidor'].find((b) => ruta === b || ruta.startsWith(`${b}/`))
 const sedeEnRuta = seccion && ruta.startsWith(`${seccion}/`) ? ruta.slice(seccion.length + 1) : null
 
 /* La web del cliente se instala como app. El panel también, con su
@@ -38,6 +40,8 @@ else if (seccion === '/admin') {
   add('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' })
   add('meta', { name: 'apple-mobile-web-app-title', content: 'Nonno Reparto' })
   document.title = 'Nonno · Repartidores'
+} else if (seccion === '/superadmin') {
+  document.title = 'Nonno · Superadmin'
 }
 
 createRoot(document.getElementById('root')).render(
@@ -50,9 +54,11 @@ createRoot(document.getElementById('root')).render(
           </div>
         }
       >
-        {seccion === '/repartidor' ? <DriverPortal /> : seccion === '/pantalla'
-          ? <Admin sedeEnRuta={sedeEnRuta} base="/pantalla" title="PANTALLA DE PEDIDOS" Inside={DisplayBoard} />
-          : <Admin sedeEnRuta={sedeEnRuta} />}
+        <ProtectedRoute section={seccion} sedeEnRuta={sedeEnRuta}>
+          {seccion === '/superadmin' ? <Superadmin /> : seccion === '/repartidor' ? <DriverPortal /> : seccion === '/pantalla'
+            ? <Admin sedeEnRuta={sedeEnRuta} base="/pantalla" title="PANTALLA DE PEDIDOS" Inside={DisplayBoard} />
+            : <Admin sedeEnRuta={sedeEnRuta} />}
+        </ProtectedRoute>
       </Suspense>
     ) : (
       <StoreProvider>

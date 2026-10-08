@@ -1,6 +1,6 @@
 # NONNO — cambios y puesta en marcha
 
-**Fecha:** 5 de octubre de 2026
+**Fecha:** 6 de octubre de 2026
 
 **Estado:** cambios preparados en esta rama; la web no se ha desplegado.
 
@@ -13,13 +13,15 @@
 - **Mostrador y carta:** guía integrada para atender pedidos por teléfono y mejoras de textos, reglas del Club Nonno y avisos relacionados con alérgenos. Los datos de las sedes se conservaron como estaban.
 - **Operación y presentación:** documentación actualizada para los nuevos flujos, protección de cabeceras web y correcciones de reintentos para que una respuesta perdida no deje sin recuperar la impresión automática.
 - **Documentación:** puesta al día de `PEDIDOS.md`, guía de instalación de impresoras y este resumen.
+- **Superadmin y páginas públicas:** panel móvil en `/superadmin` para imágenes, carta y precios, alérgenos, logos, sedes, privacidad e icono de la app; páginas de alérgenos y privacidad, cookies ilustradas como pizza y página visual de error 404.
+- **Despliegue en Netlify:** compatibilidad para mantener las API existentes en `/api/*`, cabeceras de seguridad, rutas de la SPA y recordatorio programado de cierre; el proyecto anterior de Netlify es otra aplicación y se mantiene intacto.
 
 ## Cómo usarlo
 
 ### Instalar la impresora automática
 
 1. Ejecuta `supabase/impresora.sql` en el SQL Editor del proyecto Supabase.
-2. Configura `PRINT_AGENT_SECRET` como variable protegida de Vercel y despliega la web cuando se apruebe.
+2. Configura `PRINT_AGENT_SECRET` como variable protegida de Vercel o Netlify y despliega la web cuando se apruebe.
 3. En el ordenador Windows del local, descarga `public/nonno-impresora.zip` o el ZIP desde **Configuración → Impresoras** del panel y descomprímelo.
 4. En el panel, crea un código de instalación para la sede. Ejecuta `INSTALAR NONNO IMPRESORA.bat`, indica la sede, pega el código y selecciona las impresoras de cocina y mostrador.
 5. Envía una prueba desde el panel. El ordenador, la sesión de Windows y las impresoras deben estar disponibles durante el servicio.
@@ -33,7 +35,7 @@ Los productos leen sus fotos desde `src/data/images.js`; los archivos propios se
 ### Activar avisos al cliente
 
 1. Ejecuta `supabase/notificaciones-cliente.sql` en Supabase.
-2. En Vercel, configura credenciales protegidas para **SMS Gateway** (`SMS_GATEWAY_USER`, `SMS_GATEWAY_PASSWORD`) o **Twilio SMS** (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`). Para WhatsApp, registra el remitente de Twilio y configura las plantillas aprobadas `TWILIO_WA_RECIBIDO`, `TWILIO_WA_LISTO`, `TWILIO_WA_REPARTO` y `TWILIO_WA_CANCELADO`.
+2. En Vercel o Netlify, configura credenciales protegidas para **SMS Gateway** (`SMS_GATEWAY_USER`, `SMS_GATEWAY_PASSWORD`) o **Twilio SMS** (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`). Para WhatsApp, registra el remitente de Twilio y configura las plantillas aprobadas `TWILIO_WA_RECIBIDO`, `TWILIO_WA_LISTO`, `TWILIO_WA_REPARTO` y `TWILIO_WA_CANCELADO`.
 3. Despliega tras la aprobación. Comprueba el estado en **Configuración → Avisos a clientes**. Desde ahí se puede enviar un SMS real de prueba (el proveedor puede cobrarlo) o reintentar los avisos fallidos.
 
 Twilio aceptando el mensaje no confirma que el teléfono lo haya recibido. El fallback a SMS ocurre si la solicitud inicial de WhatsApp es rechazada.
@@ -43,13 +45,17 @@ Twilio aceptando el mensaje no confirma que el teléfono lo haya recibido. El fa
 1. Ejecuta `supabase/mantenimiento.sql` en Supabase.
 2. Tras el despliegue, abre el panel y la pestaña **Mantenimiento** para añadir o editar los registros por sede y mes.
 
+### Acceder al Superadmin
+
+Configura en las variables privadas de Vercel o Netlify `SUPERADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`. Ejecuta `supabase/superadmin.sql` y `supabase/carta.sql`; después inicia sesión en `/superadmin`. La guía completa está en `SUPERADMIN.md`.
+
 ### Verificar cambios locales
 
 Desde la carpeta del proyecto: `npm install` y `npm run dev`. La vista de carta local es `http://127.0.0.1:5173/carta`. La compilación de producción comprobada para esta rama es `npm run build`.
 
 ## Pendiente antes de usar en producción
 
-- Aplicar las tres migraciones indicadas a la base de datos de producción y configurar las variables protegidas necesarias en Vercel; no se han tocado servicios externos.
+- Aplicar las migraciones indicadas a la base de datos de producción y configurar las variables protegidas necesarias en Netlify; el proyecto anterior de Netlify no se modificó.
 - Instalar el agente en el equipo real de cada local y probar con sus impresoras, una comanda, ticket, reintento, edición y cancelación.
 - Configurar y comprobar SMS/WhatsApp con credenciales reales. No se han enviado mensajes de prueba ni pedidos reales desde este trabajo.
 - Confirmar con Nonno la matriz oficial de alérgenos y contaminación cruzada y revisar las fotos aprobadas de los productos. El código no inventa esos datos.

@@ -31,7 +31,8 @@ export default async function handler(req, res) {
   if (!isConfigured()) {
     return res.status(503).json({ error: 'Base de datos no configurada.' })
   }
-  const session = requireSession(req, res)
+  // Roles autorizados para alterar comandas y pedidos: Administrador y Cajero de sede
+  const session = requireSession(req, res, { roles: ['superadmin', 'admin', 'cajero'] })
   if (!session) return
 
   const { id } = req.query
@@ -152,7 +153,7 @@ async function editOrder(req, res, id, scoped) {
     printed_at: null,
   }
 
-  const { error: updateError } = await db().from('orders').update(patch).eq('id', id)
+  const { error: updateError } = await scoped(db().from('orders').update(patch).eq('id', id))
   if (updateError) {
     console.error('Error editando el pedido:', updateError)
     return res.status(500).json({ error: 'No hemos podido actualizar el pedido.' })
@@ -167,7 +168,7 @@ async function editOrder(req, res, id, scoped) {
   }
 
   if (!assigned.ok) {
-    await db().from('orders').update(pick(current, EDITABLE)).eq('id', id)
+    await scoped(db().from('orders').update(pick(current, EDITABLE)).eq('id', id))
     return res.status(409).json({
       error: `${SLOT_ERRORS[assigned.reason] || 'No hemos podido actualizar el pedido.'} El pedido se queda como estaba.`,
     })

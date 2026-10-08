@@ -1,5 +1,6 @@
 import { price } from './format'
 import { hourOf } from './kitchenSlots'
+import { logoSrc } from '../data/siteContent'
 
 /* ═══════════════════════════════════════════════════════════════
    Ticket del pedido como imagen, para que el cliente lo guarde en el
@@ -40,7 +41,7 @@ function wrap(ctx, text, max) {
  * @returns {Promise<Blob>} imagen PNG
  */
 export async function ticketImage(order, arrivalAt) {
-  const logo = await loadImage('/logo-nonno.png')
+  const logo = await loadImage(logoSrc())
   const delivery = order.mode === 'delivery'
   const items = order.items || []
 

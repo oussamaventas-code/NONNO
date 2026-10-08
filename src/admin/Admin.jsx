@@ -3,6 +3,7 @@ import { Lock } from 'lucide-react'
 import { getSession, login } from './api'
 import { getLocation } from '../data/locations'
 import AdminPanel from './AdminPanel'
+import { logoSrc } from '../data/siteContent'
 
 /* Color de cada local, para que el enlace de cada cocina se
    reconozca de un vistazo antes incluso de entrar. */
@@ -97,7 +98,7 @@ export default function Admin({ sedeEnRuta = null, base = '/admin', title = 'PAN
         <div className="w-full max-w-sm">
           <div className="text-center mb-7">
             <img
-              src="/logo-nonno.png"
+              src={logoSrc()}
               alt="La Pizza de Nonno"
               width="88"
               height="88"

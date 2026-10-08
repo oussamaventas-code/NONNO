@@ -39,7 +39,7 @@ export function setupInstall() {
     add('meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black' })
     document.querySelector('link[rel="apple-touch-icon"]')?.setAttribute('href', '/app/apple-touch-icon.png')
   } else {
-    add('link', { rel: 'manifest', href: '/manifest.webmanifest' })
+    add('link', { rel: 'manifest', href: '/api/site-manifest' })
   }
 
   window.addEventListener('beforeinstallprompt', (e) => {

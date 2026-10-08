@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { X, Star, MapPin, Package, Clock } from 'lucide-react'
 import ScooterIcon from './ScooterIcon'
 import { LOCATIONS } from '../data/locations'
+import { logoSrc } from '../data/siteContent'
 import { useStore, useActions } from '../store/StoreContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
@@ -64,7 +65,7 @@ export default function LocationPrompt() {
 
           <div className="text-center pr-6 pl-6">
             <img
-              src="/logo-nonno.png"
+              src={logoSrc()}
               alt=""
               width="64"
               height="64"

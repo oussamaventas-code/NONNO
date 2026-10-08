@@ -1,8 +1,10 @@
 import { db, isConfigured } from './supabase.js'
-import { requireSession, SCOPE_ALL } from './auth.js'
+import { requireSession, requireSuperadmin, SCOPE_ALL } from './auth.js'
 import { readMenuOverrides, loadMenu } from './menu.js'
 import { getLocation } from '../../src/data/locations.js'
 import { PRODUCTS, CATEGORIES, ingredientCatalog } from '../../src/data/menu.js'
+import { ALLERGENS } from '../../src/data/siteContent.js'
+import { PHOTO } from '../../src/data/images.js'
 import { isMissingTable } from './customer.js'
 import { discountFromRow, DISCOUNT_KINDS, DISCOUNT_TARGETS } from '../../src/lib/discounts.js'
 
@@ -24,6 +26,9 @@ const trim = (v, max) => String(v ?? '').trim().slice(0, max)
 const KNOWN = new Set(PRODUCTS.map((p) => p.id))
 const KNOWN_INGREDIENTS = new Set(ingredientCatalog().map((i) => i.key))
 const KNOWN_CATEGORIES = new Set(CATEGORIES.map((c) => c.id))
+const KNOWN_ALLERGENS = new Set(ALLERGENS.map((a) => a.id))
+const KNOWN_IMAGES = new Set(Object.values(PHOTO))
+const MENU_SCHEMA_MESSAGE = 'Falta actualizar la carta editable: ejecuta supabase/carta.sql en Supabase.'
 
 const NO_TABLE = 'Falta crear la tabla de descuentos: ejecuta supabase/descuentos.sql en Supabase (mira PEDIDOS.md).'
 
@@ -147,6 +152,89 @@ export default async function handler(req, res) {
       const productId = trim(req.body?.productId, 60)
       if (!KNOWN.has(productId)) return res.status(400).json({ error: 'Ese producto no existe.' })
 
+      if (action === 'content') {
+        if (!requireSuperadmin(req, res)) return
+        const content = req.body?.content || {}
+        const name = trim(content.name, 80)
+        const description = trim(content.description, 360)
+        const category = trim(content.category, 60)
+        const ingredients = Array.isArray(content.ingredients)
+          ? [...new Set(content.ingredients.map((x) => trim(x, 60)).filter(Boolean))].slice(0, 24)
+          : null
+        const allergens = Array.isArray(content.allergens)
+          ? [...new Set(content.allergens.map((x) => trim(x, 60)))]
+          : null
+        const image = content.image === null || content.image === ''
+          ? null
+          : trim(content.image, 1000)
+        const baseUrl = process.env.SUPABASE_URL?.replace(/\/+$/, '')
+        const uploadedImage = Boolean(baseUrl && image?.startsWith(baseUrl + '/storage/v1/object/public/nonno-site-assets/'))
+        const localImage = typeof image === 'string' && (
+          KNOWN_IMAGES.has(image) || image.startsWith('own:') || image.startsWith('/fotos/') || image.startsWith('/ilustraciones/')
+        )
+        if (!name) return res.status(400).json({ error: 'Escribe un nombre para el producto.' })
+        if (!KNOWN_CATEGORIES.has(category)) return res.status(400).json({ error: 'Elige una categoría válida.' })
+        if (!Array.isArray(content.ingredients) || ingredients.length !== content.ingredients.filter((x) => trim(x, 60)).length || content.ingredients.length > 24) {
+          return res.status(400).json({ error: 'Revisa la lista de ingredientes (máximo 24).'})
+        }
+        if (!Array.isArray(content.allergens) || content.allergens.some((id) => !KNOWN_ALLERGENS.has(id))) {
+          return res.status(400).json({ error: 'La selección de alérgenos no es válida.' })
+        }
+        if (image && !uploadedImage && !localImage) {
+          return res.status(400).json({ error: 'Sube la foto desde el selector de imágenes.' })
+        }
+
+        const { data: current, error: readError } = await db().from('menu_overrides')
+          .select('product_id, price, portion_prices, hidden, content').eq('product_id', productId).maybeSingle()
+        if (readError) {
+          if (['42703', 'PGRST204'].includes(readError.code)) return res.status(503).json({ error: MENU_SCHEMA_MESSAGE })
+          throw readError
+        }
+        const row = {
+          product_id: productId,
+          price: current?.price ?? null,
+          portion_prices: current?.portion_prices ?? null,
+          hidden: current?.hidden ?? false,
+          content: {
+            ...(current?.content || {}),
+            name,
+            description,
+            category,
+            ingredients,
+            allergens,
+            image,
+          },
+          updated_at: new Date().toISOString(),
+        }
+
+        if (Object.prototype.hasOwnProperty.call(req.body || {}, 'price')) {
+          const base = PRODUCTS.find((p) => p.id === productId)
+          if (base.portions) {
+            const next = {}
+            for (const portion of base.portions) {
+              const value = parsePrice(req.body?.portionPrices?.[portion.id])
+              if (value === undefined) return res.status(400).json({ error: 'Precio no válido.' })
+              if (value !== null) next[portion.id] = value
+            }
+            row.price = null
+            row.portion_prices = Object.keys(next).length ? next : null
+          } else {
+            const value = parsePrice(req.body?.price)
+            if (value === undefined) return res.status(400).json({ error: 'Precio no válido.' })
+            row.price = value
+            row.portion_prices = null
+          }
+        }
+
+        const { error } = await db().from('menu_overrides').upsert(row)
+        if (error) {
+          if (['42703', 'PGRST204'].includes(error.code)) return res.status(503).json({ error: MENU_SCHEMA_MESSAGE })
+          throw error
+        }
+        await loadMenu({ force: true })
+        return res.status(200).json(await readMenuOverrides())
+      }
+
       if (action === 'soldOut') {
         const locationId = trim(req.body?.location, 40)
         if (!getLocation(locationId)) return res.status(400).json({ error: 'Sede no válida.' })
@@ -167,10 +255,23 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: 'Solo la dirección puede cambiar precios o quitar productos de la carta.' })
       }
 
-      const { data: current, error: readError } = await db().from('menu_overrides')
-        .select('product_id, price, portion_prices, hidden').eq('product_id', productId).maybeSingle()
+      let currentResult = await db().from('menu_overrides')
+        .select('product_id, price, portion_prices, hidden, content').eq('product_id', productId).maybeSingle()
+      let hasContentColumn = true
+      if (['42703', 'PGRST204'].includes(currentResult.error?.code)) {
+        hasContentColumn = false
+        currentResult = await db().from('menu_overrides')
+          .select('product_id, price, portion_prices, hidden').eq('product_id', productId).maybeSingle()
+      }
+      const { data: current, error: readError } = currentResult
       if (readError) throw readError
-      const row = { product_id: productId, price: current?.price ?? null, portion_prices: current?.portion_prices ?? null, hidden: current?.hidden ?? false }
+      const row = {
+        product_id: productId,
+        price: current?.price ?? null,
+        portion_prices: current?.portion_prices ?? null,
+        hidden: current?.hidden ?? false,
+      }
+      if (hasContentColumn) row.content = current?.content ?? null
 
       if (action === 'price') {
         const base = PRODUCTS.find((p) => p.id === productId)
@@ -194,7 +295,7 @@ export default async function handler(req, res) {
       }
 
       row.updated_at = new Date().toISOString()
-      const clean = row.price === null && row.portion_prices === null && !row.hidden
+      const clean = row.price === null && row.portion_prices === null && !row.hidden && (!hasContentColumn || !row.content)
       const { error } = clean
         ? await db().from('menu_overrides').delete().eq('product_id', productId)
         : await db().from('menu_overrides').upsert(row)

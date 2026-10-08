@@ -35,6 +35,17 @@ export default function Footer() {
             <ul className="flex flex-col gap-5">
               <li><button onClick={() => navigate('/carta')} className={link}>Pedidos</button></li>
               <li><button onClick={() => navigate('/carta')} className={link}>Carta</button></li>
+              <li><button onClick={() => navigate('/alergenos')} className={link}>Alérgenos</button></li>
+              <li><button onClick={() => navigate('/privacidad')} className={link}>Privacidad</button></li>
+              <li><button onClick={() => navigate('/terminos')} className={link}>Términos de servicio</button></li>
+              <li>
+                <button
+                  onClick={() => window.dispatchEvent(new Event('nonno:open-cookie-banner'))}
+                  className={`${link} text-xs text-masa/80 hover:text-forno cursor-pointer`}
+                >
+                  Configurar cookies
+                </button>
+              </li>
             </ul>
             {/* Las dos sedes en la misma columna, alineadas, con su pin */}
             <ul className="flex flex-col gap-5">

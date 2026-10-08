@@ -25,11 +25,11 @@ En Supabase, **Project Settings** → **API**. Necesitas dos valores:
 | **Project URL** | dirección de la base de datos |
 | **service_role** (en Project API keys, hay que revelarla) | permite escribir pedidos desde el servidor |
 
-La clave `service_role` es **secreta**. Solo va en las variables de Vercel, nunca en el código ni en el navegador. La tabla tiene la seguridad por filas activada y sin permisos públicos, así que la clave `anon` no sirve para leer pedidos aunque alguien la consiga.
+La clave `service_role` es **secreta**. Solo va en las variables privadas de Vercel o Netlify, nunca en el código ni en el navegador. La tabla tiene la seguridad por filas activada y sin permisos públicos, así que la clave `anon` no sirve para leer pedidos aunque alguien la consiga.
 
-## 4. Configurar Vercel
+## 4. Configurar Vercel o Netlify
 
-En tu proyecto de Vercel: **Settings** → **Environment Variables**.
+En Vercel, abre **Settings → Environment Variables**. En Netlify, abre **Project configuration → Environment variables**.
 
 | Nombre | Valor |
 |---|---|
@@ -46,7 +46,7 @@ Las tres contraseñas son independientes: pon solo las que necesites. Si únicam
 
 Marca las tres opciones (Production, Preview, Development) en cada una.
 
-Después, **Deployments** → botón derecho en el último → **Redeploy**. Las variables solo se aplican en un despliegue nuevo.
+Después, inicia un despliegue nuevo. Las variables solo se aplican en un despliegue nuevo.
 
 ## 5. Comprobar que funciona
 
@@ -67,7 +67,7 @@ Si quieres que salte la notificación aunque el panel no esté abierto:
 npx web-push generate-vapid-keys
 ```
 
-Añade en Vercel `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` con los dos valores que salen, más `VAPID_SUBJECT` con `mailto:` y un correo de contacto. Vuelve a desplegar.
+Añade en las variables privadas de Vercel o Netlify `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` con los dos valores que salen, más `VAPID_SUBJECT` con `mailto:` y un correo de contacto. Vuelve a desplegar.
 
 Después, en el panel aparece el botón **Activar avisos**. Hay que pulsarlo una vez en cada ordenador y aceptar el permiso del navegador.
 
@@ -92,7 +92,7 @@ Los SMS salen desde un móvil Android del local con su propia tarifa: si la tari
 
 1. En el móvil Android, instala **SMS Gateway for Android** (gratuita y de código abierto, [sms-gate.app](https://sms-gate.app)).
 2. Ábrela, activa **Cloud server** y pulsa **Online**. La app muestra un **usuario** y una **contraseña**.
-3. En Vercel → **Environment Variables**, añade `SMS_GATEWAY_USER` y `SMS_GATEWAY_PASSWORD` con esos dos valores. Vuelve a desplegar.
+3. En Vercel o Netlify → **Environment Variables**, añade `SMS_GATEWAY_USER` y `SMS_GATEWAY_PASSWORD` con esos dos valores. Vuelve a desplegar.
 4. Haz un pedido de prueba con tu móvil: debe llegarte el SMS en unos segundos.
 
 Para que no falle durante el servicio:
@@ -100,7 +100,7 @@ Para que no falle durante el servicio:
 - El móvil tiene que estar **encendido, cargando y con cobertura o wifi**.
 - En Ajustes → Batería, quita la **optimización de batería** a la app, o Android la dormirá.
 
-**Sin Android: Twilio (de pago).** Si en Vercel están `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` y `TWILIO_FROM` (número de Twilio o remitente autorizado), los SMS salen por Twilio. La cuenta de prueba de Twilio solo envía a números verificados en su panel.
+**Sin Android: Twilio (de pago).** Si en Vercel o Netlify están `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` y `TWILIO_FROM` (número de Twilio o remitente autorizado), los SMS salen por Twilio. La cuenta de prueba de Twilio solo envía a números verificados en su panel.
 
 **Probar:** en el panel, menú ⚙ → "Probar los SMS a clientes": escribe tu móvil y pulsa Enviar.
 
@@ -139,7 +139,7 @@ Las reglas están en `src/data/loyalty.js`. Si cambias ahí el reparto de puntos
 **Para activarlo:**
 
 1. En Supabase → **SQL Editor**, pega el contenido de [`supabase/club-nonno.sql`](supabase/club-nonno.sql) y pulsa **Run**. Va **después** de `schema.sql` y también se puede ejecutar varias veces.
-2. En Vercel → **Environment Variables**, añade `CUSTOMER_SESSION_SECRET` con una frase larga al azar (como `ADMIN_SESSION_SECRET`). Si no la pones, se usa la del panel.
+2. En Vercel o Netlify → **Environment Variables**, añade `CUSTOMER_SESSION_SECRET` con una frase larga al azar (como `ADMIN_SESSION_SECRET`). Si no la pones, se usa la del panel.
 3. Vuelve a desplegar.
 
 Mientras no se ejecute el SQL, la web funciona exactamente igual: **Mi cuenta** muestra "Muy pronto".
@@ -216,7 +216,7 @@ Para que quien espera vea cómo va su pedido: **En preparación** y **¡Listo! R
 1. En la TV (o un ordenador/Chromecast/Fire TV conectado a ella) abre `tu-dominio/pantalla/sangonera` (o `/pantalla/santo-angel`).
 2. Entra con la contraseña del local. Se queda guardada 7 días. Tras 5 contraseñas malas desde el mismo sitio, el acceso se bloquea 15 minutos.
 
-**Seguridad (una sola vez):** en Supabase → SQL Editor, pega [`supabase/seguridad.sql`](supabase/seguridad.sql) y pulsa **Run**. Activa el límite de intentos del login, de los códigos del Club, de los SMS y de los pedidos de la web. Además, en Vercel crea `ADMIN_SESSION_SECRET` con una cadena larga y aleatoria (30+ caracteres). Para **cerrar todas las sesiones abiertas** (por ejemplo si se pierde un ordenador), cambia ese valor y vuelve a desplegar.
+**Seguridad (una sola vez):** en Supabase → SQL Editor, pega [`supabase/seguridad.sql`](supabase/seguridad.sql) y pulsa **Run**. Activa el límite de intentos del login, de los códigos del Club, de los SMS y de los pedidos de la web. Además, en Vercel o Netlify crea `ADMIN_SESSION_SECRET` con una cadena larga y aleatoria (30+ caracteres). Para **cerrar todas las sesiones abiertas** (por ejemplo si se pierde un ordenador), cambia ese valor y vuelve a desplegar.
 3. Pulsa **Pantalla completa y sonido** una vez: activa el aviso sonoro cuando un pedido pasa a listo.
 
 Los pedidos pasan a "¡Listo!" cuando cocina pulsa **LISTO** en el panel, y desaparecen al marcarlos **ENTREGADO**. Si se corta internet, la TV sigue enseñando lo último que sabía y se pone al día sola al volver.
@@ -250,7 +250,7 @@ WhatsApp solo deja que el negocio escriba primero con **plantillas aprobadas por
 1. **Número de WhatsApp del negocio.** En Twilio → *Messaging → Senders → WhatsApp senders* → registra un número (hace falta cuenta de pago y la cuenta de Facebook/Meta Business del negocio). Nombre visible: *La Pizza de Nonno*. El número de prueba `+49…` de Twilio no sirve para clientes.
 2. **Crear las plantillas** en Twilio → *Messaging → Content Template Builder*. Idioma **Spanish (es)**, categoría **Utility**, tipo *Text*, y **Submit for WhatsApp approval**. Copia cada texto tal cual (`{{1}}`, `{{2}}`… son los huecos que rellena la web):
 
-   | Nombre | Texto | Variable en Vercel |
+   | Nombre | Texto | Variable en Vercel o Netlify |
    |---|---|---|
    | `nonno_pedido_recibido` | ¡Hola! Hemos recibido tu pedido *{{1}}* en La Pizza de Nonno. {{2}}. Total: {{3}}. Sigue tu pedido o contacta con nosotros: {{4}} ¡Gracias! | `TWILIO_WA_RECIBIDO` |
    | `nonno_pedido_listo` | ¡Tu pedido *{{1}}* ya está listo! Puedes recogerlo en La Pizza de Nonno {{2}}. ¡Te esperamos! | `TWILIO_WA_LISTO` |
@@ -259,7 +259,7 @@ WhatsApp solo deja que el negocio escriba primero con **plantillas aprobadas por
    | `nonno_codigo` | tipo **Authentication** (el texto lo pone WhatsApp), con botón *Copy code* | `TWILIO_WA_CODIGO` |
 
    Ejemplos que pide Twilio para los huecos: `07` · `Recógelo en Sangonera la Verde a las 21:30` · `22,90 €` · `https://tu-dominio/p/07-a1b2c3d4e5` · `Llega hacia las 22:40` · `968 00 00 00`.
-3. **Vercel → Environment Variables**: `TWILIO_WHATSAPP_FROM` (el número del paso 1, `+34…`) y, por cada plantilla **aprobada**, su identificador `HX…` en la variable de la tabla. Pon también `SITE_URL` (`https://tu-dominio`) para incluir el enlace de seguimiento en el aviso de pedido recibido. **Redeploy**.
+3. **Variables privadas de Vercel o Netlify**: `TWILIO_WHATSAPP_FROM` (el número del paso 1, `+34…`) y, por cada plantilla **aprobada**, su identificador `HX…` en la variable de la tabla. Pon también `SITE_URL` (`https://tu-dominio`) para incluir el enlace de seguimiento en el aviso de pedido recibido. **Vuelve a desplegar**.
 4. **Probar**: panel → ⚙ → "Probar los avisos a clientes".
 
 Un aviso sin su plantilla configurada sale por SMS, así que se puede activar poco a poco. Precio: Meta cobra cada plantilla de categoría *Utility* más la comisión de Twilio (mira las tarifas de España en Twilio).

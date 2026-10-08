@@ -2,6 +2,7 @@ import { isConfigured } from './_lib/supabase.js'
 import { requireSession, SCOPE_ALL } from './_lib/auth.js'
 import { getStoreStatuses, setStoreOpen, setDoughLimit } from './_lib/store.js'
 import menuHandler from './_lib/menuHandler.js'
+import superadminHandler from './_lib/superadminHandler.js'
 
 const LOCATION_IDS = ['sangonera', 'santo-angel']
 
@@ -17,6 +18,7 @@ const LOCATION_IDS = ['sangonera', 'santo-angel']
  */
 export default async function handler(req, res) {
   if (req.query?.resource === 'menu') return menuHandler(req, res)
+  if (req.query?.resource === 'superadmin') return superadminHandler(req, res)
 
   if (!isConfigured()) {
     return res.status(200).json({

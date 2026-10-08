@@ -12,9 +12,12 @@ create table if not exists public.menu_overrides (
   product_id     text primary key,
   price          numeric(8,2) check (price is null or price >= 0),
   portion_prices jsonb,
+  content        jsonb,
   hidden         boolean not null default false,
   updated_at     timestamptz not null default now()
 );
+
+alter table public.menu_overrides add column if not exists content jsonb;
 
 -- Agotado en una sede concreta: una fila = agotado. Se borra al reponer.
 create table if not exists public.menu_soldout (

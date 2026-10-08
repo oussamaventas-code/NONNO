@@ -477,7 +477,7 @@ export const PICKUP_DEALS = [
    selectores de abajo devuelven siempre la carta ya corregida, así
    que la web, el carrito y el servidor cuentan con los mismos precios.
    Sin correcciones (base de datos sin conectar) es la carta de siempre. */
-let overrides = { prices: {}, hidden: [], soldOut: {}, ingredients: {}, discounts: [] }
+let overrides = { prices: {}, hidden: [], soldOut: {}, ingredients: {}, discounts: [], content: {} }
 let effective = PRODUCTS
 
 const applyPrices = (product, o) => {
@@ -493,7 +493,19 @@ const applyPrices = (product, o) => {
   return next
 }
 
-/** Sustituye las correcciones: { prices: {id: {price, portionPrices}}, hidden: [id], soldOut: {sede: [id]}, ingredients: {sede: [claveIngrediente]}, discounts: [descuento] } */
+const applyProductContent = (product, patch) => {
+  if (!patch || typeof patch !== 'object') return product
+  const next = { ...product }
+  for (const key of ['name', 'category', 'description', 'image']) {
+    if (typeof patch[key] === 'string') next[key] = patch[key]
+  }
+  if (patch.image === null) next.image = product.image || null
+  if (Array.isArray(patch.ingredients)) next.ingredients = patch.ingredients
+  if (Array.isArray(patch.allergens)) next.allergens = patch.allergens
+  return next
+}
+
+/** Sustituye las correcciones de precio, contenido, disponibilidad y descuentos. */
 export function setMenuOverrides(next) {
   overrides = {
     prices: next?.prices || {},
@@ -501,10 +513,14 @@ export function setMenuOverrides(next) {
     soldOut: next?.soldOut || {},
     ingredients: next?.ingredients || {},
     discounts: Array.isArray(next?.discounts) ? next.discounts : [],
+    content: next?.content || {},
   }
   /* Primero el precio de la carta; encima, el descuento en vigor */
   const live = overrides.discounts.filter((d) => isLive(d))
-  effective = PRODUCTS.map((p) => applyDiscounts(applyPrices(p, overrides.prices[p.id]), live))
+  effective = PRODUCTS.map((p) => applyDiscounts(
+    applyPrices(applyProductContent(p, overrides.content[p.id]), overrides.prices[p.id]),
+    live
+  ))
 }
 
 export const getMenuOverrides = () => overrides
@@ -524,29 +540,25 @@ export const ingredientKey = (label) =>
     .toLowerCase().trim().replace(/\s+/g, ' ')
     .replace(/^extra /, '')
 
-let catalog = null
-
 /** Todos los ingredientes de la carta: [{ key, label, group }]. */
 export function ingredientCatalog() {
-  if (catalog) return catalog
   const map = new Map()
   for (const e of EXTRAS) {
     const key = ingredientKey(e.label)
     if (!map.has(key)) map.set(key, { key, label: e.label.replace(/^Extra /, '').replace(/^./, (c) => c.toUpperCase()), group: e.group })
   }
-  for (const p of PRODUCTS) {
+  for (const p of effective) {
     for (const name of p.ingredients || []) {
       const key = ingredientKey(name)
       if (key && !map.has(key)) map.set(key, { key, label: name, group: 'Base y otros de las pizzas' })
     }
   }
-  catalog = [...map.values()]
-  return catalog
+  return [...map.values()]
 }
 
 /** Productos de la carta que llevan ese ingrediente. */
 export const productsUsing = (key) =>
-  PRODUCTS.filter((p) => (p.ingredients || []).some((i) => ingredientKey(i) === key))
+  effective.filter((p) => (p.ingredients || []).some((i) => ingredientKey(i) === key))
 
 /** Ingredientes agotados en esa sede (claves). */
 export const ingredientsOut = (locationId) =>
@@ -558,7 +570,7 @@ export const isIngredientOut = (key, locationId) => ingredientsOut(locationId).i
 export function missingIngredients(productId, locationId) {
   const out = ingredientsOut(locationId)
   if (!out.length) return []
-  const product = PRODUCTS.find((p) => p.id === productId)
+  const product = effective.find((p) => p.id === productId)
   return (product?.ingredients || []).filter((i) => out.includes(ingredientKey(i)))
 }
 

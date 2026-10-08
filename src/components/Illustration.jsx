@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { logoSrc } from '../data/siteContent'
 
 /**
  * Ilustración de marca leída de public/ilustraciones/. Mientras el
@@ -12,7 +13,7 @@ export default function Illustration({ src, alt = '', className = '', fallbackCl
     if (hideWhenMissing) return null
     return (
       <img
-        src="/logo-nonno.png"
+        src={logoSrc()}
         alt={alt}
         loading="lazy"
         className={`rounded-full object-cover border-4 border-crema shadow-float ${fallbackClassName}`}

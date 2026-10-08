@@ -17,6 +17,7 @@ import { phonePattern, phoneKey, summarizeCustomer } from '../src/lib/customerLo
 import { trackToken, parseTrackToken, keyMatches } from '../src/lib/tracking.js'
 import { serviceDay, serviceDayRange, nextNumber } from '../src/lib/orderNumber.js'
 import { guard, clientIp } from './_lib/limiter.js'
+import { loadSiteConfiguration } from './_lib/siteConfig.js'
 
 const reply = (row, staff) => ({
   id: row.id,
@@ -103,6 +104,7 @@ export default async function handler(req, res) {
 
     /* Precios, ocultos y agotados al día: el total se recalcula con la carta
        real, no con la que el navegador tenía en pantalla. */
+    await loadSiteConfiguration()
     await loadMenu({ force: true })
     const parsed = sanitizeOrder(req.body, { staff, customerId: customer?.id, redeem })
     const problem = validateOrder(parsed)
@@ -274,7 +276,8 @@ export default async function handler(req, res) {
        (referencia + clave), y solo lo que necesita ver. */
     if (req.query?.track !== undefined) return trackOrder(req, res)
 
-    const session = requireSession(req, res)
+    // Solo Administrador y Cajero pueden consultar el listado de pedidos del panel
+    const session = requireSession(req, res, { roles: ['superadmin', 'admin', 'cajero'] })
     if (!session) return
 
     /* Ficha de un cliente por teléfono (mostrador y teléfono). Cada local

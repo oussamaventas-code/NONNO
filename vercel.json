@@ -2,6 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     { "source": "/api/menu", "destination": "/api/store-status?resource=menu" },
+    { "source": "/api/superadmin", "destination": "/api/store-status?resource=superadmin" },
+    { "source": "/api/site-manifest", "destination": "/api/store-status?resource=superadmin&manifest=1" },
     { "source": "/api/cash", "destination": "/api/billing?resource=cash" },
     { "source": "/api/cierre", "destination": "/api/push?cron=cierre" },
     { "source": "/api/driver", "destination": "/api/routes?resource=driver" },
@@ -29,6 +31,10 @@
     },
     {
       "source": "/(admin|pantalla)(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/superadmin(.*)",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     }
   ]

@@ -12,6 +12,7 @@ const money = (v) => {
 export function overridesFromRows(overrideRows = [], soldOutRows = [], ingredientRows = [], discountRows = []) {
   const prices = {}
   const hidden = []
+  const content = {}
   for (const r of overrideRows) {
     if (r.hidden) hidden.push(r.product_id)
     const price = money(r.price)
@@ -24,6 +25,7 @@ export function overridesFromRows(overrideRows = [], soldOutRows = [], ingredien
     if (price !== null || hasPortions) {
       prices[r.product_id] = { price, portionPrices: hasPortions ? portionPrices : null }
     }
+    if (r.content && typeof r.content === 'object') content[r.product_id] = r.content
   }
   const soldOut = {}
   for (const r of soldOutRows) (soldOut[r.location_id] ||= []).push(r.product_id)
@@ -32,5 +34,5 @@ export function overridesFromRows(overrideRows = [], soldOutRows = [], ingredien
   /* Al público solo le llegan los descuentos en vigor */
   const discounts = discountRows.map(discountFromRow).filter((d) => isLive(d))
     .map(({ id, name, kind, value, target, targetIds, endsAt }) => ({ id, name, kind, value, target, targetIds, endsAt, active: true }))
-  return { prices, hidden, soldOut, ingredients, discounts }
+  return { prices, hidden, soldOut, ingredients, discounts, content }
 }

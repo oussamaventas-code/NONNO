@@ -2,7 +2,7 @@ import { price } from '../lib/format'
 import { STATIONS, stationOf } from '../data/menu'
 import { hourOf } from '../lib/kitchenSlots'
 import qrcode from 'qrcode-generator'
-import { queuePrint } from './api'
+import { queuePrint, updateOrder } from './api'
 /* Logo en blanco y negro puro (la versión neón tiene fondo negro y en
    térmica saldría un borrón). Va incrustado: imprime aunque no haya red. */
 import logoTicket from '../assets/logo-ticket.png?inline'
@@ -297,21 +297,65 @@ async function browserTicket(order) {
   return results.every(Boolean)
 }
 
-/** Ticket del cliente: al programa del local si lo hay; si falla, por el navegador. */
-export async function printReceipt(order, { browser = false } = {}) {
-  if (!browser && viaAgent(order)) {
-    try { if ((await queuePrint(order.id, 'ticket')).queued) return true } catch { /* plan B: navegador */ }
+/**
+ * Registra en base de datos el estado de impresión sin interrumpir la operación del TPV
+ */
+async function markPendingPrint(order, errorMsg) {
+  if (!order?.id) return
+  try {
+    await updateOrder(order.id, { print_status: 'Pendiente de imprimir' })
+  } catch (err) {
+    console.warn('No se pudo guardar estado "Pendiente de imprimir":', err)
   }
-  return browserReceipt(order)
+}
+
+/** Ticket del cliente: con captura de fallos de red/WiFi Excelvan ZJ-8220WIFI */
+export async function printReceipt(order, { browser = false } = {}) {
+  try {
+    if (!browser && viaAgent(order)) {
+      try {
+        const res = await queuePrint(order.id, 'ticket')
+        if (res?.queued) return { ok: true, partial: false }
+      } catch (agentErr) {
+        console.warn('Fallo de red hacia impresora de local (Excelvan/WiFi):', agentErr)
+      }
+    }
+    const printed = await browserReceipt(order)
+    if (!printed) {
+      await markPendingPrint(order, 'Navegador no imprimió')
+      return { ok: true, partial: true, error: 'Pendiente de imprimir' }
+    }
+    return { ok: true, partial: false }
+  } catch (err) {
+    console.error('Error de impresión ticket (IP/WiFi Excelvan ZJ-8220WIFI):', err)
+    await markPendingPrint(order, err.message)
+    // Retorna éxito parcial para que el TPV del cajero jamás se congele
+    return { ok: true, partial: true, error: 'Pendiente de imprimir' }
+  }
 }
 
 /**
- * Comanda de cocina (una hoja por sección). Devuelve false si el
- * navegador bloqueó la impresión.
+ * Comanda de cocina (una hoja por sección) con captura de fallos de conexión
  */
 export async function printTicket(order, { browser = false } = {}) {
-  if (!browser && viaAgent(order)) {
-    try { if ((await queuePrint(order.id, 'comanda')).queued) return true } catch { /* plan B: navegador */ }
+  try {
+    if (!browser && viaAgent(order)) {
+      try {
+        const res = await queuePrint(order.id, 'comanda')
+        if (res?.queued) return { ok: true, partial: false }
+      } catch (agentErr) {
+        console.warn('Fallo de red hacia impresora de comanda (Excelvan/WiFi):', agentErr)
+      }
+    }
+    const printed = await browserTicket(order)
+    if (!printed) {
+      await markPendingPrint(order, 'Navegador no imprimió comanda')
+      return { ok: true, partial: true, error: 'Pendiente de imprimir' }
+    }
+    return { ok: true, partial: false }
+  } catch (err) {
+    console.error('Error de impresión comanda (IP/WiFi Excelvan ZJ-8220WIFI):', err)
+    await markPendingPrint(order, err.message)
+    return { ok: true, partial: true, error: 'Pendiente de imprimir' }
   }
-  return browserTicket(order)
 }

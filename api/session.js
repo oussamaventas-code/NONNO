@@ -1,5 +1,5 @@
 import {
-  scopeForPassword, createSessionCookie, clearSessionCookie,
+  credentialsForPassword, createSessionCookie, clearSessionCookie,
   readSession, isConfigured, SCOPE_ALL,
 } from './_lib/auth.js'
 
@@ -22,7 +22,9 @@ export default async function handler(req, res) {
     return res.status(200).json({
       authenticated: Boolean(session),
       scope: session?.scope || null,
+      role: session?.role || null,
       configured: isConfigured(),
+      superadminConfigured: Boolean(process.env.SUPERADMIN_PASSWORD),
     })
   }
 
@@ -42,16 +44,16 @@ export default async function handler(req, res) {
       })
     }
 
-    const scope = scopeForPassword(req.body?.password)
-    if (!scope) {
+    const grant = credentialsForPassword(req.body?.password)
+    if (!grant) {
       /* Pequeña espera: frena a quien prueba contraseñas a mano */
       await new Promise((r) => setTimeout(r, 600))
       return res.status(401).json({ error: 'Contraseña incorrecta.' })
     }
 
     await clear(ipKey)
-    res.setHeader('Set-Cookie', createSessionCookie(scope))
-    return res.status(200).json({ authenticated: true, scope })
+    res.setHeader('Set-Cookie', createSessionCookie(grant.scope, grant.role))
+    return res.status(200).json({ authenticated: true, scope: grant.scope, role: grant.role })
   }
 
   if (req.method === 'DELETE') {

@@ -186,7 +186,7 @@ async function manage(req, res) {
     const { data: d, error } = await db().from('drivers').select('id, location_id').eq('id', String(req.body.id || '')).maybeSingle()
     if (error) throw error
     if (!d || !can(d.location_id)) return res.status(404).json({ error: 'Ese repartidor no es de tu sede.' })
-    const { error: delError } = await db().from('drivers').delete().eq('id', d.id)
+    const { error: delError } = await db().from('drivers').delete().eq('id', d.id).eq('location_id', d.location_id)
     if (delError) throw delError
     return res.status(200).json({ drivers: await listDrivers(d.location_id) })
   }

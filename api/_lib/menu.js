@@ -13,10 +13,16 @@ import { setMenuOverrides } from '../../src/data/menu.js'
 const TTL_MS = 15000
 let loadedAt = 0
 let inflight = null
+const missingColumn = (error) => ['42703', 'PGRST204'].includes(error?.code)
 
 export async function readMenuOverrides() {
-  const [o, s, i, d] = await Promise.all([
-    db().from('menu_overrides').select('product_id, price, portion_prices, hidden'),
+  let o = await db().from('menu_overrides').select('product_id, price, portion_prices, hidden, content')
+  let hasContent = true
+  if (missingColumn(o.error)) {
+    hasContent = false
+    o = await db().from('menu_overrides').select('product_id, price, portion_prices, hidden')
+  }
+  const [s, i, d] = await Promise.all([
     db().from('menu_soldout').select('location_id, product_id'),
     db().from('menu_ingredient_soldout').select('location_id, ingredient_key'),
     db().from('discounts').select('*').eq('active', true),
@@ -32,7 +38,12 @@ export async function readMenuOverrides() {
   }
   /* Si aún no se ha creado la tabla de ingredientes, el resto sigue funcionando */
   if (i.error && !isMissingTable(i.error)) throw i.error
-  return overridesFromRows(o.data, s.data, i.error ? [] : i.data, discountRows)
+  return overridesFromRows(
+    hasContent ? o.data : o.data.map((row) => ({ ...row, content: null })),
+    s.data,
+    i.error ? [] : i.data,
+    discountRows
+  )
 }
 
 /**

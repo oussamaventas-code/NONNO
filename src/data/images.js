@@ -14,15 +14,21 @@ const UNSPLASH = 'https://images.unsplash.com/photo-'
  * @param {number} q   calidad 1-100
  */
 export const img = (id, w = 1200, q = 80) =>
-  isOwn(id)
-    ? ownSrc(id, w)
-    : `${UNSPLASH}${id}?w=${w}&q=${q}&auto=format&fit=crop`
+  getImageOverride(id)
+    || (typeof id === 'string' && /^https?:\/\//i.test(id) ? id : null)
+    || (isOwn(id)
+      ? ownSrc(id, w)
+      : UNSPLASH + id + '?w=' + w + '&q=' + q + '&auto=format&fit=crop')
 
 /** srcSet responsive para las imágenes grandes (hero, editorial, destacado) */
 export const srcSet = (id, widths = [640, 960, 1400, 1920]) =>
-  isOwn(id)
-    ? OWN_WIDTHS.map((w) => `${ownSrc(id, w)} ${w}w`).join(', ')
-    : widths.map((w) => `${img(id, w)} ${w}w`).join(', ')
+  getImageOverride(id)
+    ? getImageOverride(id) + ' 1200w'
+    : (typeof id === 'string' && /^https?:\/\//i.test(id))
+      ? id + ' 1200w'
+      : (isOwn(id)
+        ? OWN_WIDTHS.map((w) => ownSrc(id, w) + ' ' + w + 'w').join(', ')
+        : widths.map((w) => img(id, w) + ' ' + w + 'w').join(', '))
 
 /* ── Fotografía propia ───────────────────────────────────────────
    Los ids 'own:nombre' apuntan a /public/fotos/pizzas/nombre-{ancho}.webp,
@@ -31,6 +37,9 @@ const OWN = 'own:'
 const OWN_WIDTHS = [600, 1200]
 const OWN_REVISION = '20261005-2'
 const isOwn = (id) => typeof id === 'string' && id.startsWith(OWN)
+let imageOverrides = {}
+export const setImageOverrides = (next) => { imageOverrides = next && typeof next === 'object' ? next : {} }
+export const getImageOverride = (id) => imageOverrides[id] || null
 const ownSrc = (id, w) => {
   const width = OWN_WIDTHS.find((x) => x >= w) || OWN_WIDTHS[OWN_WIDTHS.length - 1]
   return `/fotos/pizzas/${id.slice(OWN.length)}-${width}.webp?v=${OWN_REVISION}`

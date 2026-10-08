@@ -15,10 +15,17 @@ import Toasts from './components/Toasts'
 import AccountDrawer from './components/AccountDrawer'
 import OrderTracking from './components/OrderTracking'
 import NewPassword from './components/NewPassword'
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { useStore } from './store/StoreContext'
 import { usePath, navigate } from './lib/router'
 import { useMenuOverrides } from './hooks/useMenuOverrides'
+import { useSiteContent } from './hooks/useSiteContent'
+
+const AllergensPage = lazy(() => import('./components/AllergensPage'))
+const PrivacyPage = lazy(() => import('./components/PrivacyPage'))
+const TermsPage = lazy(() => import('./components/TermsPage'))
+const CookieConsent = lazy(() => import('./components/CookieConsent'))
+const NotFoundPage = lazy(() => import('./components/NotFoundPage'))
 
 /**
  * Flujo de pedido en tres pantallas, con la misma cabecera y carrito:
@@ -33,6 +40,7 @@ export default function App() {
   const path = usePath()
   const { locationId } = useStore()
   const enFlujo = path === '/' || path === '/pedir'
+  useSiteContent()
 
   /* La carta necesita sede: sin ella se pasa antes por la elección */
   useEffect(() => {
@@ -48,16 +56,24 @@ export default function App() {
       <MobileNav />
 
       <main>
-        {path.startsWith('/p/') ? (
+        {/^\/p\/[^/]+$/.test(path) ? (
           <OrderTracking token={decodeURIComponent(path.slice(3))} />
         ) : path === '/cuenta/contrasena' ? (
           <NewPassword />
         ) : path === '/carta' ? (
           <Menu />
+        ) : path === '/alergenos' ? (
+          <Suspense fallback={<p className="mono py-16 text-center text-tomate">PREPARANDO LA GUÍA…</p>}><AllergensPage /></Suspense>
+        ) : path === '/privacidad' ? (
+          <Suspense fallback={<p className="mono py-16 text-center text-tomate">PREPARANDO LA GUÍA…</p>}><PrivacyPage /></Suspense>
+        ) : path === '/terminos' ? (
+          <Suspense fallback={<p className="mono py-16 text-center text-tomate">PREPARANDO LA GUÍA…</p>}><TermsPage /></Suspense>
         ) : path === '/pedir' ? (
           <ElegirPedido />
-        ) : (
+        ) : path === '/' ? (
           <Entrada />
+        ) : (
+          <Suspense fallback={<p className="mono py-16 text-center text-tomate">BUSCANDO UNA BUENA PORCIÓN…</p>}><NotFoundPage /></Suspense>
         )}
       </main>
 
@@ -70,6 +86,7 @@ export default function App() {
       <Checkout />
       <AccountDrawer />
       <Toasts />
+      <Suspense fallback={null}><CookieConsent /></Suspense>
     </>
   )
 }

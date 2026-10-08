@@ -4,6 +4,7 @@ import { requireSession, SCOPE_ALL } from './_lib/auth.js'
 import { getLocation } from '../src/data/locations.js'
 import driverHandler from './_lib/driverHandler.js'
 import { sendCustomerNotification } from './_lib/customerNotifications.js'
+import { loadSiteConfiguration } from './_lib/siteConfig.js'
 
 /**
  * POST /api/routes  (solo panel)
@@ -33,6 +34,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    await loadSiteConfiguration()
     if (action === 'dispatch') return await dispatch(req, res, locationId)
     if (action === 'undo') return await undo(req, res, locationId)
     return res.status(400).json({ error: 'Acción no válida.' })

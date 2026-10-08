@@ -116,7 +116,8 @@ export default async function handler(req, res) {
   if (!isConfigured()) {
     return res.status(503).json({ error: 'El sistema todavía no está conectado a la base de datos.' })
   }
-  const session = requireSession(req, res)
+  // Facturación y métricas financieras: estrictamente Dirección / Superadmin
+  const session = requireSession(req, res, { roles: ['superadmin', 'admin'] })
   if (!session) return
   if (session.scope !== SCOPE_ALL) {
     return res.status(403).json({ error: 'La facturación solo la puede ver la dirección.' })

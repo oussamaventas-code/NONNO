@@ -4,6 +4,7 @@ import { readLastOrder, LAST_ORDER_EVENT } from '../lib/lastOrder'
 import { trackPath } from '../lib/tracking'
 import { NAV_LINKS } from '../data/site'
 import { ANNOUNCE } from '../data/content'
+import { logoSrc } from '../data/siteContent'
 import { useCart, useActions, useSelectedLocation, useStore } from '../store/StoreContext'
 import { useAccount } from '../store/AccountContext'
 import { followLink, navigate, usePath } from '../lib/router'
@@ -40,7 +41,7 @@ export default function Navbar() {
             <span />
             {path === '/pedir' ? (
               <button onClick={() => navigate('/')} aria-label="Ir al inicio — La Pizza de Nonno">
-                <img src="/logo-nonno.png" alt="La Pizza de Nonno" width="44" height="44" className="h-11 w-11 rounded-full object-cover border border-tomate" />
+                <img src={logoSrc()} alt="La Pizza de Nonno" width="44" height="44" className="h-11 w-11 rounded-full object-cover border border-tomate" />
               </button>
             ) : <span />}
             <div className="justify-self-end">
@@ -94,7 +95,7 @@ export default function Navbar() {
           {/* Centro: logo */}
           <button onClick={() => navigate('/')} aria-label="Ir al inicio — La Pizza de Nonno">
             <img
-              src="/logo-nonno.png"
+              src={logoSrc()}
               alt="La Pizza de Nonno"
               width="72"
               height="72"

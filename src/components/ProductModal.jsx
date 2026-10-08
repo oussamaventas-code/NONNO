@@ -9,6 +9,8 @@ import { useStore, useActions } from '../store/StoreContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useIsDesktop } from '../hooks/useMediaQuery'
+import { useSiteContent } from '../hooks/useSiteContent'
+import { navigate } from '../lib/router'
 import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 
 /**
@@ -22,6 +24,7 @@ import { gsap, useGSAP, EASE, revealFrom, guard } from '../lib/motion'
 export default function ProductModal() {
   const { ui, locationId } = useStore()
   const { closeProduct, addToCart, openLocationPrompt } = useActions()
+  const siteContent = useSiteContent()
   const productId = ui.productId
   const product = productId ? getProduct(productId) : null
   const isDesktop = useIsDesktop()
@@ -29,6 +32,9 @@ export default function ProductModal() {
   const missing = product ? missingIngredients(product.id, locationId) : []
   /* Toppings agotados en esta sede: no se pueden añadir, y si ya estaban marcados no cuentan */
   const outExtras = product ? (product.extras || []).filter((id) => isExtraOut(id, locationId)) : []
+  const allergens = (product?.allergens || [])
+    .map((id) => siteContent.allergens.find((item) => item.id === id)?.name)
+    .filter(Boolean)
 
   const panelRef = useRef(null)
   const dialogRef = useRef(null)
@@ -147,6 +153,21 @@ export default function ProductModal() {
             {product.spicy && <FlameIcon className="w-4 h-4 text-tomate" strokeWidth={2} />}
           </h2>
           <p className="mt-1 text-carbon/70">{product.description}</p>
+
+          <div className="mt-4 rounded-lg border border-tomate/30 bg-masa/70 p-3">
+            <p className="mono text-tomate">Alérgenos de este producto</p>
+            {allergens.length ? (
+              <p className="mt-1 text-sm font-semibold text-carbon">{allergens.join(' · ')}</p>
+            ) : (
+              <p className="mt-1 text-sm text-carbon/70">La ficha específica aún no está confirmada. Consulta con la sede antes de pedir.</p>
+            )}
+            <button
+              onClick={() => { closeProduct(); navigate('/alergenos') }}
+              className="mt-2 min-h-10 text-xs font-bold uppercase tracking-wide text-tomate underline underline-offset-4"
+            >
+              Ver guía general de alérgenos
+            </button>
+          </div>
 
           {isPizza(product) && (
             <p className="mono text-carbon/50 mt-2">TAMAÑO ÚNICO · {PIZZA_SIZE.diameter}</p>

@@ -25,7 +25,9 @@ export default function ProductImage({ image, category, alt, width = 500, widths
     )
   }
 
-  const fit = typeof image === 'string' && image.startsWith('own:')
+  const fit = typeof image === 'string' && (
+    image.startsWith('own:') || image.includes('/storage/v1/object/public/nonno-site-assets/')
+  )
     ? 'object-contain bg-crema'
     : 'object-cover'
 

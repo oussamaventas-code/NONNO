@@ -39,16 +39,20 @@ export default async function handler(req, res) {
       if (!CUSTOMER_EVENTS.includes(event) || !/^[0-9a-f-]{36}$/i.test(id)) {
         return res.status(400).json({ error: 'Aviso no válido.' })
       }
-      const { data: order, error } = await db().from('orders').select('*').eq('id', id).maybeSingle()
+      let orderQuery = db().from('orders').select('*').eq('id', id)
+      if (session.scope !== SCOPE_ALL) orderQuery = orderQuery.eq('location_id', session.scope)
+      const { data: order, error } = await orderQuery.maybeSingle()
       if (error) throw error
-      if (!order || (session.scope !== SCOPE_ALL && session.scope !== order.location_id)) {
+      if (!order) {
         return res.status(404).json({ error: 'Ese pedido no es de esta sede.' })
       }
       if (['enviado', 'enviando'].includes(order.sms?.[event]?.status)) {
         return res.status(409).json({ error: 'Ese aviso ya se envió o se está intentando enviar.' })
       }
       await sendCustomerNotification(order, event)
-      const { data: latest, error: latestError } = await db().from('orders').select('sms').eq('id', id).maybeSingle()
+      let latestQuery = db().from('orders').select('sms').eq('id', id)
+      if (session.scope !== SCOPE_ALL) latestQuery = latestQuery.eq('location_id', session.scope)
+      const { data: latest, error: latestError } = await latestQuery.maybeSingle()
       if (latestError) throw latestError
       return res.status(200).json({ notification: latest?.sms?.[event] || null })
     }

@@ -23,9 +23,10 @@ const MAX_AGE = 60 * 60 * 24 * 7 // 7 días
 export const SCOPE_ALL = 'all'
 
 const PASSWORDS = [
-  { env: 'ADMIN_PASSWORD_SANGONERA', scope: 'sangonera' },
-  { env: 'ADMIN_PASSWORD_SANTO_ANGEL', scope: 'santo-angel' },
-  { env: 'ADMIN_PASSWORD', scope: SCOPE_ALL },
+  { env: 'SUPERADMIN_PASSWORD', scope: SCOPE_ALL, role: 'superadmin' },
+  { env: 'ADMIN_PASSWORD_SANGONERA', scope: 'sangonera', role: 'cajero' },
+  { env: 'ADMIN_PASSWORD_SANTO_ANGEL', scope: 'santo-angel', role: 'cajero' },
+  { env: 'ADMIN_PASSWORD', scope: SCOPE_ALL, role: 'admin' },
 ]
 
 /* Mejor con ADMIN_SESSION_SECRET (cadena larga y aleatoria). Si falta se
@@ -54,21 +55,23 @@ export const isConfigured = () => PASSWORDS.some(({ env }) => process.env[env])
  * Comprueba la contraseña contra todas las configuradas.
  * @returns {string|null} el ámbito que abre, o null si no vale.
  */
-export function scopeForPassword(password) {
+export function credentialsForPassword(password) {
   if (!password) return null
   /* Se recorren todas sin cortar al primer acierto para no revelar
      por el tiempo de respuesta cuál de ellas coincidió. */
   let found = null
-  for (const { env, scope } of PASSWORDS) {
+  for (const { env, scope, role = 'admin' } of PASSWORDS) {
     const expected = process.env[env]
-    if (expected && safeEqual(password, expected) && !found) found = scope
+    if (expected && safeEqual(password, expected) && !found) found = { scope, role }
   }
   return found
 }
 
-export function createSessionCookie(scope) {
-  const issued = `${Date.now()}.${randomBytes(8).toString('hex')}`
-  const body = `${issued}~${scope}`
+export const scopeForPassword = (password) => credentialsForPassword(password)?.scope || null
+
+export function createSessionCookie(scope, role = 'admin') {
+  const issued = String(Date.now()) + '.' + randomBytes(8).toString('hex')
+  const body = issued + '~' + scope + '~' + role
   const token = `${body}~${sign(body)}`
   return [
     `${COOKIE}=${token}`,
@@ -96,15 +99,18 @@ export function readSession(req) {
 
   const token = match.slice(COOKIE.length + 1)
   const parts = token.split('~')
-  if (parts.length !== 3) return null
+  if (parts.length !== 3 && parts.length !== 4) return null
 
-  const [issued, scope, signature] = parts
-  if (!safeEqual(signature, sign(`${issued}~${scope}`))) return null
+  const [issued, scope, roleOrSignature, maybeSignature] = parts
+  const role = maybeSignature ? roleOrSignature : 'admin'
+  const signature = maybeSignature || roleOrSignature
+  const body = maybeSignature ? issued + '~' + scope + '~' + role : issued + '~' + scope
+  if (!safeEqual(signature, sign(body))) return null
 
   const at = Number(issued.split('.')[0])
   if (!at || Date.now() - at > MAX_AGE * 1000) return null
 
-  return { scope }
+  return { scope, role }
 }
 
 export const hasSession = (req) => readSession(req) !== null
@@ -113,10 +119,27 @@ export const hasSession = (req) => readSession(req) !== null
  * Corta la petición con 401 si no hay sesión.
  * @returns {{scope: string}|null} la sesión, o null si ya se respondió.
  */
-export function requireSession(req, res) {
+export function requireSession(req, res, { roles = null } = {}) {
   const session = readSession(req)
   if (!session) {
     res.status(401).json({ error: 'No autorizado' })
+    return null
+  }
+  if (roles && !roles.includes(session.role)) {
+    res.status(403).json({ error: 'Acceso no permitido para este rol.' })
+    return null
+  }
+  return session
+}
+
+export function requireSuperadmin(req, res) {
+  const session = readSession(req)
+  if (!session) {
+    res.status(401).json({ error: 'Inicia sesión como superadministración.' })
+    return null
+  }
+  if (session.role !== 'superadmin') {
+    res.status(403).json({ error: 'Esta sección es solo para superadministración.' })
     return null
   }
   return session
