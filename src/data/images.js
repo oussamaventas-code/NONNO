@@ -94,6 +94,10 @@ export const PHOTO = {
   calzoneTostarica: 'own:calzone-tostarica',
   calzonePistacho: 'own:calzone-pistacho',
   calzoneLotus: 'own:calzone-lotus',
+  nonnitosLotus: 'own:nonnitos-lotus',
+  nonnitosNutella: 'own:nonnitos-nutella',
+  nonnitosPistacho: 'own:nonnitos-pistacho',
+  nonnitosOreo: 'own:nonnitos-oreo',
 
   // Entrantes
   panDeAjo: '1608198093002-ad4e005484ec',
