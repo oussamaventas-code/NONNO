@@ -119,10 +119,10 @@ export const PHOTO = {
   zumo: '1600271886742-f049cd451bba',
   vino: '1437418747212-8d9709afab22',
   cafe: '1544787219-7f47ccb76574',
-  refrescoBote: '1554866585-cd94860890b7',
-  aguaBotella: '1523362628745-0c100150b504',
-  cervezaBotella: '1597822738124-151fb72dcb79',
-  colaBotella: '1648569883125-d01072540b4c',
+  refrescoBote: 'own:refresco-bote',
+  aguaBotella: 'own:agua',
+  cervezaBotella: 'own:cerveza',
+  colaBotella: 'own:coca-cola-2l',
 
   // Postres
   tarta: '1571877227200-a0d98ea607e9',
