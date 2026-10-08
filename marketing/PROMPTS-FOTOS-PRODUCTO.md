@@ -1027,3 +1027,93 @@ Style: realistic commercial pizzeria photography, true-to-life colours, appetisi
 
 Avoid: text, logos, watermarks, hands, cutlery, cardboard box, extra food, any ingredient not listed, cartoon or 3D-render look, plastic-looking surfaces, oversaturated colours, perfectly identical pieces.
 ```
+
+## Bebidas
+
+### Refresco en bote
+
+```
+Professional product photograph of the "Refresco en bote" sold at La Pizza de Nonno, a local pizzeria in Murcia, straight from the fridge.
+
+Reference images: the attached photo of white tiles is the background. If another photo of this drink is also attached, reproduce exactly that drink: the same container, size, label and brand. If no photo of the drink is attached, follow the description below.
+
+The drink: three ice-cold 33 cl aluminium soft drink cans standing together, one cola, one orange and one lemon flavour, with plain unbranded designs in those colours, covered in fine condensation droplets. Nothing else.
+
+Make it look real: natural condensation with a few droplets running down, slight reflections of the window light on the container, a small wet ring on the countertop.
+
+Setting: standing upright directly on a light-grey stone countertop. Behind it, the white glossy tiled wall from the attached background image, with thin light-grey grout, softly out of focus.
+
+Camera: low angle, about 15 degrees above the table, 70 mm lens, the drink centred and filling about 70 % of the frame height, label facing the camera and sharp, gentle depth of field towards the back.
+
+Light: soft natural window light from the left, cool and fresh, a crisp highlight along the edge of the container, a soft contact shadow.
+
+Style: realistic commercial beverage photography, true-to-life colours, refreshing, crisp detail. Square 1:1.
+
+Avoid: text other than the real label, invented logos, misspelled brand names, glasses, ice cubes, food, hands, cartoon or 3D-render look, oversaturated colours.
+```
+
+### Agua 1,5 L
+
+```
+Professional product photograph of the "Agua 1,5 L" sold at La Pizza de Nonno, a local pizzeria in Murcia, straight from the fridge.
+
+Reference images: the attached photo of white tiles is the background. If another photo of this drink is also attached, reproduce exactly that drink: the same container, size, label and brand. If no photo of the drink is attached, follow the description below.
+
+The drink: one ice-cold 1.5 litre clear plastic bottle of still mineral water with a plain light-blue label without any brand name, covered in fine condensation droplets. Nothing else.
+
+Make it look real: natural condensation with a few droplets running down, slight reflections of the window light on the container, a small wet ring on the countertop.
+
+Setting: standing upright directly on a light-grey stone countertop. Behind it, the white glossy tiled wall from the attached background image, with thin light-grey grout, softly out of focus.
+
+Camera: low angle, about 15 degrees above the table, 70 mm lens, the drink centred and filling about 70 % of the frame height, label facing the camera and sharp, gentle depth of field towards the back.
+
+Light: soft natural window light from the left, cool and fresh, a crisp highlight along the edge of the container, a soft contact shadow.
+
+Style: realistic commercial beverage photography, true-to-life colours, refreshing, crisp detail. Square 1:1.
+
+Avoid: text other than the real label, invented logos, misspelled brand names, glasses, ice cubes, food, hands, cartoon or 3D-render look, oversaturated colours.
+```
+
+### Cerveza 1 L
+
+```
+Professional product photograph of the "Cerveza 1 L" sold at La Pizza de Nonno, a local pizzeria in Murcia, straight from the fridge.
+
+Reference images: the attached photo of white tiles is the background. If another photo of this drink is also attached, reproduce exactly that drink: the same container, size, label and brand. If no photo of the drink is attached, follow the description below.
+
+The drink: one ice-cold 1 litre brown glass bottle of Spanish lager beer with a plain cream label without any brand name, covered in fine condensation droplets. Nothing else.
+
+Make it look real: natural condensation with a few droplets running down, slight reflections of the window light on the container, a small wet ring on the countertop.
+
+Setting: standing upright directly on a light-grey stone countertop. Behind it, the white glossy tiled wall from the attached background image, with thin light-grey grout, softly out of focus.
+
+Camera: low angle, about 15 degrees above the table, 70 mm lens, the drink centred and filling about 70 % of the frame height, label facing the camera and sharp, gentle depth of field towards the back.
+
+Light: soft natural window light from the left, cool and fresh, a crisp highlight along the edge of the container, a soft contact shadow.
+
+Style: realistic commercial beverage photography, true-to-life colours, refreshing, crisp detail. Square 1:1.
+
+Avoid: text other than the real label, invented logos, misspelled brand names, glasses, ice cubes, food, hands, cartoon or 3D-render look, oversaturated colours.
+```
+
+### Coca-Cola 2 L
+
+```
+Professional product photograph of the "Coca-Cola 2 L" sold at La Pizza de Nonno, a local pizzeria in Murcia, straight from the fridge.
+
+Reference images: the attached photo of white tiles is the background. If another photo of this drink is also attached, reproduce exactly that drink: the same container, size, label and brand. If no photo of the drink is attached, follow the description below.
+
+The drink: one ice-cold 2 litre plastic bottle of Coca-Cola with its classic red label, covered in fine condensation droplets. Nothing else.
+
+Make it look real: natural condensation with a few droplets running down, slight reflections of the window light on the container, a small wet ring on the countertop.
+
+Setting: standing upright directly on a light-grey stone countertop. Behind it, the white glossy tiled wall from the attached background image, with thin light-grey grout, softly out of focus.
+
+Camera: low angle, about 15 degrees above the table, 70 mm lens, the drink centred and filling about 70 % of the frame height, label facing the camera and sharp, gentle depth of field towards the back.
+
+Light: soft natural window light from the left, cool and fresh, a crisp highlight along the edge of the container, a soft contact shadow.
+
+Style: realistic commercial beverage photography, true-to-life colours, refreshing, crisp detail. Square 1:1.
+
+Avoid: text other than the real label, invented logos, misspelled brand names, glasses, ice cubes, food, hands, cartoon or 3D-render look, oversaturated colours.
+```
