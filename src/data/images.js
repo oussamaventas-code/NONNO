@@ -100,12 +100,13 @@ export const PHOTO = {
   nonnitosOreo: 'own:nonnitos-oreo',
   provolone: 'own:provolone',
   ovniCamembert: 'own:ovni-camembert',
+  tirasPollo: 'own:tiras-pollo',
 
   // Entrantes
   panDeAjo: 'own:pan-de-ajo',
   ensalada: '1540189549336-e6e99c3679fe',
   alitas: 'own:alitas',
-  patatasCheeseBacon: '1743193711514-4f7bc5d78d4d',
+  patatasCheeseBacon: 'own:patatas-cheese-bacon',
   patatasCheeseKebab: 'own:patatas-cheese-kebab',
   patatasFritas: 'own:patatas-fritas',
   boniatos: 'own:boniatos',

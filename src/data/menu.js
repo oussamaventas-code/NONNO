@@ -287,7 +287,7 @@ export const PRODUCTS = [
     name: 'Tiras de pollo',
     description: 'Fingers de pollo crujientes.',
     ingredients: [],
-    image: null,
+    image: PHOTO.tirasPollo,
     price: 5.9,
   },
   {
