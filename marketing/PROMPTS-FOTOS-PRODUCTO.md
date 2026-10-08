@@ -1037,7 +1037,7 @@ Professional product photograph of the "Refresco en bote" sold at La Pizza de No
 
 Reference images: the attached photo of white tiles is the background. If another photo of this drink is also attached, reproduce exactly that drink: the same container, size, label and brand. If no photo of the drink is attached, follow the description below.
 
-The drink: three ice-cold 33 cl aluminium soft drink cans standing together, one cola, one orange and one lemon flavour, with plain unbranded designs in those colours, covered in fine condensation droplets. Nothing else.
+The drink: three ice-cold 33 cl aluminium cans standing together: a red Coca-Cola can, an orange Fanta Naranja can and a yellow Fanta Limón can, with their real, correctly spelled logos and current Spanish designs, covered in fine condensation droplets. Nothing else.
 
 Make it look real: natural condensation with a few droplets running down, slight reflections of the window light on the container, a small wet ring on the countertop.
 
@@ -1049,7 +1049,9 @@ Light: soft natural window light from the left, cool and fresh, a crisp highligh
 
 Style: realistic commercial beverage photography, true-to-life colours, refreshing, crisp detail. Square 1:1.
 
-Avoid: text other than the real label, invented logos, misspelled brand names, glasses, ice cubes, food, hands, cartoon or 3D-render look, oversaturated colours.
+Brands: show the real brand logos and labels exactly as they are sold in Spain, sharp and correctly spelled, letter by letter.
+
+Avoid: invented or distorted logos, misspelled brand names, extra text, glasses, ice cubes, food, hands, cartoon or 3D-render look, oversaturated colours.
 ```
 
 ### Agua 1,5 L
@@ -1059,7 +1061,7 @@ Professional product photograph of the "Agua 1,5 L" sold at La Pizza de Nonno, a
 
 Reference images: the attached photo of white tiles is the background. If another photo of this drink is also attached, reproduce exactly that drink: the same container, size, label and brand. If no photo of the drink is attached, follow the description below.
 
-The drink: one ice-cold 1.5 litre clear plastic bottle of still mineral water with a plain light-blue label without any brand name, covered in fine condensation droplets. Nothing else.
+The drink: one ice-cold 1.5 litre clear plastic bottle of Font Vella still mineral water with its real, correctly spelled label, covered in fine condensation droplets. Nothing else.
 
 Make it look real: natural condensation with a few droplets running down, slight reflections of the window light on the container, a small wet ring on the countertop.
 
@@ -1071,7 +1073,9 @@ Light: soft natural window light from the left, cool and fresh, a crisp highligh
 
 Style: realistic commercial beverage photography, true-to-life colours, refreshing, crisp detail. Square 1:1.
 
-Avoid: text other than the real label, invented logos, misspelled brand names, glasses, ice cubes, food, hands, cartoon or 3D-render look, oversaturated colours.
+Brands: show the real brand logos and labels exactly as they are sold in Spain, sharp and correctly spelled, letter by letter.
+
+Avoid: invented or distorted logos, misspelled brand names, extra text, glasses, ice cubes, food, hands, cartoon or 3D-render look, oversaturated colours.
 ```
 
 ### Cerveza 1 L
@@ -1081,7 +1085,7 @@ Professional product photograph of the "Cerveza 1 L" sold at La Pizza de Nonno, 
 
 Reference images: the attached photo of white tiles is the background. If another photo of this drink is also attached, reproduce exactly that drink: the same container, size, label and brand. If no photo of the drink is attached, follow the description below.
 
-The drink: one ice-cold 1 litre brown glass bottle of Spanish lager beer with a plain cream label without any brand name, covered in fine condensation droplets. Nothing else.
+The drink: one ice-cold 1 litre brown glass bottle of Estrella de Levante beer from Murcia with its real, correctly spelled label, covered in fine condensation droplets. Nothing else.
 
 Make it look real: natural condensation with a few droplets running down, slight reflections of the window light on the container, a small wet ring on the countertop.
 
@@ -1093,7 +1097,9 @@ Light: soft natural window light from the left, cool and fresh, a crisp highligh
 
 Style: realistic commercial beverage photography, true-to-life colours, refreshing, crisp detail. Square 1:1.
 
-Avoid: text other than the real label, invented logos, misspelled brand names, glasses, ice cubes, food, hands, cartoon or 3D-render look, oversaturated colours.
+Brands: show the real brand logos and labels exactly as they are sold in Spain, sharp and correctly spelled, letter by letter.
+
+Avoid: invented or distorted logos, misspelled brand names, extra text, glasses, ice cubes, food, hands, cartoon or 3D-render look, oversaturated colours.
 ```
 
 ### Coca-Cola 2 L
@@ -1103,7 +1109,7 @@ Professional product photograph of the "Coca-Cola 2 L" sold at La Pizza de Nonno
 
 Reference images: the attached photo of white tiles is the background. If another photo of this drink is also attached, reproduce exactly that drink: the same container, size, label and brand. If no photo of the drink is attached, follow the description below.
 
-The drink: one ice-cold 2 litre plastic bottle of Coca-Cola with its classic red label, covered in fine condensation droplets. Nothing else.
+The drink: one ice-cold 2 litre plastic bottle of Coca-Cola with its real red label and correctly spelled logo, covered in fine condensation droplets. Nothing else.
 
 Make it look real: natural condensation with a few droplets running down, slight reflections of the window light on the container, a small wet ring on the countertop.
 
@@ -1115,5 +1121,7 @@ Light: soft natural window light from the left, cool and fresh, a crisp highligh
 
 Style: realistic commercial beverage photography, true-to-life colours, refreshing, crisp detail. Square 1:1.
 
-Avoid: text other than the real label, invented logos, misspelled brand names, glasses, ice cubes, food, hands, cartoon or 3D-render look, oversaturated colours.
+Brands: show the real brand logos and labels exactly as they are sold in Spain, sharp and correctly spelled, letter by letter.
+
+Avoid: invented or distorted logos, misspelled brand names, extra text, glasses, ice cubes, food, hands, cartoon or 3D-render look, oversaturated colours.
 ```
